@@ -8,14 +8,15 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm : IDisposable
     {
-        private const int NonceSize = 12;
-        public static KeySizes NonceByteSizes { get; } = new KeySizes(NonceSize, NonceSize, 1);
-        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
+        public static KeySizes NonceByteSizes { get; } = AesGcmPal.NonceByteSizes;
+        public static KeySizes TagByteSizes { get; } = AesGcmPal.TagByteSizes;
+
+        private readonly AesGcmPal _pal = AesGcmPal.Create();
 
         public AesGcm(ReadOnlySpan<byte> key)
         {
             AesAEAD.CheckKeySize(key.Length * 8);
-            ImportKey(key);
+            _pal.ImportKey(key);
         }
 
         public AesGcm(byte[] key)
@@ -24,7 +25,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(key));
 
             AesAEAD.CheckKeySize(key.Length * 8);
-            ImportKey(key);
+            _pal.ImportKey(key);
         }
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null)
@@ -41,7 +42,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            EncryptInternal(nonce, plaintext, ciphertext, tag, associatedData);
+            _pal.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = null)
@@ -58,7 +59,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
             CheckParameters(plaintext, ciphertext, nonce, tag);
-            DecryptInternal(nonce, ciphertext, tag, plaintext, associatedData);
+            _pal.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
         }
 
         private static void CheckParameters(
@@ -75,6 +76,11 @@ namespace System.Security.Cryptography
 
             if (!tag.Length.IsLegalSize(TagByteSizes))
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        public void Dispose()
+        {
+            _pal.Dispose();
         }
     }
 }

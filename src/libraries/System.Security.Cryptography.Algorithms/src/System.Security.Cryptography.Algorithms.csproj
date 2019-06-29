@@ -21,6 +21,7 @@
     <Compile Include="System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPal.cs" />
     <Compile Include="System\Security\Cryptography\AesManaged.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
@@ -274,7 +275,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Security\Cryptography\AesGcm.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPal.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPalWindows.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Windows.cs" />
     <Compile Include="System\Security\Cryptography\AesAEAD.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
@@ -703,7 +705,8 @@
       <Link>Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs</Link>
     </Compile>
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPal.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPalUnix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

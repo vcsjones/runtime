@@ -7,11 +7,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class AesGcm
+    internal sealed class AesGcmPalUnix : AesGcmPal
     {
         private SafeEvpCipherCtxHandle _ctxHandle;
 
-        private void ImportKey(ReadOnlySpan<byte> key)
+        public override void ImportKey(ReadOnlySpan<byte> key)
         {
             _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8));
 
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherSetGcmNonceLength(_ctxHandle, NonceSize);
         }
 
-        private void EncryptInternal(
+        public override void Encrypt(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherGetGcmTag(_ctxHandle, tag);
         }
 
-        private void DecryptInternal(
+        public override void Decrypt(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             _ctxHandle.Dispose();
         }
