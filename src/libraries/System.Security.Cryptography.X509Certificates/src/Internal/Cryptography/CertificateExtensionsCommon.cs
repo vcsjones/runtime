@@ -12,6 +12,10 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateExtensionsCommon
     {
+        private static readonly string[] s_RsaOids = new string[] { Oids.Rsa, Oids.RsaPss };
+        private static readonly string[] s_DsaOids = new string[] { Oids.Dsa };
+        private static readonly string[] s_EcDsaOids = new string[] { Oids.EcPublicKey };
+
         public static T GetPublicKey<T>(
             this X509Certificate2 certificate,
             Predicate<X509Certificate2> matchesConstraints = null)
@@ -20,10 +24,10 @@ namespace Internal.Cryptography.Pal
             if (certificate == null)
                 throw new ArgumentNullException(nameof(certificate));
 
-            string oidValue = GetExpectedOidValue<T>();
+            ReadOnlySpan<string> oidValues = GetExpectedOidValues<T>();
             PublicKey publicKey = certificate.PublicKey;
             Oid algorithmOid = publicKey.Oid;
-            if (oidValue != algorithmOid.Value)
+            if (!oidValues.Contains(algorithmOid.Value))
                 return null;
 
             if (matchesConstraints != null && !matchesConstraints(certificate))
@@ -42,8 +46,8 @@ namespace Internal.Cryptography.Pal
             if (certificate == null)
                 throw new ArgumentNullException(nameof(certificate));
 
-            string oidValue = GetExpectedOidValue<T>();
-            if (!certificate.HasPrivateKey || oidValue != certificate.PublicKey.Oid.Value)
+            ReadOnlySpan<string> oidValues = GetExpectedOidValues<T>();
+            if (!certificate.HasPrivateKey || !oidValues.Contains(certificate.PublicKey.Oid.Value))
                 return null;
 
             if (matchesConstraints != null && !matchesConstraints(certificate))
@@ -58,18 +62,18 @@ namespace Internal.Cryptography.Pal
             if (typeof(T) == typeof(DSA))
                 return (T)(object)certificate.Pal.GetDSAPrivateKey();
 
-            Debug.Fail("Expected GetExpectedOidValue() to have thrown before we got here.");
+            Debug.Fail($"Expected {nameof(GetExpectedOidValues)}() to have thrown before we got here.");
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
-        private static string GetExpectedOidValue<T>() where T : AsymmetricAlgorithm
+        private static string[] GetExpectedOidValues<T>() where T : AsymmetricAlgorithm
         {
             if (typeof(T) == typeof(RSA))
-                return Oids.Rsa;
+                return s_RsaOids;
             if (typeof(T) == typeof(ECDsa))
-                return Oids.EcPublicKey;
+                return s_EcDsaOids;
             if (typeof(T) == typeof(DSA))
-                return Oids.Dsa;
+                return s_DsaOids;
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
     }
