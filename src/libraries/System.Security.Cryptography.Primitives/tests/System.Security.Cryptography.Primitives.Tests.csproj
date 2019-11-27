@@ -21,6 +21,7 @@
     <Compile Include="Sum32Hash.cs" />
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
+    <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
   </ItemGroup>
 </Project>
