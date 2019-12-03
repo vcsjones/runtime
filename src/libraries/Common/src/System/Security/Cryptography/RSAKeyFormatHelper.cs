@@ -16,6 +16,7 @@ namespace System.Security.Cryptography
         private static readonly string[] s_validOids =
         {
             Oids.Rsa,
+            Oids.RsaPss
         };
 
         internal static void FromPkcs1PrivateKey(
@@ -25,9 +26,35 @@ namespace System.Security.Cryptography
         {
             RSAPrivateKeyAsn key = RSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER);
 
-            if (!algId.HasNullEquivalentParameters())
+            if (algId.Algorithm?.Value == Oids.Rsa && !algId.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            // RFC 8017 suggests that the parameters SHALL be present, however in PKCS8 formatted
+            // private keys, it appears to be common for the parameters to be missing entirely.
+            if (algId.Algorithm?.Value == Oids.RsaPss && algId.Parameters != null)
+            {
+                // RSASSA-PSS params in a key exist really to attempt to restrict how the key
+                // key is used. Here we are simply validating that the params at least make sense
+                // if they are present.
+                PssParamsAsn pssParams = PssParamsAsn.Decode(algId.Parameters.Value, AsnEncodingRules.DER);
+
+                if (pssParams.TrailerField != 1 ||
+                    pssParams.MaskGenAlgorithm.Algorithm.Value != Oids.Mgf1 ||
+                    pssParams.MaskGenAlgorithm.Parameters == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                AlgorithmIdentifierAsn mgf1Params = AlgorithmIdentifierAsn.Decode(
+                    pssParams.MaskGenAlgorithm.Parameters.Value,
+                    AsnEncodingRules.DER);
+
+                if (mgf1Params.Algorithm.Value != pssParams.HashAlgorithm.Algorithm.Value)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
             }
 
             const int MaxSupportedVersion = 0;

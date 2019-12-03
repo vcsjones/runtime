@@ -987,6 +987,48 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        public static void Pkcs8_RsaPssOid()
+        {
+            using RSA key = RSAFactory.Create();
+            string base64 = @"
+MIIEvAIBADANBgkqhkiG9w0BAQoFAASCBKYwggSiAgEAAoIBAQCxfO53tFmk
+ZZKNf1V3gDm6Iroppf/lU/tAmKg15S0K3IUXbuTWk4IgcY3p3cnVvTBH7lm5
+5qh5nkeWjmPNpiide22DqmjiRtYcjCuhxAQSrmEHr2/pK0hcysIOUnEhA+AF
+HAfAVv2KYXqVOUuqWp0DbXpRPnrkq+20CoiAPAftGSGi3NecPzsZWTM5iiXb
+zo2OENqxODLKWaFpPCN2UDezv3NYdzjFFgNgNg0xjL6lEi/lFq0cgAFQ6zyG
+eSLTf9SQhbjrsH3YyIu7iL7+uLqtYcf5aCCyqR203LBbx7PygzVDsK4ZK6b6
+iEi5+7PN+KmcIG9jI+XChc11elUEpAiZAgMBAAECggEALJaGEexs2K/rsUBb
+6Dl+RxSSUAQz1RjT9dZj66Y3OpNLnCdvtbg46I2eaTIekmOEzY1DXUBk8qig
+s2HyEKe9bFKloH4e+zlwcJuGGo1zuH22QogARUNqWmVVeuObKAAhNydjix5P
+c4Qpl3NdXt6Es2e9Ysufc/L9NE2xHQX3t8g8afYsW3jGsFW/i1jxwp8ZShdT
+YNpSby7eD2SdT7ivUCuPmR4VeDLXNwbDCF0cBLFtRoTJ6PYOjhjsS4TF82Vr
+mzUK2nvHq21Y+hd2wmfxupvdH7SKVgZnNjnpHoKKqih6p9oYAdUcGQxQqwk1
+r84mANTQYcwqDj/Kw9tCFpv/QQKBgQC6Yf1lbYa63Xe3EZ7IyX24aiMDPejJ
+t9be+BV89wuxHciD7HZXn39HXtVXNNkWvdzdoLLgGNFwZU4rdRV3xAY+gD7C
+tqdASlNhMDVGn9T8fYDJDuGUm8f6vUabTBKQfZv15oJGuaap9jW8B57EeHRu
+RKy/XFkz2lnem+09ORs2IwKBgQDzyGupotLWq2RZD2gMyGnGUbIsKLXb3QBw
+XrMEOMSqRe95rHmP8fYHO9+vCOPaITcIQR+ghE3rqZG1sdbVOhbVfnqdZfGS
+h2nnAf1glSUb8Hng4crOmXrtx42iPY0wsY7amc+eawIo1Owl1Yl0yqJ+R9vo
+5UJs1Nyt3DGyQvssEwKBgHXXVrs2UKT9OZ/JyDbzDkX29UQrdG91iKlY+V0V
+ZZMKXajrbLdh5LtfPkvw4gD68hY+cFo31tPVeWMImBYtHjWOKCA8E+sWEzmz
+nTuV+rfZMf/tJLss83eZDHdL1cD9agpDP8MvxixXuwmzV7Ko5hSB3ybuYIfk
+WkXhGFJJNOc5AoGAL18PxLv2Gm7dpgy/XFSJcVcotzoF9L5iOnO8d6KMXMYQ
+PeWNDbKn60nwMnQYyqdPqVP2UFvFRHkD7nmrVG3gSAY2z2Ui5yVXJ+OUF/OD
+bYVyOYfGwBTE9XWkiRVK3V5zcvkWhiMnHUYayVNQTZiesMlH6165ZKqMY2B5
+a7lmU28CgYALFmsuh88cLJyKHJLU0R6khyUcoSl65NZlaW5iuupBaYm9eFqh
+LFFmoz0eUaZlYaZsL6rbXWqUTmVKMELheqhbLUEFgl9t3Z2aam5ufBuzC5NY
+EBzvkbYGu+WtFXRppGT/a4geoTzj4SRTTcjRC/d9G2jqtTTk+xxsyn8scRmd
+vA==";
+            ReadWriteBase64Pkcs8(base64, TestData.RSA2048Params);
+        }
+
+        [Fact]
+        public static void SubjectPublicKeyInfo_RsaPssOid()
+        {
+
+        }
+
+        [Fact]
         public static void NoFuzzyPkcs8()
         {
             using (RSA key = RSAFactory.Create())
