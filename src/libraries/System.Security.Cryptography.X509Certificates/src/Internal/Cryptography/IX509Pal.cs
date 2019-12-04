@@ -11,6 +11,7 @@ namespace Internal.Cryptography.Pal
     internal interface IX509Pal
     {
         AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal);
+        ECDiffieHellman DecodePublicKeyAsECDiffieHellman(Oid oid, ICertificatePal certificatePal);
         string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);
         byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag);
         string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);

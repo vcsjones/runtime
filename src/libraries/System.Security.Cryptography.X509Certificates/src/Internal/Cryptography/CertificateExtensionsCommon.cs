@@ -31,7 +31,15 @@ namespace Internal.Cryptography.Pal
 
             byte[] rawEncodedKeyValue = publicKey.EncodedKeyValue.RawData;
             byte[] rawEncodedParameters = publicKey.EncodedParameters.RawData;
-            return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
+
+            if (typeof(T) == typeof(ECDiffieHellman))
+            {
+                return (T)(AsymmetricAlgorithm)(X509Pal.Instance.DecodePublicKeyAsECDiffieHellman(algorithmOid, certificate.Pal));
+            }
+            else
+            {
+                return (T)(X509Pal.Instance.DecodePublicKey(algorithmOid, rawEncodedKeyValue, rawEncodedParameters, certificate.Pal));
+            }
         }
 
         public static T GetPrivateKey<T>(
@@ -58,6 +66,9 @@ namespace Internal.Cryptography.Pal
             if (typeof(T) == typeof(DSA))
                 return (T)(object)certificate.Pal.GetDSAPrivateKey();
 
+            if (typeof(T) == typeof(ECDiffieHellman))
+                return (T)(object)certificate.Pal.GetECDiffieHellmanPrivateKey();
+
             Debug.Fail("Expected GetExpectedOidValue() to have thrown before we got here.");
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
@@ -66,7 +77,7 @@ namespace Internal.Cryptography.Pal
         {
             if (typeof(T) == typeof(RSA))
                 return Oids.Rsa;
-            if (typeof(T) == typeof(ECDsa))
+            if (typeof(T) == typeof(ECDsa) || typeof(T) == typeof(ECDiffieHellman))
                 return Oids.EcPublicKey;
             if (typeof(T) == typeof(DSA))
                 return Oids.Dsa;

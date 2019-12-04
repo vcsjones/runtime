@@ -124,6 +124,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\ECDiffieHellmanCertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaX509SignatureGenerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />

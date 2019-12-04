@@ -510,6 +510,16 @@ namespace Internal.Cryptography.Pal
             return new ECDsaOpenSsl(_privateKey);
         }
 
+        public ECDiffieHellman GetECDiffieHellmanPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new ECDiffieHellmanOpenSsl(_privateKey);
+        }
+
         private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -552,6 +562,26 @@ namespace Internal.Cryptography.Pal
 
             using (PinAndClear.Track(ecParameters.D))
             using (typedKey = new ECDsaOpenSsl())
+            {
+                typedKey.ImportParameters(ecParameters);
+
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
+        {
+            ECDsaOpenSsl typedKey = privateKey as ECDiffieHellman;
+
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKey((SafeEvpPKeyHandle)typedKey.DuplicateKeyHandle());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+
+            using (PinAndClear.Track(ecParameters.D))
+            using (typedKey = new ECDiffieHellmanOpenSsl())
             {
                 typedKey.ImportParameters(ecParameters);
 

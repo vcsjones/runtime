@@ -352,6 +352,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestECDiffieHellmanPublicKey()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.ECDsa384Certificate);
+            using ECDiffieHellman publicKey = cert.GetECDiffieHellmanPublicKey();
+            Assert.NotNull(publicKey.PublicKey);
+            Assert.Equal(384, publicKey.KeySize);
+            Assert.ThrowsAny<CryptographicException>(() => publicKey.ExportParameters(true));
+        }
+
+        [Fact]
+        public static void TestECDiffieHellmanPublicKey_KeyUsage()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.ECDH256Certificate);
+            using ECDiffieHellman publicKey = cert.GetECDiffieHellmanPublicKey();
+            Assert.NotNull(publicKey.PublicKey);
+            Assert.Equal(256, publicKey.KeySize);
+            Assert.ThrowsAny<CryptographicException>(() => publicKey.ExportParameters(true));
+        }
+
+        [Fact]
         public static void TestECDsaPublicKey_ValidatesSignature()
         {
             // This signature was produced as the output of ECDsaCng.SignData with the same key

@@ -66,6 +66,20 @@ namespace Internal.Cryptography.Pal
             );
         }
 
+        public ECDiffieHellman GetECDiffieHellmanPrivateKey()
+        {
+            return GetPrivateKey<ECDiffieHellman>(
+                delegate (CspParameters csp)
+                {
+                    throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp);
+                },
+                delegate (CngKey cngKey)
+                {
+                    return new ECDiffieHellmanCng(cngKey);
+                }
+            );
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng dsaCng = dsa as DSACng;
@@ -122,6 +136,31 @@ namespace Internal.Cryptography.Pal
 
             using (PinAndClear.Track(privateParameters.D))
             using (ECDsaCng clonedKey = new ECDsaCng())
+            {
+                clonedKey.ImportParameters(privateParameters);
+
+                return CopyWithEphemeralKey(clonedKey.Key);
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(ECDiffieHellman ecDiffieHellman)
+        {
+            ECDiffieHellmanCng ecDiffieHellmanCng = ecDiffieHellman as ECDiffieHellmanCng;
+
+            if (ecDiffieHellmanCng != null)
+            {
+                ICertificatePal clone = CopyWithPersistedCngKey(ecDiffieHellmanCng.Key);
+
+                if (clone != null)
+                {
+                    return clone;
+                }
+            }
+
+            ECParameters privateParameters = ecDiffieHellman.ExportParameters(true);
+
+            using (PinAndClear.Track(privateParameters.D))
+            using (ECDiffieHellmanCng clonedKey = new ECDiffieHellmanCng())
             {
                 clonedKey.ImportParameters(privateParameters);
 

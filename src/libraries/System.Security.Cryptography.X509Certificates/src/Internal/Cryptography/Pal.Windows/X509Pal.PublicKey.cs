@@ -54,9 +54,21 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static ECDsa DecodeECDsaPublicKey(CertificatePal certificatePal)
+        public ECDiffieHellman DecodePublicKeyAsECDiffieHellman(Oid oid, ICertificatePal certificatePal)
         {
-            ECDsa ecdsa;
+            CertificatePal pal = certificatePal as CertificatePal;
+
+            if (oid.Value != Oids.EcPublicKey || pal is null)
+            {
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+            }
+
+            return DecodeECDiffieHellmanPublicKey(pal);
+        }
+
+        private static T DecodeECPublicKey<T>(CertificatePal certificatePal, Func<CngKey, T> factory, Action<T, ECParameters> import) where T : new()
+        {
+            T ec;
             using (SafeBCryptKeyHandle bCryptKeyHandle = ImportPublicKeyInfo(certificatePal.CertContext))
             {
                 CngKeyBlobFormat blobFormat;
@@ -77,7 +89,7 @@ namespace Internal.Cryptography.Pal
                     keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
                     using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
                     {
-                        ecdsa = new ECDsaCng(cngKey);
+                        ec = factory(cngKey);
                     }
                 }
                 else
@@ -87,13 +99,25 @@ namespace Internal.Cryptography.Pal
                     ECParameters ecparams = default;
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
-                    ecdsa = new ECDsaCng();
-                    ecdsa.ImportParameters(ecparams);
+                    ec = new T();
+                    import(ec, ecparams);
                 }
             }
 
-            return ecdsa;
+            return ec;
         }
+
+        private static ECDsa DecodeECDsaPublicKey(CertificatePal certificatePal) =>
+            DecodeECPublicKey(
+                certificatePal,
+                key => new ECDsaCng(key),
+                (ec, ecparams) => ec.ImportParameters(ecparams));
+
+        private static ECDiffieHellman DecodeECDiffieHellmanPublicKey(CertificatePal certificatePal) =>
+            DecodeECPublicKey(
+                certificatePal,
+                key => new ECDiffieHellmanCng(key),
+                (ec, ecparams) => ec.ImportParameters(ecparams));
 
         private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
         {
