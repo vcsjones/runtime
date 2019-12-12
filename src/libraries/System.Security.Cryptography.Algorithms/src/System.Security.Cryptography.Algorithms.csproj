@@ -584,6 +584,7 @@
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
@@ -678,6 +679,8 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.OSX.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.SecurityTransforms.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPal.OSX.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcmPalOSX.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
@@ -705,7 +708,6 @@
       <Link>Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs</Link>
     </Compile>
     <Compile Include="System\Security\Cryptography\AesCcm.Unix.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcmPal.Unix.cs" />
     <Compile Include="System\Security\Cryptography\AesGcmPalUnix.cs" />
   </ItemGroup>
   <ItemGroup>
