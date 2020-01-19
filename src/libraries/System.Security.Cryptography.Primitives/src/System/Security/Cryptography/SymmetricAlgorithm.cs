@@ -255,6 +255,139 @@ namespace System.Security.Cryptography
             }
         }
 
+        public byte[] EncryptEcb(byte[] plaintext, PaddingMode paddingMode)
+        {
+            if (plaintext is null)
+                throw new ArgumentNullException(nameof(plaintext));
+
+            return EncryptEcb(plaintext.AsSpan(), paddingMode);
+        }
+
+        public byte[] EncryptEcb(ReadOnlySpan<byte> plaintext, PaddingMode paddingMode)
+        {
+            int bufferSize = GetCiphertextLength(paddingMode, plaintext.Length);
+            byte[] buffer = new byte[bufferSize];
+
+            if (!TryEncryptEcb(plaintext, buffer, paddingMode, out _))
+            {
+                Debug.Fail("Allocated buffer is too small.");
+                throw new CryptographicException(SR.Argument_BufferTooSmall);
+            }
+
+            return buffer;
+        }
+
+        public int EncyptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode)
+        {
+            if (!TryEncryptEcb(plaintext, destination, paddingMode, out int bytesWritten))
+            {
+                throw new CryptographicException(SR.Argument_BufferTooSmall);
+            }
+
+            return bytesWritten;
+        }
+
+        public bool TryEncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+            TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
+
+        protected virtual bool TryEncryptEcbCore(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+            TryTransformEcb(plaintext, destination, paddingMode, encrypt: true, out bytesWritten);
+
+        public byte[] DecryptEcb(byte[] ciphertext, PaddingMode paddingMode)
+        {
+            if (ciphertext is null)
+                throw new ArgumentNullException(nameof(ciphertext));
+
+            return DecryptEcb(ciphertext.AsSpan(), paddingMode);
+        }
+
+        public byte[] DecryptEcb(ReadOnlySpan<byte> ciphertext, PaddingMode paddingMode)
+        {
+            byte[] buffer = new byte[ciphertext.Length];
+
+            if (!TryDecryptEcb(ciphertext, buffer, paddingMode, out int plaintextLength))
+            {
+                Debug.Fail("Allocated buffer is too small.");
+                throw new CryptographicException(SR.Argument_BufferTooSmall);
+            }
+
+            return buffer[..plaintextLength];
+        }
+
+        public int DecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode)
+        {
+            if (!TryDecryptEcb(ciphertext, destination, paddingMode, out int bytesWritten))
+            {
+                throw new CryptographicException(SR.Argument_BufferTooSmall);
+            }
+
+            return bytesWritten;
+        }
+
+        public bool TryDecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+            TryDecryptEcbCore(ciphertext, destination, paddingMode, out bytesWritten);
+
+        protected virtual bool TryDecryptEcbCore(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+            TryTransformEcb(ciphertext, destination, paddingMode, encrypt: false, out bytesWritten);
+
+        private bool TryTransformEcb(ReadOnlySpan<byte> input, Span<byte> output, PaddingMode paddingMode, bool encrypt, out int bytesWritten)
+        {
+            if (Mode != CipherMode.ECB)
+                throw new CryptographicException(SR.Cryptography_UnsupportedCipherModeMismatch);
+            if (paddingMode != Padding)
+                throw new CryptographicException(SR.Cryptography_UnsupportedPaddingModeMismatch);
+
+            using (ICryptoTransform transform = encrypt ? CreateEncryptor() : CreateDecryptor())
+            {
+                bytesWritten = 0;
+                Span<byte> availableOutput = output;
+                ReadOnlySpan<byte> remainingInput = input;
+                int inputBlockSize = transform.InputBlockSize;
+                int outputBlockSize = transform.OutputBlockSize;
+                byte[] inputBuffer = CryptoPool.Rent(inputBlockSize);
+                byte[] outputBuffer = CryptoPool.Rent(outputBlockSize);
+
+                try
+                {
+                    while (remainingInput.Length > inputBlockSize)
+                    {
+                        remainingInput[..inputBlockSize].CopyTo(inputBuffer);
+                        int written = transform.TransformBlock(inputBuffer, 0, inputBlockSize, outputBuffer, 0);
+
+                        if (written > availableOutput.Length)
+                        {
+                            bytesWritten = 0;
+                            return false;
+                        }
+
+                        outputBuffer.AsSpan(..written).CopyTo(availableOutput);
+                        availableOutput = availableOutput[written..];
+                        remainingInput = remainingInput[inputBlockSize..];
+                        bytesWritten += written;
+                    }
+
+                    Debug.Assert(remainingInput.Length <= inputBlockSize, $"{remainingInput.Length} <= {inputBlockSize} failed.");
+                    remainingInput.CopyTo(inputBuffer);
+                    byte[] final = transform.TransformFinalBlock(inputBuffer, 0, remainingInput.Length);
+
+                    if (final.Length > availableOutput.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    final.CopyTo(availableOutput);
+                    bytesWritten += final.Length;
+                    return true;
+                }
+                finally
+                {
+                    CryptoPool.Return(inputBuffer);
+                    CryptoPool.Return(outputBuffer);
+                }
+            }
+        }
+
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
         protected byte[]? KeyValue;

@@ -15,6 +15,9 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherOneShotTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherOneShotTests.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs</Link>
     </Compile>

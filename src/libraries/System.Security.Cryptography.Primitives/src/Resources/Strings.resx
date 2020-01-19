@@ -60,6 +60,9 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Argument_BufferTooSmall" xml:space="preserve">
+    <value>The specified buffer is too small.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
@@ -107,6 +110,12 @@
   </data>
   <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
     <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_UnsupportedCipherModeMismatch" xml:space="preserve">
+    <value>The algorithm's implementation requires the Mode property to match the calling method's mode.</value>
+  </data>
+  <data name="Cryptography_UnsupportedPaddingModeMismatch" xml:space="preserve">
+    <value>The algorithm's implementation requires the Padding property to match the calling method's padding mode.</value>
   </data>
   <data name="Cryptography_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
