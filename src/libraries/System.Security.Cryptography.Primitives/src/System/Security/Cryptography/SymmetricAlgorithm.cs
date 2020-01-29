@@ -356,7 +356,11 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   Thrown when the <paramref name="destination" /> buffer is too small.
         /// </exception>
-        public int EncyptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode)
+        public int EncyptEcb(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode
+        )
         {
             if (!TryEncryptEcb(plaintext, destination, paddingMode, out int bytesWritten))
             {
@@ -386,7 +390,12 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   True if the operation succeeded, otherwise false.
         /// </returns>
-        public bool TryEncryptEcb(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+        public bool TryEncryptEcb(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten
+        ) =>
             TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
 
         /// <summary>
@@ -413,8 +422,22 @@ namespace System.Security.Cryptography
         ///   of ECB encryption. Otherwise, a generic implementation is provided using
         ///   <see cref="CreateEncryptor()" />.
         /// </remarks>
-        protected virtual bool TryEncryptEcbCore(ReadOnlySpan<byte> plaintext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
-            TryTransformEcb(plaintext, destination, paddingMode, encrypt: true, out bytesWritten);
+        protected virtual bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten
+        )
+        {
+            return TryTransformInternal(
+                plaintext,
+                destination,
+                paddingMode,
+                encrypt: true,
+                CipherMode.ECB,
+                out bytesWritten
+            );
+        }
 
         /// <summary>
         ///   Decrypts ciphertext data with the specified padding mode using ECB.
@@ -491,7 +514,11 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   Thrown when the <paramref name="destination" /> buffer is too small.
         /// </exception>
-        public int DecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode)
+        public int DecryptEcb(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode
+        )
         {
             if (!TryDecryptEcb(ciphertext, destination, paddingMode, out int bytesWritten))
             {
@@ -521,7 +548,12 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   True if the operation succeeded, otherwise false.
         /// </returns>
-        public bool TryDecryptEcb(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
+        public bool TryDecryptEcb(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten
+        ) =>
             TryDecryptEcbCore(ciphertext, destination, paddingMode, out bytesWritten);
 
         /// <summary>
@@ -548,12 +580,33 @@ namespace System.Security.Cryptography
         ///   of ECB decryption. Otherwise, a generic implementation is provided using
         ///   <see cref="CreateDecryptor()" />.
         /// </remarks>
-        protected virtual bool TryDecryptEcbCore(ReadOnlySpan<byte> ciphertext, Span<byte> destination, PaddingMode paddingMode, out int bytesWritten) =>
-            TryTransformEcb(ciphertext, destination, paddingMode, encrypt: false, out bytesWritten);
-
-        private bool TryTransformEcb(ReadOnlySpan<byte> input, Span<byte> output, PaddingMode paddingMode, bool encrypt, out int bytesWritten)
+        protected virtual bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten
+        )
         {
-            if (Mode != CipherMode.ECB)
+            return TryTransformInternal(
+                ciphertext,
+                destination,
+                paddingMode,
+                encrypt: false,
+                CipherMode.ECB,
+                out bytesWritten
+            );
+        }
+
+        private bool TryTransformInternal(
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
+            PaddingMode paddingMode,
+            bool encrypt,
+            CipherMode requiredMode,
+            out int bytesWritten
+        )
+        {
+            if (Mode != requiredMode)
                 throw new CryptographicException(SR.Cryptography_UnsupportedCipherModeMismatch);
             if (paddingMode != Padding)
                 throw new CryptographicException(SR.Cryptography_UnsupportedPaddingModeMismatch);
