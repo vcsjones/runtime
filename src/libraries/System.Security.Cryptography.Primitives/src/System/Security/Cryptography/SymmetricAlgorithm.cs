@@ -435,6 +435,7 @@ namespace System.Security.Cryptography
                 paddingMode,
                 encrypt: true,
                 CipherMode.ECB,
+                iv: null,
                 out bytesWritten
             );
         }
@@ -593,6 +594,7 @@ namespace System.Security.Cryptography
                 paddingMode,
                 encrypt: false,
                 CipherMode.ECB,
+                iv: null,
                 out bytesWritten
             );
         }
@@ -603,6 +605,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             bool encrypt,
             CipherMode requiredMode,
+            byte[]? iv,
             out int bytesWritten
         )
         {
@@ -611,54 +614,54 @@ namespace System.Security.Cryptography
             if (paddingMode != Padding)
                 throw new CryptographicException(SR.Cryptography_UnsupportedPaddingModeMismatch);
 
-            using (ICryptoTransform transform = encrypt ? CreateEncryptor() : CreateDecryptor())
+            bytesWritten = 0;
+
+            using ICryptoTransform transform = encrypt ? CreateEncryptor(Key, iv) : CreateDecryptor(Key, iv);
+            Span<byte> availableOutput = output;
+            ReadOnlySpan<byte> remainingInput = input;
+            int inputBlockSize = transform.InputBlockSize;
+            int outputBlockSize = transform.OutputBlockSize;
+            byte[] inputBuffer = CryptoPool.Rent(inputBlockSize);
+            byte[] outputBuffer = CryptoPool.Rent(outputBlockSize);
+
+            try
             {
-                bytesWritten = 0;
-                Span<byte> availableOutput = output;
-                ReadOnlySpan<byte> remainingInput = input;
-                int inputBlockSize = transform.InputBlockSize;
-                int outputBlockSize = transform.OutputBlockSize;
-                byte[] inputBuffer = CryptoPool.Rent(inputBlockSize);
-                byte[] outputBuffer = CryptoPool.Rent(outputBlockSize);
-
-                try
+                while (remainingInput.Length > inputBlockSize)
                 {
-                    while (remainingInput.Length > inputBlockSize)
-                    {
-                        remainingInput[..inputBlockSize].CopyTo(inputBuffer);
-                        int written = transform.TransformBlock(inputBuffer, 0, inputBlockSize, outputBuffer, 0);
+                    remainingInput[..inputBlockSize].CopyTo(inputBuffer);
+                    int written = transform.TransformBlock(inputBuffer, 0, inputBlockSize, outputBuffer, 0);
 
-                        if (written > availableOutput.Length)
-                        {
-                            bytesWritten = 0;
-                            return false;
-                        }
-
-                        outputBuffer.AsSpan(..written).CopyTo(availableOutput);
-                        availableOutput = availableOutput[written..];
-                        remainingInput = remainingInput[inputBlockSize..];
-                        bytesWritten += written;
-                    }
-
-                    Debug.Assert(remainingInput.Length <= inputBlockSize, $"{remainingInput.Length} <= {inputBlockSize} failed.");
-                    remainingInput.CopyTo(inputBuffer);
-                    byte[] final = transform.TransformFinalBlock(inputBuffer, 0, remainingInput.Length);
-
-                    if (final.Length > availableOutput.Length)
+                    if (written > availableOutput.Length)
                     {
                         bytesWritten = 0;
                         return false;
                     }
 
-                    final.CopyTo(availableOutput);
-                    bytesWritten += final.Length;
-                    return true;
+                    outputBuffer.AsSpan(..written).CopyTo(availableOutput);
+                    availableOutput = availableOutput[written..];
+                    remainingInput = remainingInput[inputBlockSize..];
+                    bytesWritten += written;
                 }
-                finally
+
+                Debug.Assert(remainingInput.Length <= inputBlockSize, $"{remainingInput.Length} <= {inputBlockSize} failed.");
+                remainingInput.CopyTo(inputBuffer);
+                byte[] final = transform.TransformFinalBlock(inputBuffer, 0, remainingInput.Length);
+
+                if (final.Length > availableOutput.Length)
                 {
-                    CryptoPool.Return(inputBuffer);
-                    CryptoPool.Return(outputBuffer);
+                    bytesWritten = 0;
+                    return false;
                 }
+
+                final.CopyTo(availableOutput);
+                bytesWritten += final.Length;
+                return true;
+            }
+
+            finally
+            {
+                CryptoPool.Return(inputBuffer);
+                CryptoPool.Return(outputBuffer);
             }
         }
 
