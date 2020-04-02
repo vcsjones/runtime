@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
         // One power of two bigger should cover most unknown algorithms, too.
         private const int HashBufferStackSize = 128;
 
-        private static readonly string[] s_validOids =
+        private protected static readonly string[] s_validOids =
         {
             Oids.EcPublicKey,
             // ECDH and ECMQV are not valid in this context.

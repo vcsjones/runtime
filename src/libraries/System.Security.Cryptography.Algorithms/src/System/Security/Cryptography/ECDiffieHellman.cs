@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     /// </summary>
     public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
     {
-        private static readonly string[] s_validOids =
+        private protected static readonly string[] s_validOids =
         {
             Oids.EcPublicKey,
             // Neither Windows nor OpenSSL seem to read id-ecDH Pkcs8/SPKI.

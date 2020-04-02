@@ -4,6 +4,7 @@
 
 #nullable enable
 using Internal.NativeCrypto;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -121,10 +122,43 @@ namespace System.Security.Cryptography
             public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
-                CngPkcs8.Pkcs8Response response = CngPkcs8.ImportPkcs8PrivateKey(source, out int localRead);
 
-                ProcessPkcs8Response(response);
-                bytesRead = localRead;
+                try
+                {
+                    CngPkcs8.Pkcs8Response response = CngPkcs8.ImportPkcs8PrivateKey(source, out int localRead);
+                    ProcessPkcs8Response(response);
+                    bytesRead = localRead;
+                }
+                catch (CryptographicException)
+                {
+                    if (!CngPkcs8.TryImportExplicitEcPkcs8PrivateKey(
+                            source,
+                            s_validOids,
+                            out CngPkcs8.Pkcs8Response? pkcs8Response,
+                            out ECParameters? ecParameters,
+                            out int localRead))
+                    {
+                        throw;
+                    }
+
+                    Debug.Assert(ecParameters.HasValue != pkcs8Response.HasValue);
+
+                    if (ecParameters.HasValue)
+                    {
+                        ImportParameters(ecParameters.Value);
+                        bytesRead = localRead;
+                    }
+                    else if (pkcs8Response.HasValue)
+                    {
+                        ProcessPkcs8Response(pkcs8Response.Value);
+                        bytesRead = localRead;
+                    }
+                    else
+                    {
+                        Debug.Fail("Did not get a PKCS8 or ECParameters response.");
+                        throw;
+                    }
+                }
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(

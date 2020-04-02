@@ -210,6 +210,62 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static unsafe bool TryImportExplicitEcPkcs8PrivateKey(
+            ReadOnlySpan<byte> source,
+            string[] validOids,
+            out Pkcs8Response? pkcs8Response,
+            out ECParameters? ecParameters,
+            out int bytesRead
+        )
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.BER);
+                    int read = reader.PeekEncodedValue().Length;
+                    PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn privateKeyInfo);
+
+                    // This should have already been verified.
+                    if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
+                    {
+                        bytesRead = 0;
+                        pkcs8Response = default;
+                        ecParameters = default;
+                        return false;
+                    }
+
+                    EccKeyFormatHelper.FromECPrivateKey(
+                        privateKeyInfo.PrivateKey,
+                        privateKeyInfo.PrivateKeyAlgorithm,
+                        out ECParameters localParameters);
+
+                    // The ECPrivateKey has a public key, or we are not using an explicit curve.
+                    // This does not meet the criteria for re-attempting import.
+                    if (localParameters.Q.Y != null || localParameters.Q.X != null || localParameters.Curve.IsNamed)
+                    {
+                        bytesRead = 0;
+                        pkcs8Response = default;
+                        ecParameters = default;
+                        return false;
+                    }
+
+                    // The key has no attributes that require CNG's PKCS8 handling, so we can let the callee
+                    // import the parameters directly.
+                    if ((privateKeyInfo.Attributes?.Length ?? 0) == 0)
+                    {
+                        bytesRead = read;
+                        ecParameters = localParameters;
+                        pkcs8Response = default;
+                        return true;
+                    }
+
+                    throw new NotImplementedException();
+
+                }
+            }
+        }
+
         private static AsnWriter RewriteEncryptedPkcs8PrivateKey(
             AsymmetricAlgorithm key,
             ReadOnlySpan<byte> passwordBytes,
