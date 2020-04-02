@@ -133,7 +133,6 @@ namespace System.Security.Cryptography
                 {
                     if (!CngPkcs8.TryImportExplicitEcPkcs8PrivateKey(
                             source,
-                            s_validOids,
                             out CngPkcs8.Pkcs8Response? pkcs8Response,
                             out ECParameters? ecParameters,
                             out int localRead))

@@ -23,6 +23,9 @@ namespace System.Security.Cryptography
                 PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                 HashAlgorithmName.SHA1,
                 1);
+        private static readonly string[] s_ecValidOids = new string[] {
+            Oids.EcPublicKey,
+        };
 
         internal static bool IsPlatformScheme(PbeParameters pbeParameters)
         {
@@ -212,7 +215,6 @@ namespace System.Security.Cryptography
 
         internal static unsafe bool TryImportExplicitEcPkcs8PrivateKey(
             ReadOnlySpan<byte> source,
-            string[] validOids,
             out Pkcs8Response? pkcs8Response,
             out ECParameters? ecParameters,
             out int bytesRead
@@ -226,8 +228,7 @@ namespace System.Security.Cryptography
                     int read = reader.PeekEncodedValue().Length;
                     PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn privateKeyInfo);
 
-                    // This should have already been verified.
-                    if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
+                    if (Array.IndexOf(s_ecValidOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
