@@ -65,13 +65,28 @@ namespace System.Security.Cryptography
 
             private static void RoundTripFullPrivateBlob(ref ECParameters ecParameters)
             {
-                // TODO: pin and clear?
-                byte[] blob = ECCng.GetPrimeCurveBlob(ref ecParameters, ecdh: false);
                 string blobType = Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPRIVATE_BLOB;
-                using SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, blob);
-                Debug.Assert(!keyHandle.IsInvalid);
-                byte[] newBlob = CngKeyLite.ExportKeyBlob(keyHandle, blobType);
-                ECCng.ExportPrimeCurveParameters(ref ecParameters, newBlob, includePrivateParameters: true);
+                byte[] blob = ECCng.GetPrimeCurveBlob(ref ecParameters, ecdh: false);
+
+                try
+                {
+                    fixed (byte* pBlob = blob)
+                    {
+                        using SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, blob);
+                        Debug.Assert(!keyHandle.IsInvalid);
+
+                        if (!CngKeyLite.TryExportKeyBlob(keyHandle, blobType, blob, out int exportBlob))
+                        {
+                            throw new CryptographicException();
+                        }
+
+                        ECCng.ExportPrimeCurveParameters(ref ecParameters, blob, includePrivateParameters: true);
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(blob);
+                }
             }
 
             private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
