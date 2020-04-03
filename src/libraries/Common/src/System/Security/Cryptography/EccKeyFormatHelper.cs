@@ -97,7 +97,15 @@ namespace System.Security.Cryptography
             out ECParameters ret)
         {
             ECPrivateKey key = ECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
+            FromECPrivateKey(key, algId, out ret);
+        }
 
+
+        internal static void FromECPrivateKey(
+            ECPrivateKey key,
+            in AlgorithmIdentifierAsn algId,
+            out ECParameters ret)
+        {
             ValidateParameters(key.Parameters, algId);
 
             if (key.Version != 1)
@@ -208,6 +216,14 @@ namespace System.Security.Cryptography
             };
 
             ret.Validate();
+        }
+
+        internal static void EncodeEcPublicKey(AsnWriter writer, in ECParameters ecParameters)
+        {
+            Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
+            writer.PushSequence(explicit1);
+            EccKeyFormatHelper.WriteUncompressedPublicKey(ecParameters, writer);
+            writer.PopSequence(explicit1);
         }
 
         private static void ValidateParameters(ECDomainParameters? keyParameters, in AlgorithmIdentifierAsn algId)
@@ -733,7 +749,7 @@ namespace System.Security.Cryptography
             CryptoPool.Return(tmp, clearSize: 0);
         }
 
-        private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
+        internal static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
             int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
 
@@ -783,13 +799,7 @@ namespace System.Security.Cryptography
                 // publicKey
                 if (ecParameters.Q.X != null)
                 {
-                    Debug.Assert(ecParameters.Q.Y != null);
-                    Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
-                    writer.PushSequence(explicit1);
-
-                    WriteUncompressedPublicKey(ecParameters, writer);
-
-                    writer.PopSequence(explicit1);
+                    EncodeEcPublicKey(writer, ecParameters);
                 }
 
                 writer.PopSequence();

@@ -141,8 +141,9 @@ namespace System.Security.Cryptography
                 }
                 catch (CryptographicException)
                 {
-                    if (!CngPkcs8.TryImportExplicitEcPkcs8PrivateKey(
+                    if (!CngPkcs8.TryImportPrimeEcPkcs8PrivateKey(
                             source,
+                            RoundTripFullPrivateBlob,
                             out CngPkcs8.Pkcs8Response? pkcs8Response,
                             out ECParameters? ecParameters,
                             out int localRead))

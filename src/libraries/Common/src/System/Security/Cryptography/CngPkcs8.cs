@@ -12,6 +12,8 @@ namespace System.Security.Cryptography
 {
     internal static partial class CngPkcs8
     {
+        internal delegate void RoundTripECParameters(ref ECParameters ecParameters);
+
         // Windows 7, 8, and 8.1 don't support PBES2 export, so use
         // the 3DES-192 scheme from PKCS12-PBE whenever deferring to the system.
         //
@@ -213,8 +215,9 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static unsafe bool TryImportExplicitEcPkcs8PrivateKey(
+        internal static unsafe bool TryImportPrimeEcPkcs8PrivateKey(
             ReadOnlySpan<byte> source,
+            RoundTripECParameters roundTripParameters,
             out Pkcs8Response? pkcs8Response,
             out ECParameters? ecParameters,
             out int bytesRead
@@ -227,8 +230,10 @@ namespace System.Security.Cryptography
                     AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.BER);
                     int read = reader.PeekEncodedValue().Length;
                     PrivateKeyInfoAsn.Decode(ref reader, manager.Memory, out PrivateKeyInfoAsn privateKeyInfo);
+                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
 
-                    if (Array.IndexOf(s_ecValidOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
+                    // We don't want to re-attempt import for anything other than EC keys.
+                    if (Array.IndexOf(s_ecValidOids, privateAlgorithm.Algorithm.Value) < 0)
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
@@ -236,14 +241,11 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    EccKeyFormatHelper.FromECPrivateKey(
-                        privateKeyInfo.PrivateKey,
-                        privateKeyInfo.PrivateKeyAlgorithm,
-                        out ECParameters localParameters);
+                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
 
-                    // The ECPrivateKey has a public key, or we are not using an explicit curve.
-                    // This does not meet the criteria for re-attempting import.
-                    if (localParameters.Q.Y != null || localParameters.Q.X != null || localParameters.Curve.IsNamed)
+                    // The private key already contains the public key, there is nothing
+                    // for us to fix-up here.
+                    if (privateKey.PublicKey != null)
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
@@ -251,18 +253,48 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    // The key has no attributes that require CNG's PKCS8 handling, so we can let the callee
-                    // import the parameters directly.
-                    if ((privateKeyInfo.Attributes?.Length ?? 0) == 0)
+                    EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters localParameters);
+                    Debug.Assert(localParameters.Q.X == null && localParameters.Q.Y == null && localParameters.D != null);
+
+                    // This code path is meant to only fix-up explicit curves that CNG supports. If the
+                    // curve is named or not a supported explicit curve (Characteristic2) then we can't
+                    // proceed.
+                    if (!localParameters.Curve.IsPrime)
                     {
-                        bytesRead = read;
-                        ecParameters = localParameters;
+                        bytesRead = 0;
                         pkcs8Response = default;
-                        return true;
+                        ecParameters = default;
+                        return false;
                     }
 
-                    throw new NotImplementedException();
+                    byte[] zero = new byte[localParameters.D.Length];
+                    localParameters.Q.X = zero;
+                    localParameters.Q.Y = zero;
 
+                    // Coerce Q to contain the right values.
+                    roundTripParameters(ref localParameters);
+
+                    // Re-encode the public key in to the existing PKCS8 so
+                    // that Attributes is preserved.
+                    int publicKeyLength = localParameters.Q.X!.Length * 2 + 1;
+                    Span<byte> publicKeyBytes = new byte[publicKeyLength];
+                    publicKeyBytes[0] = 0x04;
+                    localParameters.Q.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
+                    localParameters.Q.Y!.AsSpan().CopyTo(publicKeyBytes.Slice(1 + localParameters.Q.X.Length));
+                    privateKey.PublicKey = publicKeyBytes.ToArray();
+
+                    using AsnWriter privateKeyWriter = new AsnWriter(AsnEncodingRules.DER);
+                    privateKey.Encode(privateKeyWriter);
+                    byte[] privateKeyAsn = privateKeyWriter.Encode();
+                    privateKeyInfo.PrivateKey = privateKeyAsn;
+                    privateKeyWriter.Reset();
+                    privateKeyInfo.Encode(privateKeyWriter);
+                    byte[] reEncodedPkcs8 = privateKeyWriter.Encode();
+
+                    bytesRead = read;
+                    ecParameters = default;
+                    pkcs8Response = ImportPkcs8(reEncodedPkcs8);
+                    return true;
                 }
             }
         }

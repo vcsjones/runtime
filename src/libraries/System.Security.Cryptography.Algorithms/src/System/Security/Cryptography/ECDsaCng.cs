@@ -63,6 +63,17 @@ namespace System.Security.Cryptography
                 _key.ThrowIfDisposed();
             }
 
+            private static void RoundTripFullPrivateBlob(ref ECParameters ecParameters)
+            {
+                // TODO: pin and clear?
+                byte[] blob = ECCng.GetPrimeCurveBlob(ref ecParameters, ecdh: false);
+                string blobType = Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPRIVATE_BLOB;
+                using SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, blob);
+                Debug.Assert(!keyHandle.IsInvalid);
+                byte[] newBlob = CngKeyLite.ExportKeyBlob(keyHandle, blobType);
+                ECCng.ExportPrimeCurveParameters(ref ecParameters, newBlob, includePrivateParameters: true);
+            }
+
             private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
             {
                 string blobType = includePrivateParameters ?
