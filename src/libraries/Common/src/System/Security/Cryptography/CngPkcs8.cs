@@ -218,8 +218,7 @@ namespace System.Security.Cryptography
         internal static unsafe bool TryImportPrimeEcPkcs8PrivateKey(
             ReadOnlySpan<byte> source,
             RoundTripECParameters roundTripParameters,
-            out Pkcs8Response? pkcs8Response,
-            out ECParameters? ecParameters,
+            out Pkcs8Response pkcs8Response,
             out int bytesRead
         )
         {
@@ -237,7 +236,6 @@ namespace System.Security.Cryptography
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
-                        ecParameters = default;
                         return false;
                     }
 
@@ -249,7 +247,6 @@ namespace System.Security.Cryptography
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
-                        ecParameters = default;
                         return false;
                     }
 
@@ -263,7 +260,6 @@ namespace System.Security.Cryptography
                     {
                         bytesRead = 0;
                         pkcs8Response = default;
-                        ecParameters = default;
                         return false;
                     }
 
@@ -278,7 +274,6 @@ namespace System.Security.Cryptography
                     {
                         ReadOnlySpan<byte> encodedPkcs8 = pkcs8PrivateKey.EncodeAsSpan();
                         pkcs8Response = ImportPkcs8(encodedPkcs8);
-                        ecParameters = default;
                         bytesRead = read;
                         return true;
                     }

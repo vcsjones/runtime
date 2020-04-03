@@ -134,30 +134,14 @@ namespace System.Security.Cryptography
                     if (!CngPkcs8.TryImportPrimeEcPkcs8PrivateKey(
                             source,
                             RoundTripFullPrivateBlob,
-                            out CngPkcs8.Pkcs8Response? pkcs8Response,
-                            out ECParameters? ecParameters,
+                            out CngPkcs8.Pkcs8Response pkcs8Response,
                             out int localRead))
                     {
                         throw;
                     }
 
-                    Debug.Assert(ecParameters.HasValue != pkcs8Response.HasValue);
-
-                    if (ecParameters.HasValue)
-                    {
-                        ImportParameters(ecParameters.Value);
-                        bytesRead = localRead;
-                    }
-                    else if (pkcs8Response.HasValue)
-                    {
-                        ProcessPkcs8Response(pkcs8Response.Value);
-                        bytesRead = localRead;
-                    }
-                    else
-                    {
-                        Debug.Fail("Did not get a PKCS8 or ECParameters response.");
-                        throw;
-                    }
+                    ProcessPkcs8Response(pkcs8Response);
+                    bytesRead = localRead;
                 }
             }
 
