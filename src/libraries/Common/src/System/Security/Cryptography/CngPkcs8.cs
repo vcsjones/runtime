@@ -274,27 +274,14 @@ namespace System.Security.Cryptography
                     // Coerce Q to contain the right values.
                     roundTripParameters(ref localParameters);
 
-                    // Re-encode the public key in to the existing PKCS8 so
-                    // that Attributes is preserved.
-                    int publicKeyLength = localParameters.Q.X!.Length * 2 + 1;
-                    Span<byte> publicKeyBytes = new byte[publicKeyLength];
-                    publicKeyBytes[0] = 0x04;
-                    localParameters.Q.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
-                    localParameters.Q.Y!.AsSpan().CopyTo(publicKeyBytes.Slice(1 + localParameters.Q.X.Length));
-                    privateKey.PublicKey = publicKeyBytes.ToArray();
-
-                    using AsnWriter privateKeyWriter = new AsnWriter(AsnEncodingRules.DER);
-                    privateKey.Encode(privateKeyWriter);
-                    byte[] privateKeyAsn = privateKeyWriter.Encode();
-                    privateKeyInfo.PrivateKey = privateKeyAsn;
-                    privateKeyWriter.Reset();
-                    privateKeyInfo.Encode(privateKeyWriter);
-                    byte[] reEncodedPkcs8 = privateKeyWriter.Encode();
-
-                    bytesRead = read;
-                    ecParameters = default;
-                    pkcs8Response = ImportPkcs8(reEncodedPkcs8);
-                    return true;
+                    using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(localParameters, privateKeyInfo.Attributes))
+                    {
+                        ReadOnlySpan<byte> encodedPkcs8 = pkcs8PrivateKey.EncodeAsSpan();
+                        pkcs8Response = ImportPkcs8(encodedPkcs8);
+                        ecParameters = default;
+                        bytesRead = read;
+                        return true;
+                    }
                 }
             }
         }
