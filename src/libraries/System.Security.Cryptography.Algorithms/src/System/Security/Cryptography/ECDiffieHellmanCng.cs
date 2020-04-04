@@ -27,32 +27,6 @@ namespace System.Security.Cryptography
                 _key.ThrowIfDisposed();
             }
 
-            private static unsafe void RoundTripFullPrivateBlob(ref ECParameters ecParameters)
-            {
-                string blobType = Interop.BCrypt.KeyBlobType.BCRYPT_ECCFULLPRIVATE_BLOB;
-                byte[] blob = ECCng.GetPrimeCurveBlob(ref ecParameters, ecdh: true);
-
-                try
-                {
-                    fixed (byte* pBlob = blob)
-                    {
-                        using SafeNCryptKeyHandle keyHandle = CngKeyLite.ImportKeyBlob(blobType, blob);
-                        Debug.Assert(!keyHandle.IsInvalid);
-
-                        if (!CngKeyLite.TryExportKeyBlob(keyHandle, blobType, blob, out int exportBlob))
-                        {
-                            throw new CryptographicException();
-                        }
-
-                        ECCng.ExportPrimeCurveParameters(ref ecParameters, blob, includePrivateParameters: true);
-                    }
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(blob);
-                }
-            }
-
             private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
             {
                 string blobType = includePrivateParameters ?

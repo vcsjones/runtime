@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
                 {
                     if (!CngPkcs8.TryImportPrimeEcPkcs8PrivateKey(
                             source,
-                            RoundTripFullPrivateBlob,
+                            ecdh: true,
                             out CngPkcs8.Pkcs8Response pkcs8Response,
                             out int localRead))
                     {

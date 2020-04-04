@@ -97,15 +97,22 @@ YyVRAgEB",
         [Fact]
         public void ReadWriteNistP256ExplicitPkcs8_LimitedPrivate()
         {
-            ReadWriteBase64Pkcs8(
-                @"
+            Assert.True(LimitedPrivateKeySupported && SupportsExplicitCurves);
+            string base64 = @"
 MIIBMwIBADCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAAB
 AAAAAAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA
 ///////////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMV
 AMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg
 9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8A
 AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
-/2jPwhpHKz8E19aFG/Y0ny19WzRSs4o=",
+/2jPwhpHKz8E19aFG/Y0ny19WzRSs4o=";
+            ECDsaCng test = new ECDsaCng();
+            test.ImportPkcs8PrivateKey(Convert.FromBase64String(base64), out _);
+            byte[] buff = new byte[10_000];
+            test.TryExportPkcs8PrivateKey(buff, out int written);
+            Console.WriteLine(Convert.ToBase64String(buff, 0, written));
+            ReadWriteBase64Pkcs8(
+                base64,
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
                 LimitedPrivateKeySupported && SupportsExplicitCurves);
         }

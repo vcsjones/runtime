@@ -12,8 +12,6 @@ namespace System.Security.Cryptography
 {
     internal static partial class CngPkcs8
     {
-        internal delegate void RoundTripECParameters(ref ECParameters ecParameters);
-
         // Windows 7, 8, and 8.1 don't support PBES2 export, so use
         // the 3DES-192 scheme from PKCS12-PBE whenever deferring to the system.
         //
@@ -217,7 +215,7 @@ namespace System.Security.Cryptography
 
         internal static unsafe bool TryImportPrimeEcPkcs8PrivateKey(
             ReadOnlySpan<byte> source,
-            RoundTripECParameters roundTripParameters,
+            bool ecdh,
             out Pkcs8Response pkcs8Response,
             out int bytesRead
         )
@@ -268,7 +266,7 @@ namespace System.Security.Cryptography
                     localParameters.Q.Y = zero;
 
                     // Coerce Q to contain the right values.
-                    roundTripParameters(ref localParameters);
+                    ECCng.RoundTripFullPrivateBlob(ref localParameters, ecdh);
 
                     using (AsnWriter pkcs8PrivateKey = EccKeyFormatHelper.WritePkcs8PrivateKey(localParameters, privateKeyInfo.Attributes))
                     {

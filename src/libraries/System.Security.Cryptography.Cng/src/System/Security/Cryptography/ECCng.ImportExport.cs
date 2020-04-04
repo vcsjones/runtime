@@ -78,6 +78,10 @@ namespace System.Security.Cryptography
             return blob;
         }
 
+        internal static unsafe void RoundTripFullPrivateBlob(ref ECParameters ecParameters, bool ecdh)
+        {
+        }
+
         private static unsafe void FixupGenericBlob(byte[] blob)
         {
             if (blob.Length > sizeof(BCRYPT_ECCKEY_BLOB))
