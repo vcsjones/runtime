@@ -222,6 +222,80 @@ namespace System.Security.Cryptography
             return bitLength.IsLegalSize(validSizes);
         }
 
+        /// <summary>
+        /// Gets the length of a ciphertext with a given padding mode and plaintext length.
+        /// </summary>
+        /// <param name="paddingMode">The padding mode used to pad the plaintext to the algorithm's block size.</param>
+        /// <param name="plaintextLength">The plaintext length, in bytes.</param>
+        /// <returns>The length, in bytes, of the ciphertext with padding.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///   <paramref name="plaintextLength" /> is a negative number.
+        ///   </para>
+        ///   <para>
+        ///   - or -
+        ///   </para>
+        ///   <para>
+        ///   <paramref name="plaintextLength" /> when padded is too large to represent as
+        ///   a signed 32-bit integer.
+        ///   </para>
+        ///   <para>
+        ///   - or -
+        ///   </para>
+        ///   <para>
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///   <see cref="BlockSize" /> is not a positive integer.
+        ///   </para>
+        ///   <para>
+        ///   - or -
+        ///   </para>
+        ///   <para>
+        ///   <see cref="BlockSize" /> is not a whole number of bytes. It must be divisible by 8.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///   The padding mode <see cref="PaddingMode.None" /> was used, but <paramref name="plaintextLength" />
+        ///   is not a whole number of blocks.
+        ///   </para>
+        /// </exception>
+        public int GetCiphertextLength(PaddingMode paddingMode, int plaintextLength)
+        {
+            if (plaintextLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            int blockSizeBits = BlockSize;
+
+            if (blockSizeBits <= 0 || (blockSizeBits & 0b111) != 0)
+                throw new CryptographicException(SR.Cryptography_UnsupportedBlockSize);
+
+            int blockSizeBytes = blockSizeBits >> 3;
+            int wholeBlocks = Math.DivRem(plaintextLength, blockSizeBytes, out int remainder) * blockSizeBytes;
+
+            switch (paddingMode)
+            {
+                case PaddingMode.None when (remainder != 0):
+                    throw new ArgumentException(SR.Cryptography_MatchBlockSize, nameof(plaintextLength));
+                case PaddingMode.None:
+                case PaddingMode.Zeros when (remainder == 0):
+                    return plaintextLength;
+                case PaddingMode.Zeros:
+                case PaddingMode.PKCS7:
+                case PaddingMode.ANSIX923:
+                case PaddingMode.ISO10126:
+                    if (int.MaxValue - wholeBlocks < blockSizeBytes)
+                        throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.Cryptography_PlaintextTooLarge);
+
+                    return wholeBlocks + blockSizeBytes;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+            }
+        }
+
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
         protected byte[]? KeyValue;
