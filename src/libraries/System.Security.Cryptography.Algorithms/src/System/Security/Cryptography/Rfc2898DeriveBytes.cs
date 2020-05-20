@@ -44,8 +44,7 @@ namespace System.Security.Cryptography
             if (password == null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
 
-            _salt = new byte[salt.Length + sizeof(uint)];
-            salt.AsSpan().CopyTo(_salt);
+            _salt = salt.CloneByteArray();
             _iterations = (uint)iterations;
             _password = password.CloneByteArray();
             HashAlgorithm = hashAlgorithm;
@@ -88,8 +87,8 @@ namespace System.Security.Cryptography
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
 
-            _salt = new byte[saltSize + sizeof(uint)];
-            RandomNumberGenerator.Fill(_salt.AsSpan(0, saltSize));
+            _salt = new byte[saltSize];
+            RandomNumberGenerator.Fill(_salt);
 
             _iterations = (uint)iterations;
             _password = Encoding.UTF8.GetBytes(password);
@@ -117,10 +116,7 @@ namespace System.Security.Cryptography
 
         public byte[] Salt
         {
-            get
-            {
-                return _salt.AsSpan(0, _salt.Length - sizeof(uint)).ToArray();
-            }
+            get => _salt.CloneByteArray();
 
             set
             {
@@ -129,8 +125,7 @@ namespace System.Security.Cryptography
                 if (value.Length < MinimumSaltSize)
                     throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
 
-                _salt = new byte[value.Length + sizeof(uint)];
-                value.AsSpan().CopyTo(_salt);
+                _salt = value.CloneByteArray();
                 Initialize();
             }
         }
@@ -164,6 +159,8 @@ namespace System.Security.Cryptography
             byte[] password = new byte[cb];
 
             int offset = 0;
+
+            // Drain the existing buffered content first, if any.
             int size = _endIndex - _startIndex;
             if (size > 0)
             {
@@ -175,12 +172,17 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
+                    // The buffered contents had enough to fill the requested
+                    // amount of data, copy and return.
                     Buffer.BlockCopy(_buffer, _startIndex, password, 0, cb);
                     _startIndex += cb;
                     return password;
                 }
             }
 
+            // The buffer should be empty at this point. We should have either
+            // returned early if there was enough in the buffer, or drained all
+            // of it.
             Debug.Assert(_startIndex == 0 && _endIndex == 0, "Invalid start or end index in the internal buffer.");
 
             while (offset < cb)
@@ -255,7 +257,8 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan()[^sizeof(uint)..], _block);
+            Span<byte> blockSpan = stackalloc byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32BigEndian(blockSpan, _block);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.
@@ -265,6 +268,7 @@ namespace System.Security.Cryptography
             Span<byte> uiSpan = stackalloc byte[64];
             uiSpan = uiSpan.Slice(0, _blockSize);
             _hmac.AppendData(_salt);
+            _hmac.AppendData(blockSpan);
 
             if (!_hmac.TryGetHashAndReset(uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
             {
