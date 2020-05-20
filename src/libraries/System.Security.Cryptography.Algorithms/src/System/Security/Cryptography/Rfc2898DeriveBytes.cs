@@ -187,21 +187,12 @@ namespace System.Security.Cryptography
 
             while (offset < cb)
             {
-                Func();
-                int remainder = cb - offset;
-                if (remainder >= _blockSize)
-                {
-                    Buffer.BlockCopy(_buffer, 0, password, offset, _blockSize);
-                    offset += _blockSize;
-                }
-                else
-                {
-                    Buffer.BlockCopy(_buffer, 0, password, offset, remainder);
-                    _startIndex = remainder;
-                    _endIndex = _buffer.Length;
-                    return password;
-                }
+                Prf(password.AsSpan(offset), _buffer, out int bytesWrittenToPassword, out int bytesWrittenToBuffer);
+                offset += bytesWrittenToPassword;
+                _startIndex = 0;
+                _endIndex = bytesWrittenToBuffer;
             }
+
             return password;
         }
 
@@ -255,18 +246,31 @@ namespace System.Security.Cryptography
         // This function is defined as follows:
         // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i)
         // where i is the block number.
-        private void Func()
+        private void Prf(Span<byte> destination, Span<byte> spillBuffer, out int bytesWrittenDestination, out int bytesWrittenSpilled)
         {
             Span<byte> blockSpan = stackalloc byte[sizeof(uint)];
             BinaryPrimitives.WriteUInt32BigEndian(blockSpan, _block);
-            Debug.Assert(_blockSize == _buffer.Length);
+
+            // We shouldn't spill a whole block but we should have room for it.
+            Debug.Assert(spillBuffer.Length >= _blockSize);
+            Debug.Assert(destination.Length > 0);
+            Debug.Assert(_endIndex == 0);
+            Debug.Assert(_startIndex == 0);
+
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.
             // Since we have a closed set of supported hash algorithms (OpenHmac())
             // we can know this always fits.
-            //
             Span<byte> uiSpan = stackalloc byte[64];
             uiSpan = uiSpan.Slice(0, _blockSize);
+
+            // If the destination has enough space to hold a whole block, we can
+            // use that. Otherwise we need a temporary place to hold a whole
+            // output from the MAC.
+            bool willSpill = destination.Length < _blockSize;
+            Span<byte> target = willSpill ? stackalloc byte[64] : destination;
+            target = target.Slice(0, _blockSize);
+
             _hmac.AppendData(_salt);
             _hmac.AppendData(blockSpan);
 
@@ -275,7 +279,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            uiSpan.CopyTo(_buffer);
+            uiSpan.CopyTo(target);
 
             for (int i = 2; i <= _iterations; i++)
             {
@@ -286,14 +290,28 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                for (int j = _buffer.Length - 1; j >= 0; j--)
+                for (int j = 0; j < target.Length; j++)
                 {
-                    _buffer[j] ^= uiSpan[j];
+                    target[j] ^= uiSpan[j];
                 }
             }
 
             // increment the block count.
             _block++;
+
+            if (willSpill)
+            {
+                ReadOnlySpan<byte> spillover = target.Slice(destination.Length);
+                target.Slice(0, destination.Length).CopyTo(destination);
+                spillover.CopyTo(spillBuffer);
+                bytesWrittenDestination = destination.Length;
+                bytesWrittenSpilled = spillover.Length;
+            }
+            else
+            {
+                bytesWrittenDestination = _blockSize;
+                bytesWrittenSpilled = 0;
+            }
         }
     }
 }
