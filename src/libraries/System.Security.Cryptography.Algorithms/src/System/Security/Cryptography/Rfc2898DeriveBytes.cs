@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
         private readonly byte[] _password;
         private byte[] _salt;
         private uint _iterations;
-        private HMAC _hmac;
+        private IncrementalHash _hmac;
         private readonly int _blockSize;
 
         private byte[] _buffer = null!; // Initialized in helper
@@ -49,9 +49,7 @@ namespace System.Security.Cryptography
             _iterations = (uint)iterations;
             _password = password.CloneByteArray();
             HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac();
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
+            (_hmac, _blockSize) = OpenHmac();
 
             Initialize();
         }
@@ -96,9 +94,7 @@ namespace System.Security.Cryptography
             _iterations = (uint)iterations;
             _password = Encoding.UTF8.GetBytes(password);
             HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac();
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
+            (_hmac, _blockSize) = OpenHmac();
 
             Initialize();
         }
@@ -224,7 +220,7 @@ namespace System.Security.Cryptography
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/runtime/issues/17618)")]
-        private HMAC OpenHmac()
+        private (IncrementalHash Hmac, int BlockSizeBytes) OpenHmac()
         {
             Debug.Assert(_password != null);
 
@@ -234,13 +230,13 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
 
             if (hashAlgorithm == HashAlgorithmName.SHA1)
-                return new HMACSHA1(_password);
+                return (IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _password), 160 / 8);
             if (hashAlgorithm == HashAlgorithmName.SHA256)
-                return new HMACSHA256(_password);
+                return (IncrementalHash.CreateHMAC(HashAlgorithmName.SHA256, _password), 256 / 8);
             if (hashAlgorithm == HashAlgorithmName.SHA384)
-                return new HMACSHA384(_password);
+                return (IncrementalHash.CreateHMAC(HashAlgorithmName.SHA384, _password), 384 / 8);
             if (hashAlgorithm == HashAlgorithmName.SHA512)
-                return new HMACSHA512(_password);
+                return (IncrementalHash.CreateHMAC(HashAlgorithmName.SHA512, _password), 512 / 8);
 
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
         }
@@ -268,8 +264,9 @@ namespace System.Security.Cryptography
             //
             Span<byte> uiSpan = stackalloc byte[64];
             uiSpan = uiSpan.Slice(0, _blockSize);
+            _hmac.AppendData(_salt);
 
-            if (!_hmac.TryComputeHash(_salt, uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
+            if (!_hmac.TryGetHashAndReset(uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
             {
                 throw new CryptographicException();
             }
@@ -278,7 +275,9 @@ namespace System.Security.Cryptography
 
             for (int i = 2; i <= _iterations; i++)
             {
-                if (!_hmac.TryComputeHash(uiSpan, uiSpan, out bytesWritten) || bytesWritten != _blockSize)
+                _hmac.AppendData(uiSpan);
+
+                if (!_hmac.TryGetHashAndReset(uiSpan, out bytesWritten) || bytesWritten != _blockSize)
                 {
                     throw new CryptographicException();
                 }
