@@ -491,8 +491,9 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     orderBn = BN_bin2bn(order, orderLength, NULL);
 
-    // Cofactor can be null.
-    EC_GROUP_set_generator(group, G, orderBn, cofactorBn);
+    // Cofactor can be null, order cannot.
+    if (!EC_GROUP_set_generator(group, G, orderBn, cofactorBn))
+        goto error;
 
     // Set seed (optional)
     if (seed && seedLength > 0)
