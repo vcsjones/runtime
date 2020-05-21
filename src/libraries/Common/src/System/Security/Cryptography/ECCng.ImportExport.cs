@@ -285,7 +285,7 @@ namespace System.Security.Cryptography
                     curve.G.X!.Length +
                     curve.G.Y!.Length +
                     curve.Order!.Length +
-                    curve.Cofactor!.Length +
+                    (curve.Cofactor?.Length ?? 0) +
                     (curve.Seed == null ? 0 : curve.Seed.Length);
 
                 byte[] blob = new byte[blobSize];
@@ -294,7 +294,7 @@ namespace System.Security.Cryptography
                     // Build the header
                     BCRYPT_ECC_PARAMETER_HEADER* pBcryptBlob = (BCRYPT_ECC_PARAMETER_HEADER*)pBlob;
                     pBcryptBlob->Version = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER_V1;
-                    pBcryptBlob->cbCofactor = curve.Cofactor.Length;
+                    pBcryptBlob->cbCofactor = curve.Cofactor?.Length ?? 0;
                     pBcryptBlob->cbFieldLength = curve.A.Length; // P, A, B, X, Y have the same length
                     pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
                     pBcryptBlob->cbSubgroupOrder = curve.Order.Length;
@@ -309,7 +309,11 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.Emit(blob, ref offset, curve.G.X);
                     Interop.BCrypt.Emit(blob, ref offset, curve.G.Y);
                     Interop.BCrypt.Emit(blob, ref offset, curve.Order);
-                    Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
+
+                    if (curve.Cofactor != null)
+                    {
+                        Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
+                    }
                     if (curve.Seed != null)
                     {
                         Interop.BCrypt.Emit(blob, ref offset, curve.Seed);
