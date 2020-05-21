@@ -222,8 +222,7 @@ namespace System.Security.Cryptography
                     B == null || B.Length != A.Length ||
                     G.X == null || G.X.Length != A.Length ||
                     G.Y == null || G.Y.Length != A.Length ||
-                    Order == null || Order.Length == 0 ||
-                    Cofactor == null || Cofactor.Length == 0)
+                    Order == null || Order.Length == 0)
                 {
                     hasErrors = true;
                 }

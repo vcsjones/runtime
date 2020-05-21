@@ -420,7 +420,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     uint8_t* cofactor,  int32_t cofactorLength,
     uint8_t* seed,  int32_t seedLength)
 {
-    if (!p || !a || !b || !gx || !gy || !order || !cofactor)
+    if (!p || !a || !b || !gx || !gy || !order)
     {
         // qx, qy, d and seed are optional
         assert(false);
@@ -484,8 +484,14 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         EC_POINT_set_affine_coordinates_GFp(group, G, gxBn, gyBn, NULL);
     }
 
+    if (cofactor && cofactorLength > 0)
+    {
+        cofactorBn = BN_bin2bn(cofactor, cofactorLength, NULL);
+    }
+
     orderBn = BN_bin2bn(order, orderLength, NULL);
-    cofactorBn = BN_bin2bn(cofactor, cofactorLength, NULL);
+
+    // Cofactor can be null.
     EC_GROUP_set_generator(group, G, orderBn, cofactorBn);
 
     // Set seed (optional)

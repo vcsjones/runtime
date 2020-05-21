@@ -55,6 +55,42 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [Fact]
+        public static void ImportExplicitWithoutCofactor()
+        {
+            if (!ECDsaFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
+
+            using (ECDsa ec = ECDsaFactory.Create())
+            {
+                ECCurve curve = EccTestData.GetNistP256ExplicitCurve();
+                curve.Cofactor = null;
+                ec.GenerateKey(curve);
+
+                ECParameters parameters = ec.ExportExplicitParameters(true);
+                ec.ImportParameters(parameters);
+                ec.Exercise();
+
+                byte[] signature = (
+                    // r
+                    "f3ac8061b514795b8843e3d6629527ed2afd6b1f6a555a7acabb5e6f79c8c2ac" +
+                    // s
+                    "8bf77819ca05a6b2786c76262bf7371cef97b218e96f175a3ccdda2acc058903"
+                    ).HexToByteArray();
+
+                byte[] data = (
+                    "5905238877c77421f73e43ee3da6f2d9e2ccad5fc942dcec0cbd25482935faaf" +
+                    "416983fe165b1a045ee2bcd2e6dca3bdf46c4310a7461f9a37960ca672d3feb5" +
+                    "473e253605fb1ddfd28065b53cb5858a8ad28175bf9bd386a5e471ea7a65c17c" +
+                    "c934a9d791e91491eb3754d03799790fe2d308d16146d5c9b0d0debd97d79ce8"
+                    ).HexToByteArray();
+
+                ec.VerifyData(data, signature, HashAlgorithmName.SHA256);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)

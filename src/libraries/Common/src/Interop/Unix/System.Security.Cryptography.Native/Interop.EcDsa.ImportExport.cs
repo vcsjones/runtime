@@ -81,7 +81,7 @@ internal static partial class Interop
                 curve.G.X!, curve.G.X!.Length,
                 curve.G.Y!, curve.G.Y!.Length,
                 curve.Order!, curve.Order!.Length,
-                curve.Cofactor, curve.Cofactor!.Length,
+                curve.Cofactor, curve.Cofactor?.Length ?? 0,
                 curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
 
             if (key == null || key.IsInvalid)
