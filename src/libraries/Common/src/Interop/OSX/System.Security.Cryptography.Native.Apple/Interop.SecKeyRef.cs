@@ -36,12 +36,14 @@ internal static partial class Interop
         private static int AppleCryptoNative_GenerateSignature(
             SafeSecKeyRefHandle privateKey,
             ReadOnlySpan<byte> pbDataHash,
+            PAL_SignatureAlgorithm signatureAlgorithm,
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_GenerateSignature(
                 privateKey,
                 ref MemoryMarshal.GetReference(pbDataHash),
                 pbDataHash.Length,
+                signatureAlgorithm,
                 out pSignatureOut,
                 out pErrorOut);
 
@@ -50,6 +52,7 @@ internal static partial class Interop
             SafeSecKeyRefHandle privateKey,
             ref byte pbDataHash,
             int cbDataHash,
+            PAL_SignatureAlgorithm signatureAlgorithm,
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut);
 
@@ -225,7 +228,7 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, ReadOnlySpan<byte> dataHash)
+        internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, ReadOnlySpan<byte> dataHash, PAL_SignatureAlgorithm signatureAlgorithm)
         {
             Debug.Assert(privateKey != null, "privateKey != null");
 
@@ -235,6 +238,7 @@ internal static partial class Interop
                     AppleCryptoNative_GenerateSignature(
                         privateKey,
                         source,
+                        signatureAlgorithm,
                         out signature,
                         out error));
         }

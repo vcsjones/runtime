@@ -31,12 +31,12 @@ int32_t AppleCryptoNative_EccGenerateKey(
 
         if (status == noErr)
         {
-            status = ExportImportKey(pPublicKey, kSecItemTypePublicKey);
+            status = ExportImportKeyWithKeyServices(pPublicKey, keySizeBits, kSecAttrKeyTypeEC, kSecAttrKeyClassPublic);
         }
 
         if (status == noErr)
         {
-            status = ExportImportKey(pPrivateKey, kSecItemTypePrivateKey);
+            status = ExportImportKeyWithKeyServices(pPrivateKey, keySizeBits, kSecAttrKeyTypeEC, kSecAttrKeyClassPrivate);
         }
     }
     else

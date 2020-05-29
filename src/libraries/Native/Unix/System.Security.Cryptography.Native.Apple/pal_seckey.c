@@ -142,6 +142,21 @@ uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
 }
 
 #if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+OSStatus ExportImportKeyWithKeyServices(SecKeyRef* key, int32_t keySizeBits, CFStringRef keyType, CFStringRef keyClass)
+{
+    //CFErrorRef error = NULL;
+    CFDataRef data = SecKeyCopyExternalRepresentation(*key, NULL);
+
+    *key = NULL;
+    CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
+    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 3, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    CFDictionaryAddValue(attributes, kSecAttrKeyType, keyType);
+    CFDictionaryAddValue(attributes, kSecAttrKeyClass, keyClass);
+    CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
+    *key = SecKeyCreateWithData(data, attributes, NULL);
+    return 0;
+}
+
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
 {
     SecExternalFormat dataFormat = kSecFormatOpenSSL;

@@ -57,10 +57,51 @@ static int32_t GenerateSignature(SecKeyRef privateKey,
     return ret;
 }
 
-int32_t AppleCryptoNative_GenerateSignature(
-    SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
+static int32_t GenerateSignatureKeyServices(SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, SecKeyAlgorithm algorithm, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
 {
-    return GenerateSignature(privateKey, pbDataHash, cbDataHash, PAL_Unknown, false, pSignatureOut, pErrorOut);
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
+
+    if (pSignatureOut != NULL)
+        *pSignatureOut = NULL;
+
+    if (privateKey == NULL || pbDataHash == NULL || cbDataHash < 0 ||
+        pErrorOut == NULL || algorithm == NULL || pSignatureOut == NULL)
+        return kErrorBadInput;
+
+    CFDataRef dataHash = CFDataCreateWithBytesNoCopy(NULL, pbDataHash, cbDataHash, kCFAllocatorNull);
+
+    if (dataHash == NULL)
+    {
+        return kErrorUnknownState;
+    }
+
+    int32_t ret = kErrorSeeError;
+
+    CFDataRef sig = SecKeyCreateSignature(privateKey, algorithm, dataHash, pErrorOut);
+
+    if (sig != NULL)
+    {
+        CFRetain(sig);
+        *pSignatureOut = sig;
+        ret = 1;
+    }
+
+    CFRelease(dataHash);
+    return ret;
+}
+
+int32_t AppleCryptoNative_GenerateSignature(
+    SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, PAL_SignatureAlgorithm signatureAlgorithm, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut)
+{
+    if (signatureAlgorithm == PAL_SignatureAlgorithm_EC)
+    {
+        return GenerateSignatureKeyServices(privateKey, pbDataHash, cbDataHash, kSecKeyAlgorithmECDSASignatureDigestX962, pSignatureOut, pErrorOut);
+    }
+    else
+    {
+        return GenerateSignature(privateKey, pbDataHash, cbDataHash, PAL_Unknown, false, pSignatureOut, pErrorOut);
+    }
 }
 
 int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef privateKey,

@@ -68,4 +68,5 @@ Export a key and re-import it to the NULL keychain.
 Only internal callers are expected.
 */
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type);
+OSStatus ExportImportKeyWithKeyServices(SecKeyRef* key, int32_t keySizeBits, CFStringRef keyType, CFStringRef keyClass);
 #endif
