@@ -11,6 +11,16 @@
 #include <Security/Security.h>
 
 #if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+
+enum
+{
+    PAL_SignatureAlgorithm_Unknown = 0,
+    PAL_SignatureAlgorithm_RSA = 1,
+    PAL_SignatureAlgorithm_EC = 2,
+    PAL_SignatureAlgorithm_DSA = 3,
+};
+typedef uint32_t PAL_SignatureAlgorithm;
+
 /*
 Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
 
@@ -32,7 +42,7 @@ PALEXPORT int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef
                                                                        CFErrorRef* pErrorOut);
 
 /*
-Verify a signature for algorithms which only require the data hash blob, like DSA and ECDSA.
+Verify a signature for algorithms which require the pair of (dataHash, algorithmId), like RSA.
 
 Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
 follows pal_seckey return conventions.
@@ -46,7 +56,7 @@ PALEXPORT int32_t AppleCryptoNative_VerifySignatureWithHashAlgorithm(SecKeyRef p
                                                                      CFErrorRef* pErrorOut);
 
 /*
-Verify a signature for algorithms which require the pair of (dataHash, algorithmId), like RSA.
+Verify a signature for algorithms which only require the data hash blob, like DSA and ECDSA.
 
 Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
 follows pal_seckey return conventions.
@@ -56,5 +66,6 @@ PALEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
                                                     int32_t cbDataHash,
                                                     uint8_t* pbSignature,
                                                     int32_t cbSignature,
+                                                    PAL_SignatureAlgorithm signatureAlgorithm,
                                                     CFErrorRef* pErrorOut);
 #endif

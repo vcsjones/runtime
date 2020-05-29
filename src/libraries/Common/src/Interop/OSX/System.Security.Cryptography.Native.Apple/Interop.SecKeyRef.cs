@@ -80,6 +80,7 @@ internal static partial class Interop
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbDataHash,
             ReadOnlySpan<byte> pbSignature,
+            PAL_SignatureAlgorithm signatureAlgorithm,
             out SafeCFErrorHandle pErrorOut) =>
             AppleCryptoNative_VerifySignature(
                 publicKey,
@@ -87,6 +88,7 @@ internal static partial class Interop
                 pbDataHash.Length,
                 ref MemoryMarshal.GetReference(pbSignature),
                 pbSignature.Length,
+                signatureAlgorithm,
                 out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative)]
@@ -96,6 +98,7 @@ internal static partial class Interop
             int cbDataHash,
             ref byte pbSignature,
             int cbSignature,
+            PAL_SignatureAlgorithm signatureAlgorithm,
             out SafeCFErrorHandle pErrorOut);
 
         private static int AppleCryptoNative_VerifySignatureWithHashAlgorithm(
@@ -279,7 +282,8 @@ internal static partial class Interop
         internal static bool VerifySignature(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> dataHash,
-            ReadOnlySpan<byte> signature)
+            ReadOnlySpan<byte> signature,
+            PAL_SignatureAlgorithm signatureAlgorithm)
         {
             Debug.Assert(publicKey != null, "publicKey != null");
 
@@ -289,6 +293,7 @@ internal static partial class Interop
                 publicKey,
                 dataHash,
                 signature,
+                signatureAlgorithm,
                 out error);
 
             const int True = 1;

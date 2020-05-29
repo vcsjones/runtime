@@ -168,7 +168,8 @@ namespace System.Security.Cryptography
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
-                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature));
+                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature),
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
                 }
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>

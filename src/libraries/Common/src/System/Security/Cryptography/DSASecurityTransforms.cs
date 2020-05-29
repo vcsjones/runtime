@@ -299,7 +299,8 @@ namespace System.Security.Cryptography
                     return Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
-                        derFormatSignature);
+                        derFormatSignature,
+                        Interop.AppleCrypto.PAL_SignatureAlgorithm.DSA);
                 }
 
                 protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
