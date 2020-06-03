@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 // Declared as signed long, which has sizeof(void*) on OSX.
-using CFIndex=System.IntPtr;
+using CFIndex=nint;
 
 internal static partial class Interop
 {
@@ -22,7 +22,7 @@ internal static partial class Interop
 
         internal static unsafe Span<byte> CFDataDangerousGetSpan(SafeCFDataHandle cfData)
         {
-            long length = CFDataGetLength(cfData).ToInt64();
+            nint length = CFDataGetLength(cfData);
             byte* dataBytes = CFDataGetBytePtr(cfData);
             return new Span<byte>(dataBytes, checked((int)length));
         }
@@ -52,7 +52,7 @@ internal static partial class Interop
             {
                 cfData.DangerousAddRef(ref addedRef);
 
-                long length = CFDataGetLength(cfData).ToInt64();
+                nint length = CFDataGetLength(cfData);
 
                 if (length > 0)
                 {

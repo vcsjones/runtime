@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
-using CFIndex = System.IntPtr;
+using CFIndex = nint;
 
 internal static partial class Interop
 {
@@ -117,7 +117,7 @@ internal static partial class Interop
                 return CFStringCreateWithBytes(
                     IntPtr.Zero,
                     (IntPtr)sourcePtr,
-                    new CFIndex(source.Length * 2),
+                    source.Length * 2,
                     CFStringBuiltInEncodings.kCFStringEncodingUTF16,
                     isExternalRepresentation: false);
             }
@@ -136,7 +136,7 @@ internal static partial class Interop
             IntPtr allocator,
             [MarshalAs(UnmanagedType.LPArray)]
             IntPtr[] values,
-            UIntPtr numValues,
+            nuint numValues,
             IntPtr callbacks);
 
         /// <summary>
@@ -145,7 +145,7 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
+        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, nuint numValues)
         {
             return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
         }

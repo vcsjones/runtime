@@ -37,9 +37,9 @@ internal static partial class Interop
         private static readonly IntPtr[] s_cfAlpnHttp11Protocol = new IntPtr[] { s_cfHttp11Str.DangerousGetHandle() };
         private static readonly IntPtr[] s_cfAlpnHttp211Protocol = new IntPtr[] { s_cfHttp2Str.DangerousGetHandle(), s_cfHttp11Str.DangerousGetHandle() };
 
-        private static readonly SafeCreateHandle s_cfAlpnHttp11Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp11Protocol, (UIntPtr)1);
-        private static readonly SafeCreateHandle s_cfAlpnHttp2Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp2Protocol, (UIntPtr)1);
-        private static readonly SafeCreateHandle s_cfAlpnHttp211Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp211Protocol, (UIntPtr)2);
+        private static readonly SafeCreateHandle s_cfAlpnHttp11Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp11Protocol, 1);
+        private static readonly SafeCreateHandle s_cfAlpnHttp2Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp2Protocol, 1);
+        private static readonly SafeCreateHandle s_cfAlpnHttp211Protocols = CoreFoundation.CFArrayCreate(s_cfAlpnHttp211Protocol, 2);
 
         internal enum PAL_TlsHandshakeState
         {
@@ -265,7 +265,7 @@ internal static partial class Interop
 
         internal static void SslSetCertificate(SafeSslHandle sslHandle, IntPtr[] certChainPtrs)
         {
-            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, (UIntPtr)certChainPtrs.Length))
+            using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs, (nuint)certChainPtrs.Length))
             {
                 int osStatus = AppleCryptoNative_SslSetCertificate(sslHandle, cfCertRefs);
 
@@ -329,7 +329,7 @@ internal static partial class Interop
                         protocolsPtr[i] = cfProtocolsArrayRef[i].DangerousGetHandle();
                     }
 
-                    cfProtocolsRefs = CoreFoundation.CFArrayCreate(protocolsPtr, (UIntPtr)protocols.Count);
+                    cfProtocolsRefs = CoreFoundation.CFArrayCreate(protocolsPtr, (nuint)protocols.Count);
                 }
 
                 int osStatus;

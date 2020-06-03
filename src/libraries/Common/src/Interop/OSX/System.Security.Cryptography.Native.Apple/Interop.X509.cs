@@ -458,7 +458,7 @@ internal static partial class Interop
         {
             Debug.Assert(contentType == X509ContentType.Pkcs7 || contentType == X509ContentType.Pkcs12);
 
-            using (SafeCreateHandle handlesArray = CoreFoundation.CFArrayCreate(certHandles, (UIntPtr)certHandles.Length))
+            using (SafeCreateHandle handlesArray = CoreFoundation.CFArrayCreate(certHandles, (nuint)certHandles.Length))
             {
                 SafeCFDataHandle exportData;
                 int osStatus;

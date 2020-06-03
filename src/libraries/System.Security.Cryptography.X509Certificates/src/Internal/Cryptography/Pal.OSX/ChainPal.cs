@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
             X509ChainStatusFlags.Revoked |
             X509ChainStatusFlags.OfflineRevocation;
 
-        private static readonly SafeCreateHandle s_emptyArray = Interop.CoreFoundation.CFArrayCreate(Array.Empty<IntPtr>(), UIntPtr.Zero);
+        private static readonly SafeCreateHandle s_emptyArray = Interop.CoreFoundation.CFArrayCreate(Array.Empty<IntPtr>(), 0);
         private Stack<SafeHandle> _extraHandles;
         private SafeX509ChainHandle? _chainHandle;
         public X509ChainElement[]? ChainElements { get; private set; }
@@ -142,7 +142,7 @@ namespace Internal.Cryptography.Pal
             }
 
             SafeCreateHandle policiesArray =
-                Interop.CoreFoundation.CFArrayCreate(policies, (UIntPtr)policies.Length);
+                Interop.CoreFoundation.CFArrayCreate(policies, (nuint)policies.Length);
 
             _extraHandles.Push(policiesArray);
             return policiesArray;
@@ -212,7 +212,7 @@ namespace Internal.Cryptography.Pal
 
                 // Creating the array has the effect of calling CFRetain() on all of the pointers, so the native
                 // resource is safe even if we DangerousRelease=>ReleaseHandle them.
-                SafeCreateHandle certsArray = Interop.CoreFoundation.CFArrayCreate(ptrs, (UIntPtr)ptrs.Length);
+                SafeCreateHandle certsArray = Interop.CoreFoundation.CFArrayCreate(ptrs, (nuint)ptrs.Length);
                 _extraHandles.Push(certsArray);
                 return certsArray;
             }

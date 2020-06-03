@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
-using CFIndex = System.IntPtr;
+using CFIndex = nint;
 using SCDynamicStoreRef = System.IntPtr;
 
 internal static partial class Interop

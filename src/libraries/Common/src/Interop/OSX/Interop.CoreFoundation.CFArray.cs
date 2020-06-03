@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 // Declared as signed long, which has sizeof(void*) on OSX.
-using CFIndex=System.IntPtr;
+using CFIndex=nint;
 
 internal static partial class Interop
 {
@@ -24,12 +24,12 @@ internal static partial class Interop
 
         internal static long CFArrayGetCount(SafeCFArrayHandle cfArray)
         {
-            return _CFArrayGetCount(cfArray).ToInt64();
+            return _CFArrayGetCount(cfArray);
         }
 
         internal static IntPtr CFArrayGetValueAtIndex(SafeCFArrayHandle cfArray, int index)
         {
-            return CFArrayGetValueAtIndex(cfArray, new CFIndex(index));
+            return CFArrayGetValueAtIndex(cfArray, (CFIndex)index);
         }
     }
 }

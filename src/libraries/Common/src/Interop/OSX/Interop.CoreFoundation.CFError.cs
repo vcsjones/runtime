@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 // Declared as signed long, which has sizeof(void*) on OSX.
-using CFIndex=System.IntPtr;
+using CFIndex=nint;
 
 internal static partial class Interop
 {
@@ -26,7 +26,7 @@ internal static partial class Interop
         {
             unchecked
             {
-                return (int)(CFErrorGetCode(cfError).ToInt64());
+                return (int)CFErrorGetCode(cfError);
             }
         }
 
