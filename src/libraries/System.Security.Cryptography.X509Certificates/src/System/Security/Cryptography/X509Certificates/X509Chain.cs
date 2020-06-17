@@ -142,7 +142,8 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.TrustMode,
                     chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout,
-                    chainPolicy.DisableCertificateDownloads);
+                    chainPolicy.DisableCertificateDownloads,
+                    chainPolicy.VerificationFlags);
 
                 if (_pal == null)
                     return false;

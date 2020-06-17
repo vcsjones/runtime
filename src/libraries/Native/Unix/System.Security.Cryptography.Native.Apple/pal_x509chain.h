@@ -41,6 +41,13 @@ enum
 };
 typedef uint32_t PAL_X509ChainStatusFlags;
 
+enum
+{
+    PAL_X509VerificationOptions_None = 0x00000000,
+    PAL_X509VerificationOptions_IgnoreNotTimeValid = 0x00000001
+};
+typedef uint32_t PAL_VerificationOptions;
+
 #define PAL_X509ChainErrorNone             0
 #define PAL_X509ChainErrorUnknownValueType (((uint64_t)0x0001L) << 32)
 #define PAL_X509ChainErrorUnknownValue     (((uint64_t)0x0002L) << 32)
@@ -130,3 +137,8 @@ PALEXPORT int32_t AppleCryptoNative_GetOSStatusForChainStatus(PAL_X509ChainStatu
 Sets the trusted certificates used when evaluating a chain.
 */
 PALEXPORT int32_t AppleCryptoNative_X509ChainSetTrustAnchorCertificates(SecTrustRef chain, CFArrayRef anchorCertificates);
+
+/*
+Sets additional verification options to use when evaluating a chain.
+*/
+PALEXPORT int32_t AppleCryptoNative_X509ChainSetTrustOptions(SecTrustRef pTrust, PAL_VerificationOptions options, int32_t* pOSStatus);

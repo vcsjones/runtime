@@ -452,6 +452,80 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void VerificationFlags_IgnoreNotTimeValid_ForLeaf()
+        {
+            DateTimeOffset rootNotBefore = DateTimeOffset.UtcNow.AddDays(-30);
+            DateTimeOffset rootNotAfter = DateTimeOffset.UtcNow.AddDays(30);
+            DateTimeOffset eeNotBefore = rootNotBefore.AddDays(1);
+            DateTimeOffset eeNotAfter = DateTimeOffset.UtcNow.AddDays(-1);
+
+            VerifyWithExpiredCertificate(rootNotBefore, rootNotAfter, eeNotBefore, eeNotAfter);
+        }
+
+        [Fact]
+        public static void VerificationFlags_IgnoreNotTimeValid_ForRoot()
+        {
+            Assert.True(false);
+            DateTimeOffset rootNotBefore = DateTimeOffset.UtcNow.AddDays(-30);
+            DateTimeOffset rootNotAfter = DateTimeOffset.UtcNow.AddDays(-1);
+            DateTimeOffset eeNotBefore = rootNotBefore.AddDays(1);
+            DateTimeOffset eeNotAfter = rootNotAfter.AddDays(-2);
+
+            VerifyWithExpiredCertificate(rootNotBefore, rootNotAfter, eeNotBefore, eeNotAfter);
+        }
+
+        private static void VerifyWithExpiredCertificate(
+            DateTimeOffset rootNotBefore,
+            DateTimeOffset rootNotAfter,
+            DateTimeOffset eeNotBefore,
+            DateTimeOffset eeNotAfter)
+        {
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest rootReq = new CertificateRequest(
+                    "CN=Root",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                rootReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                CertificateRequest certReq = new CertificateRequest(
+                    "CN=test",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                certReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(false, false, 0, false));
+
+                certReq.CertificateExtensions.Add(
+                    new X509Extension(
+                        "1.3.6.1.5.5.7.1.1",
+                        new byte[] { 5 },
+                        critical: false));
+
+                using (X509Certificate2 root = rootReq.CreateSelfSigned(rootNotBefore, rootNotAfter))
+                using (X509Certificate2 ee = certReq.Create(root, eeNotBefore, eeNotAfter, root.GetSerialNumber()))
+                {
+                    X509Chain chain = new X509Chain();
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.Add(root);
+
+                    // Build it once without the verification flags to ensure the flag
+                    // will have the desired effect.
+                    Assert.False(chain.Build(ee), "A certificate should be expired.");
+                    Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.NotTimeValid), "A certificate should be expired.");
+
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreNotTimeValid;
+                    Assert.True(chain.Build(ee), chain.AllStatusFlags().ToString());
+                }
+            }
+        }
+
         private static X509Certificate2 TamperSignature(X509Certificate2 input)
         {
             byte[] cert = input.RawData;

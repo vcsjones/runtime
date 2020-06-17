@@ -12,6 +12,13 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [Flags]
+        internal enum PAL_TrustOptions : uint
+        {
+            None = 0x00000000,
+            IgnoreNotTimeValid = 0x00000001,
+        }
+
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainCreateDefaultPolicy")]
         internal static extern SafeCreateHandle X509ChainCreateDefaultPolicy();
 
@@ -49,5 +56,11 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainSetTrustAnchorCertificates")]
         internal static extern int X509ChainSetTrustAnchorCertificates(SafeX509ChainHandle chain, SafeCreateHandle anchorCertificates);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainSetTrustOptions")]
+        internal static extern int X509ChainSetTrustOptions(
+            SafeX509ChainHandle chain,
+            PAL_TrustOptions options,
+            out int pOSStatus);
     }
 }

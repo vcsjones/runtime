@@ -96,6 +96,23 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException();
         }
 
+        internal void SetOptions(X509VerificationFlags verificationFlags)
+        {
+            Debug.Assert(_chainHandle != null, "_chainHandle != null");
+
+            Interop.AppleCrypto.PAL_TrustOptions options = Interop.AppleCrypto.PAL_TrustOptions.None;
+
+            if ((verificationFlags & X509VerificationFlags.IgnoreNotTimeValid) == X509VerificationFlags.IgnoreNotTimeValid)
+                options |= Interop.AppleCrypto.PAL_TrustOptions.IgnoreNotTimeValid;
+
+            return;
+            // int ret = Interop.AppleCrypto.X509ChainSetTrustOptions(_chainHandle, options, out int osStatus);
+            // const int Success = 1;
+
+            // if (ret != Success)
+            //     throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+        }
+
         public void Dispose()
         {
             if (_extraHandles == null)
@@ -603,7 +620,8 @@ namespace Internal.Cryptography.Pal
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
             TimeSpan timeout,
-            bool disableAia)
+            bool disableAia,
+            X509VerificationFlags verificationFlags)
         {
             // If the time was given in Universal, it will stay Universal.
             // If the time was given in Local, it will be converted.
@@ -622,6 +640,8 @@ namespace Internal.Cryptography.Pal
                     revocationMode,
                     customTrustStore,
                     trustMode);
+
+                chainPal.SetOptions(verificationFlags);
 
                 chainPal.Execute(
                     verificationTime,

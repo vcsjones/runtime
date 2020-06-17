@@ -14,6 +14,33 @@ SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy()
     return SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod | kSecRevocationRequirePositiveResponse);
 }
 
+SecTrustOptionFlags MapOptionsToSecOptionFlags(PAL_VerificationOptions verificationFlags)
+{
+    SecTrustOptionFlags flags = 0;
+
+    if ((verificationFlags & PAL_X509VerificationOptions_IgnoreNotTimeValid) == PAL_X509VerificationOptions_IgnoreNotTimeValid)
+        flags |= kSecTrustOptionAllowExpired;
+
+    return flags;
+}
+
+int32_t AppleCryptoNative_X509ChainSetTrustOptions(SecTrustRef pTrust, PAL_VerificationOptions options, int32_t* pOSStatus)
+{
+    if (pOSStatus != NULL)
+        *pOSStatus = noErr;
+
+    if (pTrust == NULL)
+        return -1;
+
+    if (options == PAL_X509VerificationOptions_None) // nothing to do
+        return 1;
+
+    SecTrustOptionFlags secOptionFlags = MapOptionsToSecOptionFlags(options);
+
+    *pOSStatus = SecTrustSetOptions(pTrust, secOptionFlags);
+    return *pOSStatus == noErr;
+}
+
 int32_t
 AppleCryptoNative_X509ChainCreate(CFTypeRef certs, CFTypeRef policies, SecTrustRef* pTrustOut, int32_t* pOSStatus)
 {
