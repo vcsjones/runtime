@@ -8,7 +8,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public abstract class SymmetricAlgorithm : IDisposable
+    public abstract partial class SymmetricAlgorithm : IDisposable
     {
         protected SymmetricAlgorithm()
         {
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography
         /// <returns>The length, in bytes, of the ciphertext with padding.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <para>
-        ///   <paramref name="plaintextLength" /> is a negative number.
+        ///   <paramref name="plaintextLength" /> is negative.
         ///   </para>
         ///   <para>
         ///   - or -
@@ -274,6 +274,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_UnsupportedBlockSize);
 
             int blockSizeBytes = blockSizeBits >> 3;
+             //divisor and factor are same and won't overflow.
             int wholeBlocks = Math.DivRem(plaintextLength, blockSizeBytes, out int remainder) * blockSizeBytes;
 
             switch (paddingMode)
@@ -288,9 +289,11 @@ namespace System.Security.Cryptography
                 case PaddingMode.ANSIX923:
                 case PaddingMode.ISO10126:
                     if (int.MaxValue - wholeBlocks < blockSizeBytes)
+                    {
                         throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.Cryptography_PlaintextTooLarge);
+                    }
 
-                    return wholeBlocks + blockSizeBytes;
+                    return checked(wholeBlocks + blockSizeBytes);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
             }

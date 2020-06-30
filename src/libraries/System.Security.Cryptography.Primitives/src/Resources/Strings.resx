@@ -141,4 +141,7 @@
   <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
     <value>The specified plaintext size is too large.</value>
   </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
 </root>

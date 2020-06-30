@@ -27,6 +27,7 @@
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.OneShot.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
              Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"

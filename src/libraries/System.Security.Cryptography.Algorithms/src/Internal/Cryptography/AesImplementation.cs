@@ -69,6 +69,17 @@ namespace Internal.Cryptography
             return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
         }
 
+        protected override bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
         private const int BitsPerByte = 8;
     }
 }

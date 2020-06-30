@@ -10,7 +10,8 @@ namespace System.Security.Cryptography
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
     {
         protected int KeySizeValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected AsymmetricAlgorithm() { }
         public virtual string? KeyExchangeAlgorithm { get { throw null; } }
         public virtual int KeySize { get { throw null; } set { } }
@@ -43,9 +44,7 @@ namespace System.Security.Cryptography
     {
         CBC = 1,
         ECB = 2,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         OFB = 3,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         CFB = 4,
         CTS = 5,
     }
@@ -216,8 +215,10 @@ namespace System.Security.Cryptography
         protected byte[]? IVValue;
         protected int KeySizeValue;
         protected byte[]? KeyValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalBlockSizesValue;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
+        protected System.Security.Cryptography.KeySizes[] LegalKeySizesValue;
         protected System.Security.Cryptography.CipherMode ModeValue;
         protected System.Security.Cryptography.PaddingMode PaddingValue;
         protected SymmetricAlgorithm() { }
@@ -239,9 +240,14 @@ namespace System.Security.Cryptography
         public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] EncryptCbc(byte[] plaintext, byte[] iv, System.Security.Cryptography.PaddingMode paddingMode = default(System.Security.Cryptography.PaddingMode)) { throw null; }
+        public byte[] EncryptCbc(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> iv, System.Security.Cryptography.PaddingMode paddingMode = default(System.Security.Cryptography.PaddingMode)) { throw null; }
+        public int EncryptCbc(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode = default(System.Security.Cryptography.PaddingMode)) { throw null; }
         public abstract void GenerateIV();
         public abstract void GenerateKey();
         public int GetCiphertextLength(System.Security.Cryptography.PaddingMode paddingMode, int plaintextLength) { throw null; }
+        public bool TryEncryptCbc(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, out int bytesWritten, System.Security.Cryptography.PaddingMode paddingMode = default(System.Security.Cryptography.PaddingMode)) { throw null; }
+        protected virtual bool TryEncryptCbcCore(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> iv, System.Span<byte> destination, System.Security.Cryptography.PaddingMode paddingMode, out int bytesWritten) { throw null; }
         public bool ValidKeySize(int bitLength) { throw null; }
     }
 }
