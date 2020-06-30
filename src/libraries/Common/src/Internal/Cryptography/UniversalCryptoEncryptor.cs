@@ -30,94 +30,23 @@ namespace Internal.Cryptography
 
         protected sealed override unsafe byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            byte[] paddedBlock = PadBlock(inputBuffer, inputOffset, inputCount);
+            byte[] paddedBlock = CryptoPool.Rent(inputCount + InputBlockSize * 2);
+            int written = paddedBlock.Length;
 
-            fixed (byte* paddedBlockPtr = paddedBlock)
+            try
             {
-                byte[] output = BasicSymmetricCipher.TransformFinal(paddedBlock, 0, paddedBlock.Length);
+                ReadOnlySpan<byte> inputBufferSpan = new ReadOnlySpan<byte>(inputBuffer, inputOffset, inputCount);
+                written = SymmetricPaddingHelpers.PadBlock(PaddingMode, InputBlockSize, inputBufferSpan, paddedBlock);
 
-                if (paddedBlock != inputBuffer)
+                fixed (byte* paddedBlockPtr = paddedBlock)
                 {
-                    CryptographicOperations.ZeroMemory(paddedBlock);
+                    return BasicSymmetricCipher.TransformFinal(paddedBlock, 0, written);
                 }
-
-                return output;
             }
-        }
-
-        private byte[] PadBlock(byte[] block, int offset, int count)
-        {
-            byte[] result;
-            int padBytes = InputBlockSize - (count % InputBlockSize);
-
-            switch (PaddingMode)
+            finally
             {
-                case PaddingMode.None:
-                    if (count % InputBlockSize != 0)
-                        throw new CryptographicException(SR.Cryptography_PartialBlock);
-
-                    result = new byte[count];
-                    Buffer.BlockCopy(block, offset, result, 0, result.Length);
-                    break;
-
-                // ANSI padding fills the blocks with zeros and adds the total number of padding bytes as
-                // the last pad byte, adding an extra block if the last block is complete.
-                //
-                // x 00 00 00 00 00 00 07
-                case PaddingMode.ANSIX923:
-                    result = new byte[count + padBytes];
-
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    result[result.Length - 1] = (byte)padBytes;
-
-                    break;
-
-                // ISO padding fills the blocks up with random bytes and adds the total number of padding
-                // bytes as the last pad byte, adding an extra block if the last block is complete.
-                //
-                // xx rr rr rr rr rr rr 07
-                case PaddingMode.ISO10126:
-                    result = new byte[count + padBytes];
-
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    RandomNumberGenerator.Fill(result.AsSpan(count + 1, padBytes - 1));
-                    result[result.Length - 1] = (byte)padBytes;
-
-                    break;
-
-                // PKCS padding fills the blocks up with bytes containing the total number of padding bytes
-                // used, adding an extra block if the last block is complete.
-                //
-                // xx xx 06 06 06 06 06 06
-                case PaddingMode.PKCS7:
-                    result = new byte[count + padBytes];
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-
-                    for (int i = count; i < result.Length; i++)
-                    {
-                        result[i] = (byte)padBytes;
-                    }
-                    break;
-
-                // Zeros padding fills the last partial block with zeros, and does not add a new block to
-                // the end if the last block is already complete.
-                //
-                //  xx 00 00 00 00 00 00 00
-                case PaddingMode.Zeros:
-                    if (padBytes == InputBlockSize)
-                    {
-                        padBytes = 0;
-                    }
-
-                    result = new byte[count + padBytes];
-                    Buffer.BlockCopy(block, offset, result, 0, count);
-                    break;
-
-                default:
-                    throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
+                CryptoPool.Return(paddedBlock, clearSize: written);
             }
-
-            return result;
         }
     }
 }

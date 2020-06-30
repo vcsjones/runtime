@@ -62,6 +62,8 @@
              Link="Internal\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPaddingHelpers.cs"
+             Link="Internal\Cryptography\SymmetricPaddingHelpers.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
              Link="Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs"
