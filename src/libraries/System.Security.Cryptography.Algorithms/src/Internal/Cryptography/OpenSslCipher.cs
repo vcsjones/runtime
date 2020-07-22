@@ -40,6 +40,16 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
+        public override unsafe int TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output)
+        {
+            Debug.Assert((input.Length % BlockSizeInBytes) == 0);
+            Debug.Assert(input.Length <= output.Length);
+
+            int written = ProcessFinalBlock(input, output);
+            Reset();
+            return written;
+        }
+
         public override unsafe int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Debug.Assert(input.Length > 0);

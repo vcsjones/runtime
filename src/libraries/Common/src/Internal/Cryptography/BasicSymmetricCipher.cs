@@ -32,6 +32,8 @@ namespace Internal.Cryptography
 
         public abstract int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output);
 
+        public abstract int TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output);
+
         public int BlockSizeInBytes { get; private set; }
 
         public void Dispose()
