@@ -182,6 +182,8 @@
              Link="Internal\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoEncryptor.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricCipherHelpers.cs"
+             Link="Common\Internal\Cryptography\SymmetricCipherHelpers.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoDecryptor.cs"
              Link="Internal\Cryptography\UniversalCryptoDecryptor.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"

@@ -108,6 +108,12 @@
   <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
     <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
   </data>
+  <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
+    <value>The specified plaintext size is too large.</value>
+  </data>
+  <data name="Cryptography_PartialBlock" xml:space="preserve">
+    <value>The input data is not a complete block.</value>
+  </data>
   <data name="NotSupported_SubclassOverride" xml:space="preserve">
     <value>Method not supported. Derived class must override.</value>
   </data>

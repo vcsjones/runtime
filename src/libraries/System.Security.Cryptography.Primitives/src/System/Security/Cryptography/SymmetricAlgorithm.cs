@@ -222,6 +222,19 @@ namespace System.Security.Cryptography
             return bitLength.IsLegalSize(validSizes);
         }
 
+        public int GetCiphertextLength(PaddingMode paddingMode, int plaintextLength)
+        {
+            if (plaintextLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (BlockSize <= 0 || (BlockSize & 0b111) != 0)
+                throw new CryptographicException(SR.Cryptography_InvalidBlockSize);
+
+            int blockSizeBytes = BlockSize >> 3;
+
+            return SymmetricCipherHelpers.GetCiphertextLength(plaintextLength, blockSizeBytes, Padding);
+        }
+
         protected CipherMode ModeValue;
         protected PaddingMode PaddingValue;
         protected byte[]? KeyValue;

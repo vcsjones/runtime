@@ -76,6 +76,22 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
         internal static extern unsafe int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorOneShot")]
+        internal static extern unsafe int CryptorOneShot(
+            PAL_SymmetricOperation operation,
+            PAL_SymmetricAlgorithm algorithm,
+            PAL_ChainingMode chainingMode,
+            PAL_PaddingMode paddingMode,
+            byte* pbKey,
+            int cbKey,
+            byte* pbIv,
+            byte* pbDataIn,
+            int cbDataIn,
+            byte* pbDataOut,
+            int cbDataOut,
+            out int pDataOutWritten,
+            out int ccStatus);
     }
 }
 

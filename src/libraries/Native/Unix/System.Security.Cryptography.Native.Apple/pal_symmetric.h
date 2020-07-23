@@ -103,3 +103,23 @@ Shims CCCryptorReset, updating *pkCCStatus as its output.
 Returns 1 on success, 0 on system error, -1 on input error.
 */
 PALEXPORT int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv, int32_t* pkCCStatus);
+
+/*
+Combines CCCryptorCreateWithMode, CCCryptorUpdate, CCCryptorFinal, and CCCryptorRelease
+in to a single operation.
+
+Returns 1 on success, 0 on error, and -1 on invalid input.
+*/
+PALEXPORT int32_t AppleCryptoNative_CryptorOneShot(PAL_SymmetricOperation operation,
+                                                   PAL_SymmetricAlgorithm algorithm,
+                                                   PAL_ChainingMode chainingMode,
+                                                   PAL_PaddingMode paddingMode,
+                                                   const uint8_t* pbKey,
+                                                   int32_t cbKey,
+                                                   const uint8_t* pbIv,
+                                                   const uint8_t* pbDataIn,
+                                                   int32_t cbDataIn,
+                                                   uint8_t* pbDataOut,
+                                                   int32_t cbDataOut,
+                                                   int32_t* pDataOutWritten,
+                                                   int32_t* pccStatus);

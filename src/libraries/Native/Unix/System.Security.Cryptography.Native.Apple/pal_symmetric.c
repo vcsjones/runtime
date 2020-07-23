@@ -145,3 +145,85 @@ int32_t AppleCryptoNative_CryptorReset(CCCryptorRef cryptor, const uint8_t* pbIv
     *pccStatus = status;
     return status == kCCSuccess;
 }
+
+int32_t AppleCryptoNative_CryptorOneShot(PAL_SymmetricOperation operation,
+                                         PAL_SymmetricAlgorithm algorithm,
+                                         PAL_ChainingMode chainingMode,
+                                         PAL_PaddingMode paddingMode,
+                                         const uint8_t* pbKey,
+                                         int32_t cbKey,
+                                         const uint8_t* pbIv,
+                                         const uint8_t* pbDataIn,
+                                         int32_t cbDataIn,
+                                         uint8_t* pbDataOut,
+                                         int32_t cbDataOut,
+                                         int32_t* pDataOutWritten,
+                                         int32_t* pccStatus)
+{
+    if (pccStatus != NULL)
+        *pccStatus = 0;
+
+    if (pDataOutWritten != NULL)
+        *pDataOutWritten = 0;
+
+    if (pbKey == NULL || cbKey <= 0 || pbDataOut == NULL || cbDataOut <= 0 || pDataOutWritten == NULL || pccStatus == NULL)
+        return -1;
+
+    assert(operation == PAL_OperationEncrypt || operation == PAL_OperationDecrypt);
+    assert(algorithm == PAL_AlgorithmAES || algorithm == PAL_AlgorithmDES || algorithm == PAL_Algorithm3DES ||
+           algorithm == PAL_AlgorithmRC2);
+    assert(chainingMode == PAL_ChainingModeECB || chainingMode == PAL_ChainingModeCBC);
+    assert(paddingMode == PAL_PaddingModeNone);
+
+	CCCryptorRef cryptor = NULL;
+    *pccStatus = CCCryptorCreateWithMode(operation,
+                                         chainingMode,
+                                         algorithm,
+                                         paddingMode,
+                                         pbIv,
+                                         pbKey,
+                                         (size_t)cbKey,
+                                         /* tweak is not supported */ NULL,
+                                         0,
+                                         /* numRounds is not supported */ 0,
+                                         /* options */ 0,
+                                         &cryptor);
+
+    if (*pccStatus != kCCSuccess)
+    {
+        return 0;
+    }
+
+    size_t ciphertextSize = CCCryptorGetOutputLength(cryptor, cbDataIn, true);
+
+    if (cbDataOut < ciphertextSize)
+    {
+        CCCryptorRelease(cryptor);
+        *pccStatus = kCCBufferTooSmall;
+        return 0;
+    }
+
+    size_t updatedLength;
+    size_t finalLength;
+    *pccStatus = CCCryptorUpdate(cryptor, pbDataIn, cbDataIn, pbDataOut, cbDataOut, &updatedLength);
+
+    if (*pccStatus != kCCSuccess)
+    {
+        CCCryptorRelease(cryptor);
+        return 0;
+    }
+
+    *pccStatus = CCCryptorFinal(cryptor, pbDataOut + updatedLength, cbDataOut - updatedLength, &finalLength);
+
+    if (*pccStatus != kCCSuccess)
+    {
+        CCCryptorRelease(cryptor);
+        return 0;
+    }
+
+    // This should not overflow because we've already checked the total length
+    // with CCCryptorGetOutputLength
+    *pDataOutWritten = updatedLength + finalLength;
+    CCCryptorRelease(cryptor);
+    return 1;
+}

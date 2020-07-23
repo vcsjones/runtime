@@ -33,6 +33,8 @@
              Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricCipherHelpers.cs"
+             Link="Common\Internal\Cryptography\SymmetricCipherHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"

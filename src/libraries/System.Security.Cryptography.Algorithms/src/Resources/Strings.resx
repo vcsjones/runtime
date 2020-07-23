@@ -354,4 +354,7 @@
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
+  <data name="Cryptography_PlaintextTooLarge" xml:space="preserve">
+    <value>The specified plaintext size is too large.</value>
+  </data>
 </root>

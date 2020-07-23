@@ -45,40 +45,16 @@ namespace Internal.Cryptography
 
         protected override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
+            int ciphertextLength = SymmetricCipherHelpers.GetCiphertextLength(inputCount, InputBlockSize, PaddingMode);
             byte[] buffer;
 #if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-            buffer = new byte[GetCiphertextLength(inputCount)];
+            buffer = new byte[ciphertextLength];
 #else
-            buffer = GC.AllocateUninitializedArray<byte>(GetCiphertextLength(inputCount));
+            buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
 #endif
             int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
             Debug.Assert(written == buffer.Length);
             return buffer;
-        }
-
-        private int GetCiphertextLength(int plaintextLength)
-        {
-            Debug.Assert(plaintextLength >= 0);
-
-             //divisor and factor are same and won't overflow.
-            int wholeBlocks = Math.DivRem(plaintextLength, InputBlockSize, out int remainder) * InputBlockSize;
-
-            switch (PaddingMode)
-            {
-                case PaddingMode.None when (remainder != 0):
-                    throw new CryptographicException(SR.Cryptography_PartialBlock);
-                case PaddingMode.None:
-                case PaddingMode.Zeros when (remainder == 0):
-                    return plaintextLength;
-                case PaddingMode.Zeros:
-                case PaddingMode.PKCS7:
-                case PaddingMode.ANSIX923:
-                case PaddingMode.ISO10126:
-                    return checked(wholeBlocks + InputBlockSize);
-                default:
-                    Debug.Fail($"Unknown padding mode {PaddingMode}.");
-                    throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
-            }
         }
 
         private int PadBlock(ReadOnlySpan<byte> block, Span<byte> destination)

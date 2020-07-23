@@ -246,6 +246,7 @@ namespace System.Security.Cryptography
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();
         public abstract void GenerateKey();
+        public int GetCiphertextLength(System.Security.Cryptography.PaddingMode paddingMode, int plaintextLength) { throw null; }
         public bool ValidKeySize(int bitLength) { throw null; }
     }
 }
