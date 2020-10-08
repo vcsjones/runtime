@@ -9,8 +9,6 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 
-using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
-
 using Microsoft.Win32.SafeHandles;
 
 using static Interop.Crypt32;
@@ -144,7 +142,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // .NET Framework compat: Though it seems like we could copy over the contents of contentEncryptionAlgorithm.Parameters, that property is for retrieving information from decoded Cms's only, and it
                 // massages the raw data so it wouldn't be usable here anyway. To hammer home that fact, the EncryptedCms constructor rather rudely forces contentEncryptionAlgorithm.Parameters to be the empty array.
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.cbData = 0;
-                pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.pbData = IntPtr.Zero;
+                pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.pbData = null;
 
                 pEnvelopedEncodeInfo->pvEncryptionAuxInfo = GenerateEncryptionAuxInfoIfNeeded(contentEncryptionAlgorithm, hb);
 
@@ -169,7 +167,7 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         byte[] certEncoded = originatorCerts[i].Export(X509ContentType.Cert);
                         pCertEncoded[i].cbData = (uint)(certEncoded.Length);
-                        pCertEncoded[i].pbData = hb.AllocBytes(certEncoded);
+                        pCertEncoded[i].pbData = (byte*)hb.AllocBytes(certEncoded);
                     }
                     pEnvelopedEncodeInfo->rgCertEncoded = pCertEncoded;
                 }
@@ -198,7 +196,7 @@ namespace Internal.Cryptography.Pal.Windows
                         {
                             byte[] rawData = values[j].RawData;
                             pValues[j].cbData = (uint)(rawData.Length);
-                            pValues[j].pbData = hb.AllocBytes(rawData);
+                            pValues[j].pbData = (byte*)hb.AllocBytes(rawData);
                         }
                         pCryptAttribute[i].rgValue = pValues;
                     }
@@ -285,31 +283,31 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.Rsa);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaPkcsParameters.Length;
-                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaPkcsParameters);
+                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = (byte*)hb.AllocBytes(s_rsaPkcsParameters);
                     }
                     else if (padding == RSAEncryptionPadding.OaepSHA1)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha1Parameters.Length;
-                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha1Parameters);
+                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = (byte*)hb.AllocBytes(s_rsaOaepSha1Parameters);
                     }
                     else if (padding == RSAEncryptionPadding.OaepSHA256)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha256Parameters.Length;
-                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha256Parameters);
+                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = (byte*)hb.AllocBytes(s_rsaOaepSha256Parameters);
                     }
                     else if (padding == RSAEncryptionPadding.OaepSHA384)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha384Parameters.Length;
-                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha384Parameters);
+                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = (byte*)hb.AllocBytes(s_rsaOaepSha384Parameters);
                     }
                     else if (padding == RSAEncryptionPadding.OaepSHA512)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha512Parameters.Length;
-                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha512Parameters);
+                        pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = (byte*)hb.AllocBytes(s_rsaOaepSha512Parameters);
                     }
                     else
                     {
@@ -345,7 +343,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                     pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.Esdh);
                     pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = 0;
-                    pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = IntPtr.Zero;
+                    pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = null;
 
                     pEncodeInfo->pvKeyEncryptionAuxInfo = null;
 
@@ -358,7 +356,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                     pEncodeInfo->KeyWrapAlgorithm.pszObjId = hb.AllocAsciiString(oidValue);
                     pEncodeInfo->KeyWrapAlgorithm.Parameters.cbData = 0;
-                    pEncodeInfo->KeyWrapAlgorithm.Parameters.pbData = IntPtr.Zero;
+                    pEncodeInfo->KeyWrapAlgorithm.Parameters.pbData = null;
 
                     pEncodeInfo->pvKeyWrapAuxInfo = GenerateEncryptionAuxInfoIfNeeded(contentEncryptionAlgorithm, hb);
 
@@ -369,7 +367,7 @@ namespace Internal.Cryptography.Pal.Windows
                     *(pEncodeInfo->pEphemeralAlgorithm) = pCertInfo->SubjectPublicKeyInfo.Algorithm;
 
                     pEncodeInfo->UserKeyingMaterial.cbData = 0;
-                    pEncodeInfo->UserKeyingMaterial.pbData = IntPtr.Zero;
+                    pEncodeInfo->UserKeyingMaterial.pbData = null;
 
                     CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO* pEncryptedKey = (CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO*)(hb.Alloc(sizeof(CMSG_RECIPIENT_ENCRYPTED_KEY_ENCODE_INFO)));
 
@@ -409,7 +407,7 @@ namespace Internal.Cryptography.Pal.Windows
                     case SubjectIdentifierType.SubjectKeyIdentifier:
                         {
                             byte[] ski = hCertContext.GetSubjectKeyIdentifer();
-                            IntPtr pSki = hb.AllocBytes(ski);
+                            byte* pSki = (byte*)hb.AllocBytes(ski);
 
                             recipientId.dwIdChoice = CertIdChoice.CERT_ID_KEY_IDENTIFIER;
                             recipientId.u.KeyId.cbData = (uint)(ski.Length);

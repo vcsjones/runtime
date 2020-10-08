@@ -59,17 +59,6 @@ namespace Internal.Cryptography.Pal.Windows
             return pvData;
         }
 
-        public static byte[] ToByteArray(this DATA_BLOB blob)
-        {
-            if (blob.cbData == 0)
-                return Array.Empty<byte>();
-
-            int length = (int)(blob.cbData);
-            byte[] data = new byte[length];
-            Marshal.Copy(blob.pbData, data, 0, length);
-            return data;
-        }
-
         public static CryptMsgType GetMessageType(this SafeCryptMsgHandle hCryptMsg)
         {
             int cbData = sizeof(CryptMsgType);
@@ -242,7 +231,7 @@ namespace Internal.Cryptography.Pal.Windows
             return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.PublicKeyInfo, pki);
         }
 
-        public static AlgorithmIdentifier ToAlgorithmIdentifier(this CRYPT_ALGORITHM_IDENTIFIER cryptAlgorithmIdentifer)
+        public static unsafe AlgorithmIdentifier ToAlgorithmIdentifier(this CRYPT_ALGORITHM_IDENTIFIER cryptAlgorithmIdentifer)
         {
             string oidValue = cryptAlgorithmIdentifer.pszObjId.ToStringAnsi();
             AlgId algId = oidValue.ToAlgId();
@@ -262,7 +251,7 @@ namespace Internal.Cryptography.Pal.Windows
                             unsafe
                             {
                                 int cbSize = sizeof(CRYPT_RC2_CBC_PARAMETERS);
-                                if (!Interop.Crypt32.CryptDecodeObject(CryptDecodeObjectStructType.PKCS_RC2_CBC_PARAMETERS, cryptAlgorithmIdentifer.Parameters.pbData, (int)(cryptAlgorithmIdentifer.Parameters.cbData), &rc2Parameters, ref cbSize))
+                                if (!Interop.Crypt32.CryptDecodeObject(CryptDecodeObjectStructType.PKCS_RC2_CBC_PARAMETERS, (IntPtr)cryptAlgorithmIdentifer.Parameters.pbData, (int)(cryptAlgorithmIdentifer.Parameters.cbData), &rc2Parameters, ref cbSize))
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                             }
 
@@ -283,7 +272,7 @@ namespace Internal.Cryptography.Pal.Windows
                         int saltLength = 0;
                         if (cryptAlgorithmIdentifer.Parameters.cbData != 0)
                         {
-                            using (SafeHandle sh = Interop.Crypt32.CryptDecodeObjectToMemory(CryptDecodeObjectStructType.X509_OCTET_STRING, cryptAlgorithmIdentifer.Parameters.pbData, (int)cryptAlgorithmIdentifer.Parameters.cbData))
+                            using (SafeHandle sh = Interop.Crypt32.CryptDecodeObjectToMemory(CryptDecodeObjectStructType.X509_OCTET_STRING, (IntPtr)cryptAlgorithmIdentifer.Parameters.pbData, (int)cryptAlgorithmIdentifer.Parameters.cbData))
                             {
                                 unsafe
                                 {

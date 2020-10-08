@@ -11,8 +11,8 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct FILETIME
         {
-            private uint ftTimeLow;
-            private uint ftTimeHigh;
+            public uint ftTimeLow;
+            public uint ftTimeHigh;
 
             public DateTime ToDateTime()
             {
