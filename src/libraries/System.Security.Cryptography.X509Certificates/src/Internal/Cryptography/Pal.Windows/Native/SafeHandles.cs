@@ -10,35 +10,6 @@ using System.Security.Cryptography;
 namespace Internal.Cryptography.Pal.Native
 {
     /// <summary>
-    /// Base class for safe handles representing NULL-based pointers.
-    /// </summary>
-    internal abstract class SafePointerHandle<T> : SafeHandle where T : SafeHandle, new()
-    {
-        protected SafePointerHandle()
-            : base(IntPtr.Zero, true)
-        {
-        }
-
-        public sealed override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
-
-        public static T InvalidHandle
-        {
-            get { return SafeHandleCache<T>.GetInvalidHandle(() => new T()); }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (!SafeHandleCache<T>.IsCachedInvalidHandle(this))
-            {
-                base.Dispose(disposing);
-            }
-        }
-    }
-
-    /// <summary>
     /// SafeHandle for the CERT_CONTEXT structure defined by crypt32.
     /// </summary>
     internal class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
