@@ -41,11 +41,11 @@ namespace System.Security.Cryptography
 
                 fixed (byte* pInputData = relevantData, pOptionalEntropy = optionalEntropy)
                 {
-                    DATA_BLOB userDataBlob = new DATA_BLOB((IntPtr)pInputData, (uint)(inputData.Length));
+                    DATA_BLOB userDataBlob = new DATA_BLOB(pInputData, (uint)(inputData.Length));
                     DATA_BLOB optionalEntropyBlob = default(DATA_BLOB);
                     if (optionalEntropy != null)
                     {
-                        optionalEntropyBlob = new DATA_BLOB((IntPtr)pOptionalEntropy, (uint)(optionalEntropy.Length));
+                        optionalEntropyBlob = new DATA_BLOB(pOptionalEntropy, (uint)(optionalEntropy.Length));
                     }
 
                     // For .NET Framework compat, we ignore unknown bits in the "scope" value rather than throwing.
@@ -71,25 +71,25 @@ namespace System.Security.Cryptography
                         }
 
                         // In some cases, the API would fail due to OOM but simply return a null pointer.
-                        if (outputBlob.pbData == IntPtr.Zero)
+                        if (outputBlob.pbData == null)
                             throw new OutOfMemoryException();
 
                         int length = (int)(outputBlob.cbData);
                         byte[] outputBytes = new byte[length];
-                        Marshal.Copy(outputBlob.pbData, outputBytes, 0, length);
+                        Marshal.Copy((IntPtr)outputBlob.pbData, outputBytes, 0, length);
                         return outputBytes;
                     }
                     finally
                     {
-                        if (outputBlob.pbData != IntPtr.Zero)
+                        if (outputBlob.pbData != null)
                         {
                             int length = (int)(outputBlob.cbData);
-                            byte* pOutputData = (byte*)(outputBlob.pbData);
+                            byte* pOutputData = outputBlob.pbData;
                             for (int i = 0; i < length; i++)
                             {
                                 pOutputData[i] = 0;
                             }
-                            Marshal.FreeHGlobal(outputBlob.pbData);
+                            Marshal.FreeHGlobal((IntPtr)outputBlob.pbData);
                         }
                     }
                 }
