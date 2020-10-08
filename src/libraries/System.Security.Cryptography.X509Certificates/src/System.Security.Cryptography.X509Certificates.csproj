@@ -251,6 +251,10 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.X500DistinguishedName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCloseStore.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertNameToStr.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptMsgClose.cs"

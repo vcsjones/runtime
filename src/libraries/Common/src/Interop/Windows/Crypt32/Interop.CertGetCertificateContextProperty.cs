@@ -22,5 +22,19 @@ internal static partial class Interop
             CertContextPropId dwPropId,
             out IntPtr pvData,
             [In, Out] ref int pcbData);
+
+        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern bool CertGetCertificateContextProperty(
+            SafeCertContextHandle pCertContext,
+            CertContextPropId dwPropId,
+            [Out] out DATA_BLOB pvData,
+            [In, Out] ref int pcbData);
+
+        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertGetCertificateContextProperty")]
+        public static extern unsafe bool CertGetCertificateContextPropertyString(
+            SafeCertContextHandle pCertContext,
+            CertContextPropId dwPropId, byte* pvData,
+            [In, Out] ref int pcbData);
+
     }
 }

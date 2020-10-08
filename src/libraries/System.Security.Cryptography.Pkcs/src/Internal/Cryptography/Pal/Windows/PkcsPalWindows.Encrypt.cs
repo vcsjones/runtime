@@ -249,7 +249,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // It's not about keeping the context alive.)
                 using (SafeCertContextHandle hCertContext = recipient.Certificate.CreateCertContextHandle())
                 {
-                    CERT_CONTEXT* pCertContext = hCertContext.DangerousGetCertContext();
+                    CERT_CONTEXT* pCertContext = hCertContext.CertContext;
                     CERT_INFO* pCertInfo = pCertContext->pCertInfo;
 
                     CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO* pEncodeInfo = (CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO*)(hb.Alloc(sizeof(CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO)));
@@ -334,7 +334,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // bringing in all the SafeCertContextHandle machinery, and embed pointers to them in the memory block we return. Yes, this code is scary.
                 using (SafeCertContextHandle hCertContext = recipient.Certificate.CreateCertContextHandle())
                 {
-                    CERT_CONTEXT* pCertContext = hCertContext.DangerousGetCertContext();
+                    CERT_CONTEXT* pCertContext = hCertContext.CertContext;
                     CERT_INFO* pCertInfo = pCertContext->pCertInfo;
 
                     CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO* pEncodeInfo = (CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO*)(hb.Alloc(sizeof(CMSG_KEY_AGREE_RECIPIENT_ENCODE_INFO)));

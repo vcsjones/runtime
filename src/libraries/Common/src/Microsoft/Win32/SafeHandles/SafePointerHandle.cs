@@ -16,6 +16,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        protected SafePointerHandle(IntPtr handle, bool ownsHandle)
+            : base(handle, ownsHandle)
+        {
+        }
+
         public sealed override bool IsInvalid => handle == IntPtr.Zero;
 
         public static T InvalidHandle => SafeHandleCache<T>.GetInvalidHandle(() => new T());

@@ -33,6 +33,11 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(_parent.handle);
         }
 
+        public SafeCertContextHandle(IntPtr handle) :
+            base(handle, ownsHandle: true)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             if (_parent != null)
@@ -76,13 +81,13 @@ namespace Microsoft.Win32.SafeHandles
 
         public SafeCertContextHandle Duplicate()
         {
-            return Interop.crypt32.CertDuplicateCertificateContext(handle);
+            return CertDuplicateCertificateContext(handle);
         }
 
-        private bool CertHasProperty(CertContextPropId propertyId)
+        public bool CertHasProperty(CertContextPropId propertyId)
         {
             int cb = 0;
-            bool hasProperty = Interop.crypt32.CertGetCertificateContextProperty(
+            bool hasProperty = CertGetCertificateContextProperty(
                 this,
                 propertyId,
                 null,

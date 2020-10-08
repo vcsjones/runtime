@@ -130,11 +130,10 @@ namespace Internal.Cryptography.Pal.Windows
 
         public static SafeCertContextHandle CreateCertContextHandle(this X509Certificate2 cert)
         {
-            IntPtr pCertContext = cert.Handle;
-            pCertContext = Interop.Crypt32.CertDuplicateCertificateContext(pCertContext);
-            SafeCertContextHandle hCertContext = new SafeCertContextHandle(pCertContext);
+            SafeCertContextHandle hCertContext = new SafeCertContextHandle(cert.Handle);
+            SafeCertContextHandle dupContext = hCertContext.Duplicate();
             GC.KeepAlive(cert);
-            return hCertContext;
+            return dupContext;
         }
 
         public static unsafe byte[] GetSubjectKeyIdentifer(this SafeCertContextHandle hCertContext)

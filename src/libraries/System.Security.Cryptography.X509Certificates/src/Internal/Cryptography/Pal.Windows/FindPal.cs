@@ -305,11 +305,11 @@ namespace Internal.Cryptography.Pal
                 delegate (SafeCertContextHandle pCertContext)
                 {
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
                         return false;
 
                     byte[] actual = new byte[cbData];
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
                         return false;
 
                     return keyIdentifier.ContentsEqual(actual);

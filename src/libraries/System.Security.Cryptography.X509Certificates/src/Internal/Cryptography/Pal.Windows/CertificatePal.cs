@@ -32,13 +32,11 @@ namespace Internal.Cryptography.Pal
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
-            SafeCertContextHandle safeCertContextHandle = Interop.crypt32.CertDuplicateCertificateContext(handle);
+            SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)
                 throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
 
-            DATA_BLOB dataBlob;
-            int cbData = 0;
-            bool deleteKeyContainer = Interop.crypt32.CertGetCertificateContextProperty(safeCertContextHandle, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out dataBlob, ref cbData);
+            bool deleteKeyContainer = safeCertContextHandle.CertHasProperty(CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID);
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
@@ -71,11 +69,11 @@ namespace Internal.Cryptography.Pal
             get
             {
                 int cbData = 0;
-                if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, null, ref cbData))
+                if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, null, ref cbData))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                 byte[] thumbprint = new byte[cbData];
-                if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, thumbprint, ref cbData))
+                if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_SHA1_HASH_PROP_ID, thumbprint, ref cbData))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 return thumbprint;
             }
@@ -146,18 +144,18 @@ namespace Internal.Cryptography.Pal
                 try
                 {
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                     {
                         CERT_CHAIN_PARA chainPara = default;
                         chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
                         if (!Interop.crypt32.CertGetCertificateChain((IntPtr)ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                        if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
+                        if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                     }
 
                     byte[] keyAlgorithmParameters = new byte[cbData];
-                    if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, keyAlgorithmParameters, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, keyAlgorithmParameters, ref cbData))
                         throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                     return keyAlgorithmParameters;
@@ -274,7 +272,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 int uninteresting = 0;
-                bool archivePropertyExists = Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, null!, ref uninteresting);
+                bool archivePropertyExists = Interop.Crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, null!, ref uninteresting);
                 return archivePropertyExists;
             }
 
@@ -297,14 +295,14 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     int cbData = 0;
-                    if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
                         return string.Empty;
 
                     int spanLength = (cbData + 1) / 2;
                     Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
                     fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
                     {
-                        if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
+                        if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
                             return string.Empty;
                     }
 
@@ -479,7 +477,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                SafeCertContextHandle certContext = Interop.crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
+                SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
                 GC.KeepAlive(_certContext);
                 return certContext;
             }

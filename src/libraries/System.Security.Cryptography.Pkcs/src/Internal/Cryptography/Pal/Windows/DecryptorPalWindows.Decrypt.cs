@@ -210,7 +210,7 @@ namespace Internal.Cryptography.Pal.Windows
                                         return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
                                     using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
                                     {
-                                        CERT_CONTEXT* pOriginatorCertContext = hCertContext.DangerousGetCertContext();
+                                        CERT_CONTEXT* pOriginatorCertContext = hCertContext.CertContext;
                                         decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
 
                                         // Do not factor this call out of the switch statement as leaving this "using" block will free up

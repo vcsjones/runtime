@@ -18,7 +18,7 @@ namespace Internal.Cryptography.Pal.Native
     {
         protected sealed override bool ReleaseHandle()
         {
-            using (SafeCertContextHandle certContext = Interop.crypt32.CertDuplicateCertificateContext(handle))
+            using (SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(handle))
             {
                 DeleteKeyContainer(certContext);
             }
@@ -32,12 +32,12 @@ namespace Internal.Cryptography.Pal.Native
                 return;
 
             int cb = 0;
-            bool containsPrivateKey = Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
+            bool containsPrivateKey = Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
             if (!containsPrivateKey)
                 return;
 
             byte[] provInfoAsBytes = new byte[cb];
-            if (!Interop.crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, provInfoAsBytes, ref cb))
+            if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, provInfoAsBytes, ref cb))
                 return;
 
             unsafe
