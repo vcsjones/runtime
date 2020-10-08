@@ -10,6 +10,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Internal.Cryptography.Pal.Native;
 
+using Microsoft.Win32.SafeHandles;
+
 using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
@@ -49,7 +51,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (byte* pThumbPrint = thumbPrint)
             {
-                CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(thumbPrint.Length, pThumbPrint);
+                DATA_BLOB blob = new DATA_BLOB(pThumbPrint, (uint)thumbPrint.Length);
                 FindCore(CertFindType.CERT_FIND_HASH, &blob);
             }
         }

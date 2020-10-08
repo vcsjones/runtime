@@ -9,17 +9,17 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CRYPT_BIT_BLOB
+        internal unsafe struct CRYPT_BIT_BLOB
         {
             internal int cbData;
-            internal IntPtr pbData;
+            internal byte* pbData;
             internal int cUnusedBits;
 
             internal byte[] ToByteArray()
             {
                 int numBytes = cbData;
                 byte[] data = new byte[numBytes];
-                Marshal.Copy(pbData, data, 0, numBytes);
+                Marshal.Copy((IntPtr)pbData, data, 0, numBytes);
                 return data;
             }
         }

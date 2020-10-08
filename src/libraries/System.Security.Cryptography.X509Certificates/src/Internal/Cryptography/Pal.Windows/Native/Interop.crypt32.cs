@@ -18,6 +18,8 @@ using Internal.Cryptography.Pal.Native;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.CodeAnalysis;
 
+using static Interop.Crypt32;
+
 internal static partial class Interop
 {
     public static partial class crypt32
@@ -72,7 +74,7 @@ internal static partial class Interop
         public static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] byte[]? pvData, [In, Out] ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] out CRYPTOAPI_BLOB pvData, [In, Out] ref int pcbData);
+        public static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] out DATA_BLOB pvData, [In, Out] ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] out IntPtr pvData, [In, Out] ref int pcbData);
@@ -81,7 +83,7 @@ internal static partial class Interop
         public static extern unsafe bool CertGetCertificateContextPropertyString(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, byte* pvData, ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern unsafe bool CertSetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, CertSetPropertyFlags dwFlags, [In] CRYPTOAPI_BLOB* pvData);
+        public static extern unsafe bool CertSetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, CertSetPropertyFlags dwFlags, [In] DATA_BLOB* pvData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern unsafe bool CertSetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, CertSetPropertyFlags dwFlags, [In] CRYPT_KEY_PROV_INFO* pvData);
@@ -164,7 +166,7 @@ internal static partial class Interop
         private static extern unsafe SafeCertContextHandle CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, CERT_CONTEXT* pPrevCertContext);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern SafeCertStoreHandle PFXImportCertStore([In] ref CRYPTOAPI_BLOB pPFX, SafePasswordHandle password, PfxCertStoreFlags dwFlags);
+        public static extern SafeCertStoreHandle PFXImportCertStore([In] ref DATA_BLOB pPFX, SafePasswordHandle password, PfxCertStoreFlags dwFlags);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern unsafe bool CryptMsgGetParam(SafeCryptMsgHandle hCryptMsg, CryptMessageParameterType dwParamType, int dwIndex, byte* pvData, [In, Out] ref int pcbData);
@@ -176,7 +178,7 @@ internal static partial class Interop
         public static extern bool CertSerializeCertificateStoreElement(SafeCertContextHandle pCertContext, int dwFlags, [Out] byte[]? pbElement, [In, Out] ref int pcbElement);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool PFXExportCertStore(SafeCertStoreHandle hStore, [In, Out] ref CRYPTOAPI_BLOB pPFX, SafePasswordHandle szPassword, PFXExportFlags dwFlags);
+        public static extern bool PFXExportCertStore(SafeCertStoreHandle hStore, [In, Out] ref DATA_BLOB pPFX, SafePasswordHandle szPassword, PFXExportFlags dwFlags);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertStrToNameW")]
         public static extern bool CertStrToName(CertEncodingType dwCertEncodingType, string pszX500, CertNameStrTypeAndFlags dwStrType, IntPtr pvReserved, [Out] byte[]? pbEncoded, [In, Out] ref int pcbEncoded, IntPtr ppszError);
@@ -261,7 +263,7 @@ internal static partial class Interop
         public static extern bool CryptHashPublicKeyInfo(IntPtr hCryptProv, int algId, int dwFlags, CertEncodingType dwCertEncodingType, [In] ref CERT_PUBLIC_KEY_INFO pInfo, [Out] byte[] pbComputedHash, [In, Out] ref int pcbComputedHash);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern bool CertSaveStore(SafeCertStoreHandle hCertStore, CertEncodingType dwMsgAndCertEncodingType, CertStoreSaveAs dwSaveAs, CertStoreSaveTo dwSaveTo, ref CRYPTOAPI_BLOB pvSaveToPara, int dwFlags);
+        public static extern bool CertSaveStore(SafeCertStoreHandle hCertStore, CertEncodingType dwMsgAndCertEncodingType, CertStoreSaveAs dwSaveAs, CertStoreSaveTo dwSaveTo, ref DATA_BLOB pvSaveToPara, int dwFlags);
 
         /// <summary>
         /// A less error-prone wrapper for CertEnumCertificatesInStore().

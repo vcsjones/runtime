@@ -5,6 +5,10 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using Microsoft.Win32.SafeHandles;
+
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal.Native
 {
     internal enum CertQueryObjectType : int
@@ -132,45 +136,6 @@ namespace Internal.Cryptography.Pal.Native
         CERT_QUERY_FORMAT_ASN_ASCII_HEX_ENCODED = 3,
     }
 
-    // CRYPTOAPI_BLOB has many typedef aliases in the C++ world (CERT_BLOB, DATA_BLOB, etc.) We'll just stick to one name here.
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CRYPTOAPI_BLOB
-    {
-        public CRYPTOAPI_BLOB(int cbData, byte* pbData)
-        {
-            this.cbData = cbData;
-            this.pbData = pbData;
-        }
-
-        public int cbData;
-        public byte* pbData;
-
-        public byte[] ToByteArray()
-        {
-            if (cbData == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] array = new byte[cbData];
-            Marshal.Copy((IntPtr)pbData, array, 0, cbData);
-            return array;
-        }
-    }
-
-    internal enum CertContextPropId : int
-    {
-        CERT_KEY_PROV_INFO_PROP_ID   = 2,
-        CERT_SHA1_HASH_PROP_ID       = 3,
-        CERT_KEY_CONTEXT_PROP_ID     = 5,
-        CERT_FRIENDLY_NAME_PROP_ID   = 11,
-        CERT_ARCHIVED_PROP_ID        = 19,
-        CERT_KEY_IDENTIFIER_PROP_ID  = 20,
-        CERT_PUBKEY_ALG_PARA_PROP_ID = 22,
-        CERT_NCRYPT_KEY_HANDLE_PROP_ID = 78,
-        CERT_CLR_DELETE_KEY_PROP_ID = 125,
-    }
-
     [Flags]
     internal enum CertSetPropertyFlags : int
     {
@@ -202,102 +167,6 @@ namespace Internal.Cryptography.Pal.Native
         CERT_X500_NAME_STR = 3,
 
         CERT_NAME_STR_REVERSE_FLAG = 0x02000000,
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CERT_CONTEXT
-    {
-        public CertEncodingType dwCertEncodingType;
-        public byte* pbCertEncoded;
-        public int cbCertEncoded;
-        public CERT_INFO* pCertInfo;
-        public IntPtr hCertStore;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CERT_INFO
-    {
-        public int dwVersion;
-        public CRYPTOAPI_BLOB SerialNumber;
-        public CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
-        public CRYPTOAPI_BLOB Issuer;
-        public FILETIME NotBefore;
-        public FILETIME NotAfter;
-        public CRYPTOAPI_BLOB Subject;
-        public CERT_PUBLIC_KEY_INFO SubjectPublicKeyInfo;
-        public CRYPT_BIT_BLOB IssuerUniqueId;
-        public CRYPT_BIT_BLOB SubjectUniqueId;
-        public int cExtension;
-        public CERT_EXTENSION* rgExtension;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CRYPT_ALGORITHM_IDENTIFIER
-    {
-        public IntPtr pszObjId;
-        public CRYPTOAPI_BLOB Parameters;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct CERT_PUBLIC_KEY_INFO
-    {
-        public CRYPT_ALGORITHM_IDENTIFIER Algorithm;
-        public CRYPT_BIT_BLOB PublicKey;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CRYPT_BIT_BLOB
-    {
-        public int cbData;
-        public byte* pbData;
-        public int cUnusedBits;
-
-        public byte[] ToByteArray()
-        {
-            if (cbData == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] array = new byte[cbData];
-            Marshal.Copy((IntPtr)pbData, array, 0, cbData);
-            return array;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CERT_EXTENSION
-    {
-        public IntPtr pszObjId;
-        public int fCritical;
-        public CRYPTOAPI_BLOB Value;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct FILETIME
-    {
-        private uint ftTimeLow;
-        private uint ftTimeHigh;
-
-        public DateTime ToDateTime()
-        {
-            long fileTime = (((long)ftTimeHigh) << 32) + ftTimeLow;
-            return DateTime.FromFileTime(fileTime);
-        }
-
-        public static FILETIME FromDateTime(DateTime dt)
-        {
-            long fileTime = dt.ToFileTime();
-
-            unchecked
-            {
-                return new FILETIME()
-                {
-                    ftTimeLow = (uint)fileTime,
-                    ftTimeHigh = (uint)(fileTime >> 32),
-                };
-            }
-        }
     }
 
     internal enum CertStoreProvider : int
@@ -367,8 +236,8 @@ namespace Internal.Cryptography.Pal.Native
     internal struct CMSG_SIGNER_INFO_Partial  // This is not the full definition of CMSG_SIGNER_INFO. Only defining the part we use.
     {
         public int dwVersion;
-        public CRYPTOAPI_BLOB Issuer;
-        public CRYPTOAPI_BLOB SerialNumber;
+        public DATA_BLOB Issuer;
+        public DATA_BLOB SerialNumber;
         //... more fields follow ...
     }
 
@@ -530,9 +399,9 @@ namespace Internal.Cryptography.Pal.Native
     [StructLayout(LayoutKind.Sequential)]
     internal struct CERT_DSS_PARAMETERS
     {
-        public CRYPTOAPI_BLOB p;
-        public CRYPTOAPI_BLOB q;
-        public CRYPTOAPI_BLOB g;
+        public DATA_BLOB p;
+        public DATA_BLOB q;
+        public DATA_BLOB g;
     }
 
     internal enum PubKeyMagic : int
@@ -547,7 +416,7 @@ namespace Internal.Cryptography.Pal.Native
         public int fPathLenConstraint;
         public int dwPathLenConstraint;
         public int cSubtreesConstraint;
-        public CRYPTOAPI_BLOB* rgSubtreesConstraint; // PCERT_NAME_BLOB
+        public DATA_BLOB* rgSubtreesConstraint; // PCERT_NAME_BLOB
 
         // SubjectType.pbData[0] can contain a CERT_CA_SUBJECT_FLAG that when set indicates that the certificate's subject can act as a CA
         public const byte CERT_CA_SUBJECT_FLAG = 0x80;
@@ -598,7 +467,7 @@ namespace Internal.Cryptography.Pal.Native
     internal struct CERT_NAME_VALUE
     {
         public int dwValueType;
-        public CRYPTOAPI_BLOB Value;
+        public DATA_BLOB Value;
     }
 
     [StructLayout(LayoutKind.Sequential)]

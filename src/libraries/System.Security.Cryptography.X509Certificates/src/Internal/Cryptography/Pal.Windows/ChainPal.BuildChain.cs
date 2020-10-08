@@ -8,9 +8,10 @@ using Internal.Cryptography.Pal.Native;
 
 using System.Security.Cryptography;
 
-using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using System.Security.Cryptography.X509Certificates;
+
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {

@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
@@ -75,7 +77,7 @@ namespace Internal.Cryptography.Pal
                     {
                         unsafe
                         {
-                            CRYPTOAPI_BLOB dataBlob = new CRYPTOAPI_BLOB(0, (byte*)null);
+                            DATA_BLOB dataBlob = new DATA_BLOB((byte*)null, 0);
 
                             if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
@@ -107,7 +109,7 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(0, null);
+                DATA_BLOB blob = new DATA_BLOB(null, 0);
                 if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 

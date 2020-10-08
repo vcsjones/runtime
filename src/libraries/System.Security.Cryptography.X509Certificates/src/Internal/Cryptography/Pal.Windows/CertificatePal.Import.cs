@@ -11,6 +11,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using Internal.Cryptography.Pal.Native;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal : IDisposable, ICertificatePal
@@ -50,7 +52,7 @@ namespace Internal.Cryptography.Pal
                     {
                         fixed (char* pFileName = fileName)
                         {
-                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData.Length, pRawData);
+                            DATA_BLOB certBlob = new DATA_BLOB(pRawData, loadFromFile ? 0u : (uint)rawData.Length);
 
                             CertQueryObjectType objectType = loadFromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
@@ -155,7 +157,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pbRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pbRawData);
+                    DATA_BLOB certBlob = new DATA_BLOB(pbRawData, (uint)rawData.Length);
                     hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
                     {

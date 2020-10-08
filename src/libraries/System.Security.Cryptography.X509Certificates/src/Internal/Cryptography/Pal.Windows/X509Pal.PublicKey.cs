@@ -8,6 +8,8 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
+using Microsoft.Win32.SafeHandles;
+
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
 
@@ -289,8 +291,8 @@ namespace Internal.Cryptography.Pal
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
                     delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
                         decodedKeyValue = pBlob->ToByteArray();
                     }
                 );

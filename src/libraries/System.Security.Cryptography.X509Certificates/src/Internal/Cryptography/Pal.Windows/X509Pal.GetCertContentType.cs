@@ -13,6 +13,8 @@ using Internal.Cryptography.Pal.Native;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     /// <summary>
@@ -29,7 +31,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pRawData);
+                    DATA_BLOB certBlob = new DATA_BLOB(pRawData, (uint)rawData.Length);
                     if (!Interop.crypt32.CryptQueryObject(
                         CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                         &certBlob,

@@ -13,6 +13,8 @@ using Internal.Cryptography.Pal.Native;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     /// <summary>
@@ -28,8 +30,8 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pbEncoded = encodedDistinguishedName)
                 {
-                    CRYPTOAPI_BLOB nameBlob;
-                    nameBlob.cbData = encodedDistinguishedName.Length;
+                    DATA_BLOB nameBlob;
+                    nameBlob.cbData = (uint)encodedDistinguishedName.Length;
                     nameBlob.pbData = pbEncoded;
 
                     int cchDecoded = Interop.Crypt32.CertNameToStr((int)CertEncodingType.All, &nameBlob, dwStrType, null, 0);

@@ -10,8 +10,9 @@ using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 
-using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
+using FILETIME = Interop.Crypt32.FILETIME;
 
 using System.Security.Cryptography;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
@@ -35,7 +36,7 @@ namespace Internal.Cryptography.Pal
             if (safeCertContextHandle.IsInvalid)
                 throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
 
-            CRYPTOAPI_BLOB dataBlob;
+            DATA_BLOB dataBlob;
             int cbData = 0;
             bool deleteKeyContainer = Interop.crypt32.CertGetCertificateContextProperty(safeCertContextHandle, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out dataBlob, ref cbData);
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
@@ -281,8 +282,8 @@ namespace Internal.Cryptography.Pal
             {
                 unsafe
                 {
-                    CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(0, (byte*)null);
-                    CRYPTOAPI_BLOB* pValue = value ? &blob : (CRYPTOAPI_BLOB*)null;
+                    DATA_BLOB blob = new DATA_BLOB(null, 0);
+                    DATA_BLOB* pValue = value ? &blob : (DATA_BLOB*)null;
                     if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
@@ -319,7 +320,7 @@ namespace Internal.Cryptography.Pal
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
                     try
                     {
-                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(checked(2 * (friendlyName.Length + 1)), (byte*)pFriendlyName);
+                        DATA_BLOB blob = new DATA_BLOB((byte*)pFriendlyName, checked(2u * ((uint)friendlyName.Length + 1)));
                         if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, CertSetPropertyFlags.None, &blob))
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }

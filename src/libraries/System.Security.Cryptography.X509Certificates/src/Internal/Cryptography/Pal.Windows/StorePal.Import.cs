@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal, IExportPal, ILoaderPal
@@ -35,7 +37,7 @@ namespace Internal.Cryptography.Pal
                 {
                     fixed (char* pFileName = fileName)
                     {
-                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(fromFile ? 0 : rawData!.Length, pRawData);
+                        DATA_BLOB blob = new DATA_BLOB(pRawData, fromFile ? 0u : (uint)rawData!.Length);
                         bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
                         PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
 
@@ -70,7 +72,7 @@ namespace Internal.Cryptography.Pal
                             }
                             fixed (byte* pRawData2 = rawData)
                             {
-                                CRYPTOAPI_BLOB blob2 = new CRYPTOAPI_BLOB(rawData!.Length, pRawData2);
+                                DATA_BLOB blob2 = new DATA_BLOB(pRawData2, (uint)rawData!.Length);
                                 certStore = Interop.crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
                                 if (certStore == null || certStore.IsInvalid)
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
@@ -86,7 +88,7 @@ namespace Internal.Cryptography.Pal
                                 SafeCertContextHandle? pCertContext = null;
                                 while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                                 {
-                                    CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
+                                    DATA_BLOB nullBlob = new DATA_BLOB(null, 0);
                                     if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
                                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                                 }

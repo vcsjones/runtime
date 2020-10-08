@@ -14,6 +14,8 @@ using Internal.Cryptography.Pal.Native;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+using static Interop.Crypt32;
+
 namespace Internal.Cryptography.Pal
 {
     /// <summary>
@@ -194,7 +196,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pSubkectKeyIdentifier = subjectKeyIdentifier)
                 {
-                    CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(subjectKeyIdentifier.Length, pSubkectKeyIdentifier);
+                    DATA_BLOB blob = new DATA_BLOB(pSubkectKeyIdentifier, (uint)subjectKeyIdentifier.Length);
                     return Interop.crypt32.EncodeObject(Oids.SubjectKeyIdentifier, &blob);
                 }
             }
@@ -209,8 +211,8 @@ namespace Internal.Cryptography.Pal
                     Oids.SubjectKeyIdentifier,
                     delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
                         localSubjectKeyIdentifier = pBlob->ToByteArray();
                     }
                 );
@@ -235,7 +237,7 @@ namespace Internal.Cryptography.Pal
                                 Algorithm = new CRYPT_ALGORITHM_IDENTIFIER()
                                 {
                                     pszObjId = new IntPtr(pszOidValue),
-                                    Parameters = new CRYPTOAPI_BLOB(encodedParameters.Length, pEncodedParameters),
+                                    Parameters = new DATA_BLOB(pEncodedParameters, (uint)encodedParameters.Length),
                                 },
 
                                 PublicKey = new CRYPT_BIT_BLOB()
