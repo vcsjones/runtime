@@ -181,23 +181,14 @@ namespace System.Security.Cryptography
 
             if (isPrivateKey)
             {
-                // Start with the private key, in case some of the private key fields don't
-                // match the public key fields and the system determines an integrity failure.
-                //
-                // Public import should go off without a hitch.
                 SafeSecKeyRefHandle privateKey = ImportKey(parameters);
 
-                ECParameters publicOnly;
-
-                if (hasPublicParameters)
-                {
-                    publicOnly = parameters;
-                    publicOnly.D = null;
-                }
-                else
-                {
-                    publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
-                }
+                // If we have the private key, we ignore whatever caller supplied Q
+                // value has been supplied and re-derive Q. This is to match Window's
+                // behavior where an incorrect Q is ignored and re-derived. This behavior
+                // differs slightly from Windows where Windows will raise an error if
+                // Q is entirely off the curve, where as here we ignore Q entirely.
+                ECParameters publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
 
                 SafeSecKeyRefHandle publicKey;
                 try

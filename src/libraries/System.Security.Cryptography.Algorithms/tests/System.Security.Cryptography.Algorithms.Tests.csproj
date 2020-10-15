@@ -116,6 +116,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.LimitedPrivate.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.LimitedPrivate.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.Mismatch.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.Mismatch.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyPemTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyPemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\ECDiffieHellman\ECDhKeyFileTests.cs"

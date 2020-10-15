@@ -995,7 +995,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             string password,
             PbeParameters pbe,
             in ECParameters expected,
-            bool isSupported=true)
+            bool isSupported = true)
         {
             if (isSupported)
             {
@@ -1041,7 +1041,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             byte[] passwordBytes,
             PbeParameters pbe,
             in ECParameters expected,
-            bool isSupported=true)
+            bool isSupported = true)
         {
             if (isSupported)
             {
@@ -1111,7 +1111,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
             }
         }
 
-        private void ReadWriteBase64Pkcs8(string base64Pkcs8, in ECParameters expected, bool isSupported=true)
+        private void ReadWriteBase64Pkcs8(string base64Pkcs8, in ECParameters expected, bool isSupported = true)
         {
             if (isSupported)
             {

@@ -47,5 +47,17 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         protected override WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } =
             (ECDiffieHellman key, Span<byte> destination, out int bytesWritten) =>
                 key.PublicKey.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        protected override void ExerciseAgainstKey(ECDiffieHellman key, ECParameters otherKey)
+        {
+            using ECDiffieHellman otherDh = CreateKey();
+            using ECDiffieHellman otherParty = CreateKey();
+            otherParty.GenerateKey(otherKey.Curve);
+            ImportParameters(otherDh, otherKey);
+
+            byte[] derive1 = key.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+            byte[] derive2 = otherDh.DeriveKeyFromHash(otherParty.PublicKey, HashAlgorithmName.SHA256);
+            Assert.Equal(derive1, derive2);
+        }
     }
 }

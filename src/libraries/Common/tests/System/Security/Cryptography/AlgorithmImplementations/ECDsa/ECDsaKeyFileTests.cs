@@ -40,5 +40,20 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         protected override void Exercise(ECDsa key) => key.Exercise();
+
+        protected override void ExerciseAgainstKey(ECDsa key, ECParameters otherKey)
+        {
+            using ECDsa otherEcdsa = CreateKey();
+            ImportParameters(otherEcdsa, otherKey);
+
+            byte[] sampleData = new byte[16];
+            RandomNumberGenerator.Fill(sampleData);
+
+            byte[] signature = key.SignData(sampleData, HashAlgorithmName.SHA256);
+            Assert.True(otherEcdsa.VerifyData(sampleData, signature, HashAlgorithmName.SHA256));
+
+            signature = otherEcdsa.SignData(sampleData, HashAlgorithmName.SHA256);
+            Assert.True(key.VerifyData(sampleData, signature, HashAlgorithmName.SHA256));
+        }
     }
 }

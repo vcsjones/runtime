@@ -305,6 +305,35 @@ exit:
     return rc;
 }
 
+static int32_t EcKeySetPublicKeyFromPrivate(EC_KEY* key, BIGNUM* dBn)
+{
+    assert(key != NULL);
+    assert(dBn != NULL);
+
+    const EC_GROUP* group = EC_KEY_get0_group(key);
+    int32_t ret = 0;
+    EC_POINT* pubG = NULL;
+
+    if (!group)
+        goto error;
+
+    pubG = EC_POINT_new(group);
+
+    if (!pubG)
+        goto error;
+
+    if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
+        goto error;
+
+    if (!EC_KEY_set_public_key(key, pubG))
+        goto error;
+
+    ret = 1;
+error:
+    EC_POINT_free(pubG);
+    return ret;
+}
+
 int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, uint8_t* qx, int32_t qxLength, uint8_t* qy, int32_t qyLength, uint8_t* d, int32_t dLength)
 {
     if (!key || !oid)
@@ -327,7 +356,6 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
     BIGNUM* dBn = NULL;
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
-    EC_POINT* pubG = NULL;
 
     // If key values specified, use them, otherwise a key will be generated later
     if (qx && qy)
@@ -337,6 +365,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         if (!qxBn || !qyBn)
             goto error;
 
+        // Errors if Q is not on the curve.
         if (!EC_KEY_set_public_key_affine_coordinates(*key, qxBn, qyBn))
             goto error;
 
@@ -353,7 +382,23 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
 
         // Validate key
         if (!EC_KEY_check_key(*key))
-            goto error;
+        {
+            if (!d || dLength <= 0)
+            {
+                goto error;
+            }
+
+            // The key is invalid, but we have D. This means the supplied Q
+            // is on the curve, but the public key does not match the
+            // private key. To match Windows' behavior, we can re-derive Q
+            // from D.
+            if (!EcKeySetPublicKeyFromPrivate(*key, dBn))
+                goto error;
+
+            // Try the validate again with the new Q.
+            if (!EC_KEY_check_key(*key))
+                goto error;
+        }
     }
 
     // If we don't have the public key but we have the private key, we can
@@ -369,20 +414,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         if (!EC_KEY_set_private_key(*key, dBn))
             goto error;
 
-        const EC_GROUP* group = EC_KEY_get0_group(*key);
-
-        if (!group)
-            goto error;
-
-        pubG = EC_POINT_new(group);
-
-        if (!pubG)
-            goto error;
-
-        if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
-            goto error;
-
-        if (!EC_KEY_set_public_key(*key, pubG))
+        if (!EcKeySetPublicKeyFromPrivate(*key, dBn))
             goto error;
 
         if (!EC_KEY_check_key(*key))
@@ -396,7 +428,6 @@ error:
     if (qxBn) BN_free(qxBn);
     if (qyBn) BN_free(qyBn);
     if (dBn) BN_clear_free(dBn);
-    if (pubG) EC_POINT_free(pubG);
     if (*key)
     {
         EC_KEY_free(*key);
@@ -428,7 +459,6 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     EC_KEY* key = NULL;
     EC_POINT* G = NULL;
-    EC_POINT* pubG = NULL;
 
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
@@ -530,7 +560,23 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
         // Validate key
         if (!EC_KEY_check_key(key))
-            goto error;
+        {
+            if (!d || dLength <= 0)
+            {
+                goto error;
+            }
+
+            // The key is invalid, but we have D. This means the supplied Q
+            // is on the curve, but the public key does not match the
+            // private key. To match Windows' behavior, we can re-derive Q
+            // from D.
+            if (!EcKeySetPublicKeyFromPrivate(key, dBn))
+                goto error;
+
+            // Try the validate again with the new Q.
+            if (!EC_KEY_check_key(key))
+                goto error;
+        }
     }
     // If we don't have the public key but we have the private key, we can
     // re-derive the public key from d.
@@ -545,15 +591,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         if (!EC_KEY_set_private_key(key, dBn))
             goto error;
 
-        pubG = EC_POINT_new(group);
-
-        if (!pubG)
-            goto error;
-
-        if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
-            goto error;
-
-        if (!EC_KEY_set_public_key(key, pubG))
+        if (!EcKeySetPublicKeyFromPrivate(key, dBn))
             goto error;
 
         if (!EC_KEY_check_key(key))
@@ -575,7 +613,6 @@ error:
     if (orderBn) BN_free(orderBn);
     if (cofactorBn) BN_free(cofactorBn);
     if (G) EC_POINT_free(G);
-    if (pubG) EC_POINT_free(pubG);
     if (group) EC_GROUP_free(group);
     if (key) EC_KEY_free(key);
     return NULL;
