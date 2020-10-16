@@ -51,7 +51,7 @@ NgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li
 ysL8YyVRAgEBoUQDQgAEgQGqqqqqqqqqqvaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmSNfZ9
 nLTVjxeD08pD548KWrqqqqqqqqqqqg==";
 
-            ReadWriteBase64ECPrivateKey(
+            ReadAndVerifyECPrivateKey(
                 base64,
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
                 isSupported: false);
@@ -70,7 +70,7 @@ NgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li
 ysL8YyVRAgEBoUQDQgAErZsBkBjHlngjE2f3bN0Jil7wEE/V1O4Py5WLjhP6TSnGBIG3xpZ3Kc2i
 XHA31di60AOVC1K8HVpivFKrvGIT9A==";
 
-            ReadWriteBase64ECPrivateKey(
+            ReadAndVerifyECPrivateKey(
                 base64,
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
                 SupportsExplicitCurves);
@@ -80,7 +80,7 @@ XHA31di60AOVC1K8HVpivFKrvGIT9A==";
         public void Mismatch_ReadWriteC2pnb163v1ECPrivateKey_PublicKeyNotOnCurve()
         {
             // The Q in this key is bogus, it does not fall anywhere on the curve.
-            ReadWriteBase64ECPrivateKey(
+            ReadAndVerifyECPrivateKey(
                 @"
 MIIBBwIBAQQVAPTSShQHEi9EWWe+HZPACTplNnmGoIG6MIG3AgEBMCUGByqGSM49AQIwGgICAKMG
 CSqGSM49AQIDAzAJAgEBAgECAgEIMEQEFQclRrVDUjSkIuB4lnX0MsiUNd5SQgQUyVF9BtUkDTz/
@@ -95,7 +95,7 @@ qqqqqqpoiOkb1pJXdJQjIkiqBCcIMPehAJrWcKiN6aqqqqqqqqqq",
         public void Mismatch_ReadWriteC2pnb163v1ECPrivateKey()
         {
             // The Q in this key falls on the curve, but G x D != Q.
-            ReadWriteBase64ECPrivateKey(
+            ReadAndVerifyECPrivateKey(
                 @"
 MIIBBwIBAQQVAPTSShQHEi9EWWe+HZPACTplNnmGoIG6MIG3AgEBMCUGByqGSM49AQIwGgICAKMG
 CSqGSM49AQIDAzAJAgEBAgECAgEIMEQEFQclRrVDUjSkIuB4lnX0MsiUNd5SQgQUyVF9BtUkDTz/
@@ -119,8 +119,8 @@ ywHsIyEbWWat6h0/h/fqWEiu8LfKnwIVBAAAAAAAAAAAAAHmD8iCHMdNrq/BAgECoS4DLAAEB1FS
             }
             else
             {
-                Assert.ThrowsAny<CryptographicException>(() =>
-                    ImportECPrivateKey(key, derEcPrivateKey, out _));
+                Exception ex = Assert.ThrowsAny<Exception>(() => ImportECPrivateKey(key, derEcPrivateKey, out _));
+                Assert.True(ex is PlatformNotSupportedException || ex is CryptographicException);
             }
         }
 
