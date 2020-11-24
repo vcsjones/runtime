@@ -26,12 +26,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private readonly List<(string, CertificateAuthority)> _ocspAuthorities =
             new List<(string, CertificateAuthority)>();
 
+        private readonly Dictionary<string, string> _redirects =
+            new Dictionary<string, string>();
+
         public string UriPrefix { get; }
 
         public bool RespondEmpty { get; set; }
 
         public TimeSpan ResponseDelay { get; set; }
         public DelayedActionsFlag DelayedActions { get; set; }
+        public int RedirectStatusCode { get; set; } = 302;
 
         private RevocationResponder(HttpListener listener, string uriPrefix)
         {
@@ -42,6 +46,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         public void Dispose()
         {
             _listener.Close();
+        }
+
+        internal void InjectAiaRedirect(string originalPath, string newPath)
+        {
+            if (_aiaPaths.Remove(originalPath, out CertificateAuthority authority))
+            {
+                _aiaPaths.Add(newPath, authority);
+                _redirects.Add(originalPath, newPath);
+            }
+            else
+            {
+                throw new InvalidOperationException("AIA path does not exist.");
+            }
         }
 
         internal void AddCertificateAuthority(CertificateAuthority authority)
@@ -166,6 +183,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         {
             CertificateAuthority authority;
             string url = context.Request.RawUrl;
+
+            if (_redirects.TryGetValue(url, out string destination))
+            {
+                if (DelayedActions.HasFlag(DelayedActionsFlag.Redirect))
+                {
+                    Trace($"Delaying redirect by {ResponseDelay}.");
+                    Thread.Sleep(ResponseDelay);
+                }
+
+                responded = true;
+                context.Response.StatusCode = RedirectStatusCode;
+                context.Response.AddHeader("Location", destination);
+                context.Response.Close();
+                Trace($"Responded with redirect from {url} to {destination}.");
+                return;
+            }
 
             if (_aiaPaths.TryGetValue(url, out authority))
             {
@@ -389,6 +422,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         Ocsp = 0b1,
         Crl = 0b10,
         Aia = 0b100,
+        Redirect = 0b1000,
         All = 0b11111111
     }
 }

@@ -165,13 +165,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     s_caKeyUsage });
         }
 
-        internal X509Certificate2 CreateEndEntity(string subject, RSA publicKey, X509ExtensionCollection extensions)
+        internal X509Certificate2 CreateEndEntity(
+            string subject,
+            RSA publicKey,
+            X509ExtensionCollection extensions,
+            string aiaUrlOverride = null)
         {
             return CreateCertificate(
                 subject,
                 publicKey,
                 TimeSpan.FromSeconds(2),
-                extensions);
+                extensions,
+                aiaUrlOverride: aiaUrlOverride);
         }
 
         internal X509Certificate2 CreateOcspSigner(string subject, RSA publicKey)
@@ -241,16 +246,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             RSA publicKey,
             TimeSpan nestingBuffer,
             X509ExtensionCollection extensions,
-            bool ocspResponder = false)
+            bool ocspResponder = false,
+            string aiaUrlOverride = null)
         {
             if (_cdpExtension == null && CdpUri != null)
             {
                 _cdpExtension = CreateCdpExtension(CdpUri);
             }
 
-            if (_aiaExtension == null && (OcspUri != null || AiaHttpUri != null))
+            X509Extension aiaExtension = null;
+
+            if (aiaUrlOverride is not null)
             {
-                _aiaExtension = CreateAiaExtension(AiaHttpUri, OcspUri);
+                aiaExtension = CreateAiaExtension(aiaUrlOverride, OcspUri);
+            }
+            else if (OcspUri is not null || AiaHttpUri is not null)
+            {
+                _aiaExtension ??= CreateAiaExtension(AiaHttpUri, OcspUri);
+                aiaExtension = _aiaExtension;
             }
 
             if (_akidExtension == null)
@@ -274,7 +287,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             if (!ocspResponder)
             {
                 request.CertificateExtensions.Add(_cdpExtension);
-                request.CertificateExtensions.Add(_aiaExtension);
+                request.CertificateExtensions.Add(aiaExtension);
             }
 
             request.CertificateExtensions.Add(_akidExtension);
@@ -830,7 +843,8 @@ SingleResponse ::= SEQUENCE {
             bool pkiOptionsInSubject = false,
             string subjectName = null,
             int keySize = DefaultKeySize,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection extensions = null,
+            Func<CertificateAuthority, string> configureEeAiaUrl = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
             bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
@@ -910,10 +924,13 @@ SingleResponse ::= SEQUENCE {
                     endEntityRevocationViaCrl ? cdpUrl : null,
                     endEntityRevocationViaOcsp ? ocspUrl : null);
 
+                string aiaUrlOverride = configureEeAiaUrl?.Invoke(intermediateAuthority);
+
                 endEntityCert = intermediateAuthority.CreateEndEntity(
                         BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
                         eeKey,
-                        extensions);
+                        extensions,
+                        aiaUrlOverride: aiaUrlOverride);
 
                 endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
             }

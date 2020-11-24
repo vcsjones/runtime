@@ -9,6 +9,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     public static class AiaTests
     {
+        [Theory]
+        [InlineData(301)]
+        [InlineData(302)]
+        [InlineData(307)]
+        [InlineData(308)]
+        public static void AiaRedirectIsFollowed(int statusCode)
+        {
+            static string ConfigureAiaUrl(CertificateAuthority issuingAuthority)
+            {
+                Uri aiaUrl = new Uri(issuingAuthority.AiaHttpUri, UriKind.Absolute);
+                Uri relativePath = new Uri("/banana", UriKind.Relative);
+                Uri absoluteRedirect = new Uri(aiaUrl, relativePath);
+                return absoluteRedirect.ToString();
+            }
+
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                configureEeAiaUrl: ConfigureAiaUrl);
+
+            using (responder)
+            using (root)
+            using (intermediate)
+            using (endEntity)
+            using (ChainHolder holder = new ChainHolder())
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            {
+                Uri aiaUrl = new Uri(intermediate.AiaHttpUri, UriKind.Absolute);
+                responder.InjectAiaRedirect(aiaUrl.AbsolutePath, "/banana");
+                responder.RedirectStatusCode = statusCode;
+
+                X509Chain chain = holder.Chain;
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+
+                Assert.True(chain.Build(endEntity));
+            }
+        }
+
         [Fact]
         public static void EmptyAiaResponseIsIgnored()
         {
