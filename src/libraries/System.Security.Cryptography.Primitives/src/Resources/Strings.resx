@@ -144,4 +144,7 @@
   <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
   </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
 </root>

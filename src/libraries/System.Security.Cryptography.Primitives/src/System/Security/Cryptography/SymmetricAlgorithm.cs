@@ -7,7 +7,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public abstract class SymmetricAlgorithm : IDisposable
+    public abstract partial class SymmetricAlgorithm : IDisposable
     {
         protected SymmetricAlgorithm()
         {
