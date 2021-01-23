@@ -8,6 +8,27 @@ namespace Internal.Cryptography
 {
     internal partial class AesImplementation
     {
+        private bool OneShotTransform(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            CipherMode cipherMode,
+            bool isEncrypting,
+            out int bytesWritten)
+        {
+            int written = OpenSslCipher.OneShotCipher.Transform(
+                GetAlgorithm(Key.Length * 8, feedback: 0, cipherMode),
+                isEncrypting,
+                plaintext,
+                Key,
+                iv: default,
+                effectiveKeyLength: 0,
+                destination);
+
+            bytesWritten = written;
+            return true;
+        }
+
         private static ICryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
@@ -45,9 +66,8 @@ namespace Internal.Cryptography
                 (256, CipherMode.CFB) when feedback == 8 => Interop.Crypto.EvpAes256Cfb8(),
                 (256, CipherMode.CFB) when feedback == 128 => Interop.Crypto.EvpAes256Cfb128(),
 
-                _ => throw (keySize == 128 || keySize == 192 || keySize == 256 ? (Exception)
-                        new NotSupportedException() :
-                        new CryptographicException(SR.Cryptography_InvalidKeySize)),
+                _ when keySize == 128 || keySize == 192 || keySize == 256 => throw new NotSupportedException(),
+                _ => throw new CryptographicException(SR.Cryptography_InvalidKeySize)
             };
     }
 }

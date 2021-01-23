@@ -117,6 +117,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpCipherFinalEx)
     DllImportEntry(CryptoNative_EvpCipherGetCcmTag)
     DllImportEntry(CryptoNative_EvpCipherGetGcmTag)
+    DllImportEntry(CryptoNative_EvpCipherOneShot)
     DllImportEntry(CryptoNative_EvpCipherReset)
     DllImportEntry(CryptoNative_EvpCipherSetCcmNonceLength)
     DllImportEntry(CryptoNative_EvpCipherSetCcmTag)

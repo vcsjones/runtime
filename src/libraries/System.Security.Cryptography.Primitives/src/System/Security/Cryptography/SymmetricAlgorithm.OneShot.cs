@@ -26,10 +26,11 @@ namespace System.Security.Cryptography
             if (!result)
             {
                 // The length should have been pre-validated.
+                CryptographicOperations.ZeroMemory(destination);
                 throw new CryptographicException();
             }
 
-            Debug.Assert(bytesWritten == ciphertextLength);
+            Debug.Assert(bytesWritten == ciphertextLength, $"{bytesWritten} == {ciphertextLength}");
             return destination;
         }
 

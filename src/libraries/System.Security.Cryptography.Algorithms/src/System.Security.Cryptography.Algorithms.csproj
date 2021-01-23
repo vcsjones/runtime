@@ -100,6 +100,8 @@
              Link="Internal\Cryptography\HashProvider.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\PemKeyImportHelpers.cs"
              Link="Common\Internal\Cryptography\PemKeyImportHelpers.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
+             Link="Internal\Cryptography\SymmetricPadding.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
              Link="Internal\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"

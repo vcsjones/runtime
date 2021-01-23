@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -196,6 +198,60 @@ internal static partial class Interop
             if (!EvpCipherSetCcmTag(ctx, ref nullRef, tagLength))
             {
                 throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherOneShot")]
+        private static unsafe extern int EvpCipherOneShot(
+            IntPtr cipher,
+            byte* key,
+            int keyLength,
+            int effectiveKeyLength,
+            byte* iv,
+            byte* destination,
+            byte* source,
+            int sourceLength,
+            out int writtenLength,
+            int encrypting);
+
+        internal static unsafe void EvpCipherOneShot(
+            IntPtr cipher,
+            int effectiveKeyLength,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            ReadOnlySpan<byte> source,
+            bool encrypting,
+            out int written)
+        {
+            const int Success = 1;
+
+            fixed (byte* pKey = key)
+            fixed (byte* pIv = iv)
+            fixed (byte* pDestination = destination)
+            fixed (byte* pSource = source)
+            {
+                int result = EvpCipherOneShot(
+                    cipher,
+                    pKey,
+                    key.Length,
+                    effectiveKeyLength,
+                    pIv,
+                    pDestination,
+                    pSource,
+                    source.Length,
+                    out int destinationLength,
+                    encrypting ? 1 : 0);
+
+                if (result == Success)
+                {
+                    written = destinationLength;
+                }
+                else
+                {
+                    Debug.Fail($"result = {result}");
+                    throw new CryptographicException();
+                }
             }
         }
 

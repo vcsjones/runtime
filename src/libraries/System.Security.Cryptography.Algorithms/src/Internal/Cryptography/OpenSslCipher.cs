@@ -153,5 +153,35 @@ namespace Internal.Cryptography
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
+
+        internal static class OneShotCipher
+        {
+            public static int Transform(
+                IntPtr algorithm,
+                bool isEncrypting,
+                ReadOnlySpan<byte> source,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> iv,
+                int effectiveKeyLength,
+                Span<byte> destination)
+            {
+                Debug.Assert(algorithm != IntPtr.Zero);
+                Debug.Assert(!destination.Overlaps(key));
+                Debug.Assert(!destination.Overlaps(iv));
+                Debug.Assert(!destination.Overlaps(source));
+
+                Interop.Crypto.EvpCipherOneShot(
+                    algorithm,
+                    effectiveKeyLength,
+                    key,
+                    iv,
+                    destination,
+                    source,
+                    isEncrypting,
+                    out int written);
+
+                return written;
+            }
+        }
     }
 }

@@ -55,6 +55,8 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Windows.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.SymmetricKey.cs" />
     <Compile Include="System\Security\Cryptography\Utils.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
+             Link="Internal\Cryptography\SymmetricPadding.cs" />
     <Compile Include="Internal\Cryptography\BasicSymmetricCipherCsp.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipher.cs"
              Link="Internal\Cryptography\BasicSymmetricCipher.cs" />

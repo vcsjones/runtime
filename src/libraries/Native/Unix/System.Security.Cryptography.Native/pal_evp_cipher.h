@@ -309,3 +309,15 @@ EvpRC2Cbc
 Direct shim to EVP_des_rc2_cbc.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpRC2Cbc(void);
+
+PALEXPORT int32_t
+CryptoNative_EvpCipherOneShot(const EVP_CIPHER* type,
+                              uint8_t* key,
+                              int32_t keyLength,
+                              int32_t effectiveKeyLength,
+                              unsigned char* iv,
+                              uint8_t* destination,
+                              unsigned char* source,
+                              int32_t sourceLength,
+                              int32_t* writtenLength,
+                              int32_t encrypting);

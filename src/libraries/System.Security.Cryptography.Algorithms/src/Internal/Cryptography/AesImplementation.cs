@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -41,6 +42,29 @@ namespace Internal.Cryptography
         protected sealed override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+        }
+
+        protected sealed override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            return TryOneShotEncrypt(plaintext, destination, paddingMode, CipherMode.ECB, out bytesWritten);
+        }
+
+        private bool TryOneShotEncrypt(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            CipherMode cipherMode,
+            out int bytesWritten)
+        {
+            int paddingSize = this.GetPaddingSize();
+            int padded = SymmetricPadding.CopyAndPadBlock(paddingSize, paddingMode, plaintext, destination);
+            Debug.Assert(padded == destination.Length);
+
+            return OneShotTransform(plaintext, destination, paddingMode, cipherMode, isEncrypting: true, out bytesWritten);
         }
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)

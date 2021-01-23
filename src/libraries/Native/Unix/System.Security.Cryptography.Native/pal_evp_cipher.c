@@ -314,3 +314,54 @@ const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
 {
     return EVP_rc2_cbc();
 }
+
+int32_t
+CryptoNative_EvpCipherOneShot(const EVP_CIPHER* type,
+                              uint8_t* key,
+                              int32_t keyLength,
+                              int32_t effectiveKeyLength,
+                              unsigned char* iv,
+                              uint8_t* destination,
+                              unsigned char* source,
+                              int32_t sourceLength,
+                              int32_t* writtenLength,
+                              int32_t encrypting)
+{
+    if (key == NULL || destination == NULL || writtenLength == NULL || keyLength <= 0)
+    {
+        return -2;
+    }
+
+    *writtenLength = 0;
+
+    EVP_CIPHER_CTX* ctx = CryptoNative_EvpCipherCreate2(type, key, keyLength * 8, effectiveKeyLength, iv, encrypting);
+
+    if (ctx == NULL)
+    {
+        return -3;
+    }
+
+    EVP_CIPHER_CTX_set_padding(ctx, 0); // Input is already be padded, so disable it
+
+    int ret = 0;
+    int outLength, finalLength;
+
+    ret = EVP_CipherUpdate(ctx, destination, &outLength, source, sourceLength);
+
+    if (!ret)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        return 0;
+    }
+
+    ret = EVP_CipherFinal_ex(ctx, destination + outLength, &finalLength);
+
+    if (!ret)
+    {
+        EVP_CIPHER_CTX_free(ctx);
+        return 0;
+    }
+
+    *writtenLength = outLength + finalLength;
+    return 1;
+}
