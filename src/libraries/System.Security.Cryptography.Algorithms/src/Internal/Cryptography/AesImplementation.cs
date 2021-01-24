@@ -50,6 +50,13 @@ namespace Internal.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
+#if DEBUG
+            int ciphertextLength = GetCiphertextLengthEcb(plaintext.Length, paddingMode);
+
+            if (ciphertextLength < destination.Length)
+                Debug.Fail("Desintation was not validated correctly.");
+#endif
+
             return TryOneShotEncrypt(plaintext, destination, paddingMode, CipherMode.ECB, out bytesWritten);
         }
 

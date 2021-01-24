@@ -1129,11 +1129,18 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] oneShotEncryptBytes;
 
             using (Aes aes = AesFactory.Create())
             {
                 aes.Mode = cipherMode;
                 aes.Padding = paddingMode;
+                aes.Key = key;
+
+                if (iv is not null)
+                {
+                    aes.IV = iv;
+                }
 
                 if (feedbackSize.HasValue)
                 {
@@ -1142,10 +1149,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 liveEncryptBytes = AesEncryptDirectKey(aes, key, iv, plainBytes);
                 liveDecryptBytes = AesDecryptDirectKey(aes, key, iv, cipherBytes);
+                oneShotEncryptBytes = aes.Mode switch {
+                    CipherMode.ECB => aes.EncryptEcb(plainBytes, paddingMode),
+                    _ => null
+                };
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
             Assert.Equal(plainBytes, liveDecryptBytes);
+
+            if (oneShotEncryptBytes is not null) // TODO: get rid of this.
+            {
+                Assert.Equal(cipherBytes, oneShotEncryptBytes);
+            }
         }
 
         private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
