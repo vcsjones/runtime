@@ -116,3 +116,9 @@ inline static int32_t SizeTToInt32(size_t value)
     assert(value <= INT_MAX);
     return (int32_t)value;
 }
+
+inline static uint32_t SizeTToUint32(size_t value)
+{
+    assert(value <= UINT_MAX && value >= 0);
+    return (uint32_t)value;
+}

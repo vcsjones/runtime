@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 
@@ -117,6 +118,25 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
     {
         return 0;
     }
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_Q_digest) && API_EXISTS(EVP_MD_get0_name))
+    {
+        uint32_t size = Int32ToUint32(EVP_MD_get_size(type));
+
+        if (*mdSize < size)
+        {
+            return 0;
+        }
+
+        const char* mdName = EVP_MD_get0_name(type);
+        size_t sourceSizeT = Int32ToSizeT(sourceSize);
+        size_t mdWritten = 0;
+        int32_t qRet = EVP_Q_digest(NULL, mdName, NULL, source, sourceSizeT, md, &mdWritten);
+        *mdSize = SizeTToUint32(mdWritten);
+        return qRet;
+    }
+#endif //NEED_OPENSSL_3_0
 
     EVP_MD_CTX* ctx = CryptoNative_EvpMdCtxCreate(type);
 

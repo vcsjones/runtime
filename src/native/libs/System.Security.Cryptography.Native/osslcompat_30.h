@@ -20,6 +20,7 @@ void ERR_set_debug(const char *file, int line, const char *func);
 void ERR_set_error(int lib, int reason, const char *fmt, ...);
 int EVP_CIPHER_get_nid(const EVP_CIPHER *e);
 int EVP_MD_get_size(const EVP_MD* md);
+const char *EVP_MD_get0_name(const EVP_MD *md);
 int EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits);
 int EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
@@ -27,5 +28,7 @@ int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_size(const EVP_PKEY* pkey);
+int EVP_Q_digest(OSSL_LIB_CTX *libctx, const char *name, const char *propq,
+    const void *data, size_t datalen, unsigned char *md, size_t *mdlen);
 OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX* , const char* name, int retain_fallbacks);
 X509* SSL_get1_peer_certificate(const SSL* ssl);
