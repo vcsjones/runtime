@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
@@ -215,6 +216,11 @@ namespace System.Security.Cryptography
         public virtual void ImportFromPem(ReadOnlySpan<char> input) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 
+        public string ExportPkcs8PrivateKeyPem() =>
+            ExportPem(
+                PemLabels.Pkcs8PrivateKey,
+                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i));
+
         private delegate bool TryExportPbe<T>(
             ReadOnlySpan<T> password,
             PbeParameters pbeParameters,
@@ -284,6 +290,80 @@ namespace System.Security.Cryptography
                     bufSize = checked(bufSize * 2);
                 }
             }
+        }
+
+        private static unsafe string ExportPem(string label, TryExport exporter)
+        {
+            int bufSize = 4096;
+
+            while (true)
+            {
+                byte[] buf = CryptoPool.Rent(bufSize);
+                int bytesWritten = 0;
+                bufSize = buf.Length;
+
+                fixed (byte* bufPtr = buf)
+                {
+                    try
+                    {
+                        if (exporter(buf, out bytesWritten))
+                        {
+                            ReadOnlyMemory<byte> written = new ReadOnlyMemory<byte>(buf, 0, bytesWritten);
+                            return PemFormat(label, written);
+                        }
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(buf, bytesWritten);
+                    }
+
+                    bufSize = checked(bufSize * 2);
+                }
+            }
+        }
+
+        private static unsafe bool TryExportPem(string label, TryExport exporter, Span<char> destination, out int charsWritten)
+        {
+            int bufSize = 4096;
+
+            while (true)
+            {
+                byte[] buf = CryptoPool.Rent(bufSize);
+                int bytesWritten = 0;
+                bufSize = buf.Length;
+
+                fixed (byte* bufPtr = buf)
+                {
+                    try
+                    {
+                        if (exporter(buf, out bytesWritten))
+                        {
+                            ReadOnlySpan<byte> written = new ReadOnlySpan<byte>(buf, 0, bytesWritten);
+                            return PemEncodingWrapper.TryWrite(label, written, destination, out charsWritten);
+                        }
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(buf, bytesWritten);
+                    }
+
+                    bufSize = checked(bufSize * 2);
+                }
+            }
+        }
+
+        private static string PemFormat(string label, ReadOnlyMemory<byte> data)
+        {
+            int size = PemEncodingWrapper.GetEncodedSize(label.Length, data.Length);
+
+            return string.Create(size, (label : label, data : data), static (destination, pem) => {
+                if (!PemEncodingWrapper.TryWrite(pem.label, pem.data.Span, destination, out int written) ||
+                    written != destination.Length)
+                {
+                    Debug.Fail("Presized destination buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+            });
         }
     }
 }
