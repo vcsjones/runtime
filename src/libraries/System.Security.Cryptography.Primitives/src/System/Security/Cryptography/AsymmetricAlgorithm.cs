@@ -216,10 +216,32 @@ namespace System.Security.Cryptography
         public virtual void ImportFromPem(ReadOnlySpan<char> input) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 
-        public string ExportPkcs8PrivateKeyPem() =>
-            ExportPem(
+        public string ExportPkcs8PrivateKeyPem()
+        {
+            return ExportPem(
                 PemLabels.Pkcs8PrivateKey,
-                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i));
+                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i),
+                state: default,
+                static (label, data, _) => PemFormat(label, data));
+        }
+
+        public bool TryExportPkcs8PrivateKeyPem(Span<char> destination, out int charsWritten)
+        {
+            static (bool result, int written) TryPemFormat(string label, ReadOnlyMemory<byte> data, Span<char> state)
+            {
+                bool result = PemEncodingWrapper.TryWrite(label, data.Span, state, out int written);
+                return (result, written);
+            }
+
+            (bool result, int written) = ExportPem(
+                PemLabels.Pkcs8PrivateKey,
+                (Span<byte> destination, out int i) => TryExportPkcs8PrivateKey(destination, out i),
+                state: default,
+                static (label, data, state) => TryPemFormat(label, data, state));
+
+            charsWritten = written;
+            return result;
+        }
 
         private delegate bool TryExportPbe<T>(
             ReadOnlySpan<T> password,
@@ -228,6 +250,7 @@ namespace System.Security.Cryptography
             out int bytesWritten);
 
         private delegate bool TryExport(Span<byte> destination, out int bytesWritten);
+        private delegate TRet PemCallback<TRet>(string label, ReadOnlyMemory<byte> data, Span<char> state);
 
         private static unsafe byte[] ExportArray<T>(
             ReadOnlySpan<T> password,
@@ -292,7 +315,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static unsafe string ExportPem(string label, TryExport exporter)
+        private static unsafe TRet ExportPem<TRet>(
+            string label,
+            TryExport exporter,
+            Span<char> state,
+            PemCallback<TRet> callback)
         {
             int bufSize = 4096;
 
@@ -309,37 +336,7 @@ namespace System.Security.Cryptography
                         if (exporter(buf, out bytesWritten))
                         {
                             ReadOnlyMemory<byte> written = new ReadOnlyMemory<byte>(buf, 0, bytesWritten);
-                            return PemFormat(label, written);
-                        }
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(buf, bytesWritten);
-                    }
-
-                    bufSize = checked(bufSize * 2);
-                }
-            }
-        }
-
-        private static unsafe bool TryExportPem(string label, TryExport exporter, Span<char> destination, out int charsWritten)
-        {
-            int bufSize = 4096;
-
-            while (true)
-            {
-                byte[] buf = CryptoPool.Rent(bufSize);
-                int bytesWritten = 0;
-                bufSize = buf.Length;
-
-                fixed (byte* bufPtr = buf)
-                {
-                    try
-                    {
-                        if (exporter(buf, out bytesWritten))
-                        {
-                            ReadOnlySpan<byte> written = new ReadOnlySpan<byte>(buf, 0, bytesWritten);
-                            return PemEncodingWrapper.TryWrite(label, written, destination, out charsWritten);
+                            return callback(label, written, state);
                         }
                     }
                     finally
