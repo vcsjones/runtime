@@ -119,5 +119,8 @@ namespace System
 
         internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead.";
         internal const string RegexCompileToAssemblyDiagId = "SYSLIB0036";
+
+        internal const string ToFromXmlStringEcMessage = "ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.";
+        internal const string ToFromXmlStringEcDiagId = "SYSLIB0037";
     }
 }

@@ -298,9 +298,11 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public string ToXmlString(System.Security.Cryptography.ECKeyXmlFormat format) { throw null; }
     }
     public sealed partial class ECDiffieHellmanCngPublicKey : System.Security.Cryptography.ECDiffieHellmanPublicKey
