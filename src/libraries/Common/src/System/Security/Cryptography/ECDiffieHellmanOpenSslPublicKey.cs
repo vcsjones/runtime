@@ -37,6 +37,7 @@ namespace System.Security.Cryptography
                 _key = new ECOpenSsl(parameters);
             }
 
+            [Obsolete(Obsoletions.ToFromXmlStringEcMessage, DiagnosticId = Obsoletions.ToFromXmlStringEcDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public override string ToXmlString()
             {
                 throw new PlatformNotSupportedException();

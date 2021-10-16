@@ -314,8 +314,10 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters() { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
         public static System.Security.Cryptography.ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, System.Security.Cryptography.CngKeyBlobFormat format) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.ECDiffieHellmanCngPublicKey FromXmlString(string xml) { throw null; }
         public System.Security.Cryptography.CngKey Import() { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override string ToXmlString() { throw null; }
     }
     public enum ECDiffieHellmanKeyDerivationFunction

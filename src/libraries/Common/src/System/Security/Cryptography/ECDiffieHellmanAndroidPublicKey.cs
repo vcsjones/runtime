@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
                 _key = new ECAndroid(parameters);
             }
 
+            [Obsolete(Obsoletions.ToFromXmlStringEcMessage, DiagnosticId = Obsoletions.ToFromXmlStringEcDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public override string ToXmlString()
             {
                 throw new PlatformNotSupportedException();

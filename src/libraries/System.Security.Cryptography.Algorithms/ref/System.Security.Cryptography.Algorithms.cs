@@ -361,6 +361,7 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
         public virtual byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public virtual byte[] ToByteArray() { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString are obsolete and not supported. Use a supported import or export format such as PKCS #8 or SubjectPublicKeyInfo.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string ToXmlString() { throw null; }
         public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }

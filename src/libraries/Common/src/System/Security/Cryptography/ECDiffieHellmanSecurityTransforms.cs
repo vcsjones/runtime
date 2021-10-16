@@ -260,6 +260,7 @@ namespace System.Security.Cryptography
                     _ecc.ImportParameters(ecParameters);
                 }
 
+                [Obsolete(Obsoletions.ToFromXmlStringEcMessage, DiagnosticId = Obsoletions.ToFromXmlStringEcDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
                 public override string ToXmlString()
                 {
                     throw new PlatformNotSupportedException();

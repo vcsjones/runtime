@@ -38,6 +38,7 @@ namespace System.Security.Cryptography
         }
 
         // This method must be implemented by derived classes. In order to conform to the contract, it cannot be abstract.
+        [Obsolete(Obsoletions.ToFromXmlStringEcMessage, DiagnosticId = Obsoletions.ToFromXmlStringEcDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual string ToXmlString()
         {
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
