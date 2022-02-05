@@ -24,6 +24,7 @@ namespace System.Security.Cryptography
 
         public int BlockSizeInBytes { get; }
         public int PaddingSizeInBytes { get; }
+        public bool SupportsReset => _canReset;
 
         public unsafe AppleCCCryptorLite(
             PAL_SymmetricAlgorithm algorithm,

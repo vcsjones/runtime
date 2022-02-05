@@ -2,11 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
+        private ILiteSymmetricCipher? _encryptCbcOneShot;
+        private ILiteSymmetricCipher? _decryptCbcOneShot;
+        private ILiteSymmetricCipher? _encryptEcbOneShot;
+        private ILiteSymmetricCipher? _decryptEcbOneShot;
+        private (ILiteSymmetricCipher Cipher, int feedbackSizeInBits)? _decryptCfbOneShot;
+        private (ILiteSymmetricCipher Cipher, int feedbackSizeInBits)? _encryptCfbOneShot;
+
         public sealed override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);
@@ -37,8 +45,22 @@ namespace System.Security.Cryptography
             Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
+        public override byte[] Key
+        {
+            set
+            {
+                DisposeAndInvalidateOneShotCiphers();
+                base.Key = value;
+            }
+        }
+
         protected sealed override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                DisposeAndInvalidateOneShotCiphers();
+            }
+
             base.Dispose(disposing);
         }
 
@@ -48,19 +70,24 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.ECB,
-                Key,
-                iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: false);
-
-            using (cipher)
+            if (_decryptEcbOneShot is null)
             {
-                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+                _decryptEcbOneShot = CreateLiteCipher(
+                    CipherMode.ECB,
+                    Key,
+                    iv: default,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    0, /*feedback size */
+                    encrypting: false);
             }
+            else
+            {
+                Debug.Assert(_decryptEcbOneShot.SupportsReset);
+                _decryptEcbOneShot.Reset(iv: default);
+            }
+
+            return UniversalCryptoOneShot.OneShotDecrypt(_decryptEcbOneShot, paddingMode, ciphertext, destination, out bytesWritten);
         }
 
         protected override bool TryEncryptEcbCore(
@@ -69,19 +96,24 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.ECB,
-                Key,
-                iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: true);
-
-            using (cipher)
+            if (_encryptEcbOneShot is null)
             {
-                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
+                _encryptEcbOneShot = CreateLiteCipher(
+                    CipherMode.ECB,
+                    Key,
+                    iv: default,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    0, /*feedback size */
+                    encrypting: true);
             }
+            else
+            {
+                Debug.Assert(_encryptEcbOneShot.SupportsReset);
+                _encryptEcbOneShot.Reset(iv: default);
+            }
+
+            return UniversalCryptoOneShot.OneShotEncrypt(_encryptEcbOneShot, paddingMode, plaintext, destination, out bytesWritten);
         }
 
         protected override bool TryEncryptCbcCore(
@@ -91,19 +123,24 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CBC,
-                Key,
-                iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: true);
-
-            using (cipher)
+            if (_encryptCbcOneShot is null)
             {
-                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
+                _encryptCbcOneShot = CreateLiteCipher(
+                    CipherMode.CBC,
+                    Key,
+                    iv,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    0, /*feedback size */
+                    encrypting: true);
             }
+            else
+            {
+                Debug.Assert(_encryptCbcOneShot.SupportsReset);
+                _encryptCbcOneShot.Reset(iv);
+            }
+
+            return UniversalCryptoOneShot.OneShotEncrypt(_encryptCbcOneShot, paddingMode, plaintext, destination, out bytesWritten);
         }
 
         protected override bool TryDecryptCbcCore(
@@ -113,19 +150,24 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.CBC,
-                Key,
-                iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: false);
-
-            using (cipher)
+            if (_decryptCbcOneShot is null)
             {
-                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+                _decryptCbcOneShot = CreateLiteCipher(
+                    CipherMode.CBC,
+                    Key,
+                    iv,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    0, /*feedback size */
+                    encrypting: false);
             }
+            else
+            {
+                Debug.Assert(_decryptCbcOneShot.SupportsReset);
+                _decryptCbcOneShot.Reset(iv);
+            }
+
+            return UniversalCryptoOneShot.OneShotDecrypt(_decryptCbcOneShot, paddingMode, ciphertext, destination, out bytesWritten);
         }
 
         protected override bool TryDecryptCfbCore(
@@ -138,7 +180,24 @@ namespace System.Security.Cryptography
         {
             ValidateCFBFeedbackSize(feedbackSizeInBits);
 
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            ILiteSymmetricCipher? cipher = null;
+
+            if (_decryptCfbOneShot is (ILiteSymmetricCipher cacheCipher, int size))
+            {
+                if (size != feedbackSizeInBits)
+                {
+                    cacheCipher.Dispose();
+                }
+                else
+                {
+                    // If it was cached, it should support resetting.
+                    Debug.Assert(cacheCipher.SupportsReset);
+                    cacheCipher.Reset(iv);
+                    cipher = cacheCipher;
+                }
+            }
+
+            cipher ??= CreateLiteCipher(
                 CipherMode.CFB,
                 Key,
                 iv: iv,
@@ -147,9 +206,17 @@ namespace System.Security.Cryptography
                 feedbackSizeInBits / BitsPerByte,
                 encrypting: false);
 
-            using (cipher)
+            if (cipher.SupportsReset)
             {
+                _decryptCfbOneShot = (cipher, feedbackSizeInBits);
                 return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+            }
+            else
+            {
+                using (cipher)
+                {
+                    return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+                }
             }
         }
 
@@ -163,18 +230,42 @@ namespace System.Security.Cryptography
         {
             ValidateCFBFeedbackSize(feedbackSizeInBits);
 
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            ILiteSymmetricCipher? cipher = null;
+
+            if (_encryptCfbOneShot is (ILiteSymmetricCipher cacheCipher, int size))
+            {
+                if (size != feedbackSizeInBits)
+                {
+                    cacheCipher.Dispose();
+                }
+                else
+                {
+                    Debug.Assert(cacheCipher.SupportsReset);
+                    cacheCipher.Reset(iv);
+                    cipher = cacheCipher;
+                }
+            }
+
+            cipher ??= CreateLiteCipher(
                 CipherMode.CFB,
                 Key,
-                iv,
+                iv: iv,
                 blockSize: BlockSize / BitsPerByte,
                 paddingSize: feedbackSizeInBits / BitsPerByte,
                 feedbackSizeInBits / BitsPerByte,
                 encrypting: true);
 
-            using (cipher)
+            if (cipher.SupportsReset)
             {
+                _encryptCfbOneShot = (cipher, feedbackSizeInBits);
                 return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
+            }
+            else
+            {
+                using (cipher)
+                {
+                    return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
+                }
             }
         }
 
@@ -219,6 +310,22 @@ namespace System.Security.Cryptography
             {
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
+        }
+
+        private void DisposeAndInvalidateOneShotCiphers()
+        {
+            _decryptCbcOneShot?.Dispose();
+            _decryptCbcOneShot = null;
+            _encryptCbcOneShot?.Dispose();
+            _encryptCbcOneShot = null;
+            _decryptEcbOneShot?.Dispose();
+            _decryptEcbOneShot = null;
+            _encryptEcbOneShot?.Dispose();
+            _encryptEcbOneShot = null;
+            _decryptCfbOneShot?.Cipher.Dispose();
+            _decryptCfbOneShot = null;
+            _encryptCfbOneShot?.Cipher.Dispose();
+            _encryptCfbOneShot = null;
         }
 
         private const int BitsPerByte = 8;

@@ -20,6 +20,7 @@ namespace System.Security.Cryptography
 
         public int BlockSizeInBytes { get; }
         public int PaddingSizeInBytes { get; }
+        public bool SupportsReset => true;
 
         public OpenSslCipherLite(
             IntPtr algorithm,

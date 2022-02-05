@@ -15,5 +15,6 @@ namespace Internal.Cryptography
 
         int BlockSizeInBytes { get; }
         int PaddingSizeInBytes { get; }
+        bool SupportsReset { get; }
     }
 }

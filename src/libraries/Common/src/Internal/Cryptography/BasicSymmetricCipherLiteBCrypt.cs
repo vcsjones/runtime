@@ -16,6 +16,7 @@ namespace Internal.Cryptography
 
         public int BlockSizeInBytes { get; }
         public int PaddingSizeInBytes { get; }
+        public bool SupportsReset => true;
 
         public BasicSymmetricCipherLiteBCrypt(
             SafeAlgorithmHandle algorithm,
