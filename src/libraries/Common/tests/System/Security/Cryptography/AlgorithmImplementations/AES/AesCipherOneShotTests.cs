@@ -85,6 +85,29 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
             EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
+        [Theory]
+        [MemberData(nameof(MultiKeyTestCases))]
+        public void OneShotKeyChange(
+            byte[] key1,
+            byte[] key2,
+            byte[] plaintext,
+            byte[] ciphertext1,
+            byte[] ciphertext2,
+            PaddingMode padding,
+            CipherMode mode,
+            int feedbackSize = 0)
+        {
+            OneShotKeyChangeTest(
+                key1,
+                key2,
+                plaintext,
+                ciphertext1,
+                ciphertext2,
+                padding,
+                mode,
+                feedbackSize);
+        }
+
         [Fact]
         public void EncryptOneShot_CfbFeedbackSizeNotSupported()
         {
@@ -1119,6 +1142,176 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                         PaddingMode.None,
                         CipherMode.CFB,
                         128,
+                    };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> MultiKeyTestCases
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    // key1
+                    new byte[]
+                    {
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    },
+
+                    //key2
+                    new byte[]
+                    {
+                        0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                        0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+                    },
+
+                    // plaintext
+                    new byte[]
+                    {
+                        0x63, 0x6F, 0x66, 0x66, 0x65, 0x65
+                    },
+
+                    // ciphertext1
+                    new byte[]
+                    {
+                        0x84, 0x8C, 0xC2, 0x35, 0x3C, 0x52, 0xB2, 0x8F,
+                        0xD7, 0x38, 0xB6, 0x41, 0xF3, 0x66, 0x14, 0xCE,
+                    },
+
+                    // ciphertext2
+                    new byte[]
+                    {
+                        0x26, 0xE8, 0x7E, 0xF5, 0x6C, 0x1E, 0xCA, 0x95,
+                        0xF9, 0x84, 0xAF, 0xF6, 0xD1, 0x91, 0xC2, 0x0A,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.ECB,
+                };
+
+                yield return new object[]
+                {
+                    // key1
+                    new byte[]
+                    {
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    },
+
+                    //key2
+                    new byte[]
+                    {
+                        0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                        0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+                    },
+
+                    // plaintext
+                    new byte[]
+                    {
+                        0x63, 0x6F, 0x66, 0x66, 0x65, 0x65
+                    },
+
+                    // ciphertext1
+                    new byte[]
+                    {
+                        0xFD, 0xDE, 0xBE, 0x48, 0xBD, 0x58, 0x55, 0xF4,
+                        0x86, 0xB8, 0xD6, 0xB9, 0x6C, 0x2C, 0x7B, 0x23,
+                    },
+
+                    // ciphertext2
+                    new byte[]
+                    {
+                        0xF1, 0xE1, 0x7C, 0x95, 0x0A, 0x2D, 0x3B, 0x04,
+                        0x9A, 0x74, 0xA7, 0x23, 0x32, 0xE5, 0x10, 0xC7,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // key1
+                    new byte[]
+                    {
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    },
+
+                    //key2
+                    new byte[]
+                    {
+                        0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                        0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+                    },
+
+                    // plaintext
+                    new byte[]
+                    {
+                        0x63, 0x6F, 0x66, 0x66, 0x65, 0x65
+                    },
+
+                    // ciphertext1
+                    new byte[]
+                    {
+                        0x48, 0x55, 0x8D, 0xFF, 0x9D, 0xA1,
+                    },
+
+                    // ciphertext2
+                    new byte[]
+                    {
+                        0x3D, 0x3D, 0xA5, 0xA4, 0xAC, 0xA6,
+                    },
+
+                    PaddingMode.None,
+                    CipherMode.CFB,
+                    8, // feedbackSizeInBits
+                };
+
+                // CFB128 is not supported on Windows 7.
+                if (PlatformDetection.IsNotWindows7)
+                {
+                    yield return new object[]
+                    {
+                        // key1
+                        new byte[]
+                        {
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        },
+
+                        //key2
+                        new byte[]
+                        {
+                            0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
+                            0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF,
+                        },
+
+                        // plaintext
+                        new byte[]
+                        {
+                            0x63, 0x6F, 0x66, 0x66, 0x65, 0x65
+                        },
+
+                        // ciphertext1
+                        new byte[]
+                        {
+                            0x48, 0x87, 0xB2, 0xF7, 0x8C, 0xF2, 0x1C, 0xE5,
+                            0x41, 0xBA, 0x67, 0x65, 0x07, 0x27, 0x43, 0x25,
+                        },
+
+                        // ciphertext2
+                        new byte[]
+                        {
+                            0x3D, 0x97, 0xFE, 0x35, 0xAC, 0x4F, 0x50, 0x3B,
+                            0x13, 0xA3, 0x34, 0xE3, 0xC7, 0x2E, 0xEE, 0x7B,
+                        },
+
+                        PaddingMode.PKCS7,
+                        CipherMode.CFB,
+                        128, // feedbackSizeInBits
                     };
                 }
             }

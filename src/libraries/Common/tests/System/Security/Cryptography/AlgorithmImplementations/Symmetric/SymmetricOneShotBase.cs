@@ -380,6 +380,51 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        protected void OneShotKeyChangeTest(
+            byte[] key1,
+            byte[] key2,
+            byte[] plaintext,
+            byte[] ciphertext1,
+            byte[] ciphertext2,
+            PaddingMode padding,
+            CipherMode mode,
+            int feedbackSize = 0)
+        {
+            void AssertEncryptDecrypt(SymmetricAlgorithm alg, byte[] ciphertext)
+            {
+                int paddingSizeBytes = mode == CipherMode.CFB ? feedbackSize / 8 : alg.BlockSize / 8;
+                byte[] encrypted = mode switch
+                {
+                    CipherMode.ECB => alg.EncryptEcb(plaintext, padding),
+                    CipherMode.CBC => alg.EncryptCbc(plaintext, IV, padding),
+                    CipherMode.CFB => alg.EncryptCfb(plaintext, IV, padding, feedbackSize),
+                    _ => throw new NotImplementedException(),
+                };
+
+                AssertCiphertexts(ciphertext, encrypted, padding, paddingSizeBytes);
+
+                byte[] decrypted = mode switch
+                {
+                    CipherMode.ECB => alg.DecryptEcb(encrypted, padding),
+                    CipherMode.CBC => alg.DecryptCbc(encrypted, IV, padding),
+                    CipherMode.CFB => alg.DecryptCfb(encrypted, IV, padding, feedbackSize),
+                    _ => throw new NotImplementedException(),
+                };
+
+                AssertPlaintexts(plaintext, decrypted, padding);
+            }
+
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                alg.Key = key1;
+                AssertEncryptDecrypt(alg, ciphertext1);
+
+                // Use the same instance but change the key.
+                alg.Key = key2;
+                AssertEncryptDecrypt(alg, ciphertext2);
+            }
+        }
+
         [Fact]
         public void DerivedTypesDefineTest()
         {
