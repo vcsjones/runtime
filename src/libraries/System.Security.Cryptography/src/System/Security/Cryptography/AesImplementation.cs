@@ -2,11 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System.Threading;
 
 namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
+        private ILiteSymmetricCipher? _ecbDecryptCache;
+
+        public override byte[] Key
+        {
+            set
+            {
+                base.Key = value;
+                ResetCacheCiphers();
+            }
+        }
+
         public sealed override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);
@@ -39,6 +51,11 @@ namespace System.Security.Cryptography
 
         protected sealed override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                ResetCacheCiphers();
+            }
+
             base.Dispose(disposing);
         }
 
@@ -48,19 +65,40 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
-                CipherMode.ECB,
-                Key,
-                iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
-                encrypting: false);
+            // See what we have in cache, set it to null so that it's not eligible
+            // for use by other threads.
+            ILiteSymmetricCipher? cipher = Interlocked.Exchange(ref _ecbDecryptCache, null);
 
-            using (cipher)
+            if (cipher is null)
             {
-                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+                // No cached instance was available, so create a new one
+                cipher = CreateLiteCipher(
+                    CipherMode.ECB,
+                    Key,
+                    iv: default,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    0, /*feedback size */
+                    encrypting: false);
             }
+            else
+            {
+                cipher.Reset(iv: default);
+            }
+
+            bool result = UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
+
+            // Try to make this instance available for reuse.
+            ILiteSymmetricCipher? original = Interlocked.CompareExchange(ref _ecbDecryptCache, cipher, null);
+
+            // If this is not null, then the exchange did not take place because another thread
+            // put something back. So dispose of the one that we have.
+            if (original is not null)
+            {
+                cipher.Dispose();
+            }
+
+            return result;
         }
 
         protected override bool TryEncryptEcbCore(
@@ -215,6 +253,15 @@ namespace System.Security.Cryptography
             if (feedback != 8 && feedback != 128)
             {
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
+        }
+
+        private void ResetCacheCiphers()
+        {
+            if (_ecbDecryptCache is not null)
+            {
+                _ecbDecryptCache.Dispose();
+                _ecbDecryptCache = null;
             }
         }
 
