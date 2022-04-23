@@ -1,0 +1,4 @@
+name: dotnet/runtime
+version: 0.0.0
+dependencies:
+  codeql/csharp-queries: "*"
