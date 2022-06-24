@@ -411,7 +411,6 @@
     <Compile Include="System\Security\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoEncryptor.cs" />
     <Compile Include="System\Security\Cryptography\UniversalCryptoDecryptor.cs" />
-    <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
     <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateExtensionsCommon.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.cs" />
@@ -542,9 +541,9 @@
     <Compile Include="$(CommonPath)System\Sha1ForNonSecretPurposes.cs"
              Link="Common\System\Sha1ForNonSecretPurposes.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SimpleDigestHash.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SimpleDigestHash.cs" /> 
+             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.SimpleDigestHash.cs" />
     <Compile Include="$(CommonPath)Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.Sign.cs"
-             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.Sign.cs" /> 
+             Link="Common\Interop\Browser\System.Security.Cryptography.Native.Browser\Interop.Sign.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.Browser.cs" />
@@ -1802,6 +1801,12 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.PublicKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.X500DistinguishedName.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="System\Security\Cryptography\UniversalCryptoOneShot.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
