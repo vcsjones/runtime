@@ -462,6 +462,20 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
       <Link>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.manual.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\X509ExtensionAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml</DependentUpon>
@@ -528,10 +542,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignedAttributesSet.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml.cs">
-      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.xml.cs">
