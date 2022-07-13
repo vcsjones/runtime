@@ -1083,6 +1083,20 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\IssuerAndSerialNumberAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerIdentifierAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"
