@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         internal int Version;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn[] DigestAlgorithms;
         internal System.Security.Cryptography.Asn1.Pkcs7.EncapsulatedContentInfoAsn EncapContentInfo;
-        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
+        internal System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn[]? CertificateSet;
         internal ReadOnlyMemory<byte>[]? Crls;
         internal System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn[] SignerInfos;
 
@@ -159,12 +159,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
                 // Decode SEQUENCE OF for CertificateSet
                 {
                     collectionReader = sequenceReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    var tmpList = new List<System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn>();
-                    System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn tmpItem;
+                    var tmpList = new List<System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn>();
+                    System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn tmpItem;
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn.Decode(ref collectionReader, rebind, out tmpItem);
+                        System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

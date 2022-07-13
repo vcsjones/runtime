@@ -483,13 +483,23 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignerInfoAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\CertificateChoiceAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\OtherCertificateFormat.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CadesIssuerSerial.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml.cs">
-      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EssCertId.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EssCertId.xml.cs">
@@ -506,10 +516,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml</DependentUpon>
-    </Compile>
-    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml" />
-    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml.cs">
-      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml</DependentUpon>
     </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiFailureInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatus.cs" />
