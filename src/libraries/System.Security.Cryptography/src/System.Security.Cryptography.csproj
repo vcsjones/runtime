@@ -1048,19 +1048,19 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
-    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml</Link>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</Link>
     </AsnXml>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\Cms\SignedDataAsn.xml</DependentUpon>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\SignedDataAsn.xml</DependentUpon>
     </Compile>
-    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml">
-      <Link>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml</Link>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</Link>
     </AsnXml>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml.cs">
-      <Link>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml.cs</Link>
-      <DependentUpon>Common\System\Security\Cryptography\Asn1\Cms\EncapsulatedContentInfoAsn.xml</DependentUpon>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml.cs</Link>
+      <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncapsulatedContentInfoAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />

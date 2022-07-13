@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1.Cms;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
