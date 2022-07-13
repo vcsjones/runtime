@@ -32,6 +32,6 @@
     <asn:AnyValue />
   </asn:SetOf>
   <asn:SetOf name="SignerInfos">
-    <asn:AsnType typeName="System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn" />
+    <asn:AsnType typeName="System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn" />
   </asn:SetOf>
 </asn:Sequence>

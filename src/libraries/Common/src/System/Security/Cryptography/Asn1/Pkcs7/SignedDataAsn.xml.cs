@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         internal System.Security.Cryptography.Asn1.Pkcs7.EncapsulatedContentInfoAsn EncapContentInfo;
         internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
         internal ReadOnlyMemory<byte>[]? Crls;
-        internal System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn[] SignerInfos;
+        internal System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn[] SignerInfos;
 
         internal void Encode(AsnWriter writer)
         {
@@ -199,12 +199,12 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             // Decode SEQUENCE OF for SignerInfos
             {
                 collectionReader = sequenceReader.ReadSetOf();
-                var tmpList = new List<System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn>();
-                System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn tmpItem;
+                var tmpList = new List<System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn>();
+                System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn tmpItem;
 
                 while (collectionReader.HasData)
                 {
-                    System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn.Decode(ref collectionReader, rebind, out tmpItem);
+                    System.Security.Cryptography.Asn1.Pkcs7.SignerInfoAsn.Decode(ref collectionReader, rebind, out tmpItem);
                     tmpList.Add(tmpItem);
                 }
 
