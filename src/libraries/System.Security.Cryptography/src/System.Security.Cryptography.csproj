@@ -424,6 +424,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ICertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ICertificatePalCore.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\ICertificatePalBlob.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IChainPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IExportPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\IFindPal.cs" />
@@ -1346,6 +1347,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12Reader.macOS.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePkcs7Loader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleKeychainStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleTrustStore.cs" />

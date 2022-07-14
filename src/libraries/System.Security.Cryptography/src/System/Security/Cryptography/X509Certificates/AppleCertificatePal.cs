@@ -13,7 +13,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    internal sealed partial class AppleCertificatePal : ICertificatePal
+    internal sealed partial class AppleCertificatePal : ICertificatePal, ICertificatePalBlob
     {
         private SafeSecIdentityHandle? _identityHandle;
         private SafeSecCertificateHandle _certHandle;

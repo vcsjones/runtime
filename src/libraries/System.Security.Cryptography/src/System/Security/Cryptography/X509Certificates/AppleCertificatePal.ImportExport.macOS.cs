@@ -26,14 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs7)
             {
-                // In single mode for a PKCS#7 signed or signed-and-enveloped file we're supposed to return
-                // the certificate which signed the PKCS#7 file.
-                //
-                // X509Certificate2Collection::Export(X509ContentType.Pkcs7) claims to be a signed PKCS#7,
-                // but doesn't emit a signature block. So this is hard to test.
-                //
-                // TODO(2910): Figure out how to extract the signing certificate, when it's present.
-                throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
+                return CertificatePkcs7Loader.LoadPkcs7<AppleCertificatePal>(rawData, keyStorageFlags);
             }
 
             if (contentType == X509ContentType.Pkcs12)
