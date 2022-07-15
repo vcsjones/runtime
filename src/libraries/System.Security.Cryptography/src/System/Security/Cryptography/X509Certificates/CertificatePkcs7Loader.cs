@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -22,21 +24,18 @@ namespace System.Security.Cryptography.X509Certificates
                 switch (contentInfo.ContentType)
                 {
                     case Oids.Pkcs7Signed:
-                        return TPal.FromBlob(
-                            FindPkcs7SignedCertificate(contentInfo.Content),
-                            SafePasswordHandle.InvalidHandle,
-                            keyStorageFlags);
+                        return FindPkcs7SignedCertificate(contentInfo.Content);
                     default:
                         throw new CryptographicException("TODO");
                 }
             }
         }
 
-        private static ReadOnlySpan<byte> FindPkcs7SignedCertificate(ReadOnlyMemory<byte> content)
+        private static ICertificatePal FindPkcs7SignedCertificate(ReadOnlyMemory<byte> content)
         {
             SignedDataAsn signedData = SignedDataAsn.Decode(content, AsnEncodingRules.BER);
 
-            if (signedData.SignerInfos.Length == 0)
+            if (signedData.SignerInfos.Length == 0 || signedData.CertificateSet is null)
             {
                 throw new CryptographicException("TODO: CRYPT_E_NO_SIGNER");
             }
@@ -57,11 +56,11 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException("TODO: INVALID CMS");
             }
 
-            X509Certificate2Collection candidates = new X509Certificate2Collection();
+            List<X509Certificate2> candidates = new List<X509Certificate2>(signedData.CertificateSet.Length);
 
             foreach (CertificateChoiceAsn certChoice in signedData.CertificateSet)
             {
-                if (certChoice.Certificate is not null)
+                if (!certChoice.Certificate.HasValue)
                 {
                     continue;
                 }
@@ -72,7 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
                     // it to the X509Certificate2 constructor. The constructor makes a best effort to "figure it out",
                     // but we don't want to permit a CMS/PKCS7 document whose certificate collection contains something
                     // other than a certificate.
-                    CertificateAsn.Decode(certChoice.Certificate, AsnEncodingRules.DER);
+                    CertificateAsn.Decode(certChoice.Certificate.Value, AsnEncodingRules.DER);
                 }
                 catch (CryptographicException)
                 {
@@ -80,20 +79,32 @@ namespace System.Security.Cryptography.X509Certificates
                     continue;
                 }
 
-                candidates.Add(new X509Certificate2(certChoice.Certificate.Span));
+                candidates.Add(new X509Certificate2(certChoice.Certificate.Value.Span));
             }
 
-            return default;
+            ICertificatePal? result = TryFindMatchingCertificate(candidates, signerIdentifier);
+
+            foreach (X509Certificate2 cert in candidates)
+            {
+                cert.Dispose();
+            }
+
+            if (result is null)
+            {
+                throw new CryptographicException("TODO: CRYPT_E_NO_SIGNER");
+            }
+
+            return result;
         }
 
-        internal static X509Certificate2? TryFindMatchingCertificate(X509Certificate2[] certs, SignerIdentifierAsn signerIdentifier)
+        internal static ICertificatePal? TryFindMatchingCertificate(List<X509Certificate2> certs, SignerIdentifierAsn signerIdentifier)
         {
             // We don't care about the "CN=Dummy Signer" "No signature" case here.
 
             if (signerIdentifier.IssuerAndSerialNumber is IssuerAndSerialNumberAsn issuerAndSerialNumber)
             {
-                ReadOnlySpan<byte> issuer = issuerAndSerialNumber.Value.Issuer.Span;
-                ReadOnlySpan<byte> serial = issuerAndSerialNumber.Value.SerialNumber.Span;
+                ReadOnlySpan<byte> issuer = issuerAndSerialNumber.Issuer.Span;
+                ReadOnlySpan<byte> serial = issuerAndSerialNumber.SerialNumber.Span;
 
                 foreach (X509Certificate2 cert in certs)
                 {
@@ -102,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (issuer.SequenceEqual(candidateIssuer) && serial.SequenceEqual(candidateSerial))
                     {
-                        return cert;
+                        return TPal.FromOtherCert(cert);
                     }
                 }
 
@@ -110,7 +121,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
             else if (signerIdentifier.SubjectKeyIdentifier is ReadOnlyMemory<byte> subjectKeyIdentifier)
             {
-
+                _ = subjectKeyIdentifier;
+                throw new CryptographicException("TODO: DONTBEACA work will help here.");
             }
             else
             {

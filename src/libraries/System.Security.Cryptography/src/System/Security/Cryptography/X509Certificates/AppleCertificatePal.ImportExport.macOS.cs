@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs7)
             {
-                return CertificatePkcs7Loader.LoadPkcs7<AppleCertificatePal>(rawData, keyStorageFlags);
+                return CertificatePkcs7Loader<AppleCertificatePal>.LoadPkcs7(rawData, keyStorageFlags);
             }
 
             if (contentType == X509ContentType.Pkcs12)

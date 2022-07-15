@@ -11,5 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags);
+
+        static abstract ICertificatePal FromOtherCert(X509Certificate cert);
     }
 }
