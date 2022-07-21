@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             SignedDataAsn signedData = SignedDataAsn.Decode(content, AsnEncodingRules.BER);
 
-            if (signedData.SignerInfos.Length == 0 || signedData.CertificateSet is null)
+            if (signedData.SignerInfos.Length == 0 || signedData.CertificateSet is not { Length: > 0 })
             {
                 throw new CryptographicException("TODO: CRYPT_E_NO_SIGNER");
             }
@@ -43,9 +43,6 @@ namespace System.Security.Cryptography.X509Certificates
             // Match Window's behavior by only examining the first SignerInfo.
             SignerInfoAsn signerInfo = signedData.SignerInfos[0];
             SignerIdentifierAsn signerIdentifier = signerInfo.Sid;
-
-            // One or the other is not null.
-            Debug.Assert(signerIdentifier.SubjectKeyIdentifier is not null ^ signerIdentifier.IssuerAndSerialNumber is not null);
 
             // RFC 5652:
             // If the SignerIdentifier is the CHOICE issuerAndSerialNumber, then the version MUST be 1.
@@ -82,19 +79,18 @@ namespace System.Security.Cryptography.X509Certificates
                 candidates.Add(new X509Certificate2(certChoice.Certificate.Value.Span));
             }
 
-            ICertificatePal? result = TryFindMatchingCertificate(candidates, signerIdentifier);
-
-            foreach (X509Certificate2 cert in candidates)
+            try
             {
-                cert.Dispose();
+                return TryFindMatchingCertificate(candidates, signerIdentifier) ??
+                    throw new CryptographicException("TODO: CRYPT_E_NO_SIGNER");
             }
-
-            if (result is null)
+            finally
             {
-                throw new CryptographicException("TODO: CRYPT_E_NO_SIGNER");
+                foreach (X509Certificate2 cert in candidates)
+                {
+                    cert.Dispose();
+                }
             }
-
-            return result;
         }
 
         internal static ICertificatePal? TryFindMatchingCertificate(List<X509Certificate2> certs, SignerIdentifierAsn signerIdentifier)
@@ -108,7 +104,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 foreach (X509Certificate2 cert in certs)
                 {
-                    ReadOnlySpan<byte> candidateSerial = cert.GetRawSerialNumber();
+                    ReadOnlySpan<byte> candidateSerial = cert.SerialNumberBytes.Span;
                     ReadOnlySpan<byte> candidateIssuer = cert.IssuerName.RawData;
 
                     if (issuer.SequenceEqual(candidateIssuer) && serial.SequenceEqual(candidateSerial))
@@ -121,15 +117,27 @@ namespace System.Security.Cryptography.X509Certificates
             }
             else if (signerIdentifier.SubjectKeyIdentifier is ReadOnlyMemory<byte> subjectKeyIdentifier)
             {
-                _ = subjectKeyIdentifier;
-                throw new CryptographicException("TODO: DONTBEACA work will help here.");
+                foreach (X509Certificate2 cert in certs)
+                {
+                    X509SubjectKeyIdentifierExtension? ext = cert.Extensions[Oids.SubjectKeyIdentifier] as X509SubjectKeyIdentifierExtension;
+
+                    if (ext is null)
+                    {
+                        continue;
+                    }
+
+                    if (subjectKeyIdentifier.Span.SequenceEqual(ext.SubjectKeyIdentifierBytes.Span))
+                    {
+                        return TPal.FromOtherCert(cert);
+                    }
+                }
+
+                return null;
             }
             else
             {
-                Debug.Fail("Unhandled key identifier.");
-                throw new UnreachableException();
+                return null;
             }
-
         }
     }
 }

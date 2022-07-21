@@ -483,7 +483,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated
-        internal byte[] GetRawSerialNumber() => _lazySerialNumber ??= Pal!.SerialNumber;
+        private byte[] GetRawSerialNumber() => _lazySerialNumber ??= Pal!.SerialNumber;
 
         [Obsolete("X509Certificate.GetName has been deprecated. Use the Subject property instead.")]
         public virtual string GetName()
