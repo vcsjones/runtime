@@ -691,7 +691,7 @@
     <value>This platform does not support loading with EphemeralKeySet. Remove the flag to allow keys to be temporarily created on disk.</value>
   </data>
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
-    <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
+    <value>The private key could not be loaded because contents do not contain a private key, the private key PEM label is not recognized, the content is malformed, or the key does not match the certificate.</value>
   </data>
   <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
     <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
