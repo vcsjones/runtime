@@ -153,6 +153,13 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
+#if !HAVE_OPENSSL_EDDSA
+#undef HAVE_OPENSSL_EDDSA
+#define HAVE_OPENSSL_EDDSA 1
+#define NID_ED25519 1087
+#define EVP_PKEY_ED25519 NID_ED25519
+#endif
+
 #define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.

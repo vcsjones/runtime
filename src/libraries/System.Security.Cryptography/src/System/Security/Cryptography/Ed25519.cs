@@ -9,7 +9,10 @@ namespace System.Security.Cryptography
 {
     public abstract partial class Ed25519 : EdDsa
     {
-        private protected int SignatureSize = 64;
+        private protected const int PublicKeySize = 32;
+        private protected const int PrivateKeySize = 32;
+
+        public sealed override int GetSignatureSize() => 64;
 
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("windows")]

@@ -19,6 +19,7 @@
 #include "pal_evp_pkey_dsa.h"
 #include "pal_evp_pkey_ecdh.h"
 #include "pal_evp_pkey_eckey.h"
+#include "pal_evp_pkey_eddsa.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
@@ -80,6 +81,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EcKeyGetCurveName2)
     DllImportEntry(CryptoNative_EcKeyGetSize)
     DllImportEntry(CryptoNative_EcKeyUpRef)
+    DllImportEntry(CryptoNative_Ed25519GenerateKey)
     DllImportEntry(CryptoNative_EncodeAsn1Integer)
     DllImportEntry(CryptoNative_EncodeOcspRequest)
     DllImportEntry(CryptoNative_EncodePkcs7)

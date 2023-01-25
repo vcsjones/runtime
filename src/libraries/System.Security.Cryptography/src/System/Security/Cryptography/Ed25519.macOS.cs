@@ -9,12 +9,7 @@ namespace System.Security.Cryptography
 {
     public abstract partial class Ed25519
     {
-        private protected const int PublicKeySize = 32;
-        private protected const int PrivateKeySize = 32;
-
         public static new partial Ed25519 Create() => new Ed25519CryptoKit();
-
-        public sealed override int GetSignatureSize() => 64;
     }
 
     internal sealed class Ed25519CryptoKit : Ed25519
@@ -173,12 +168,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                ObjectDisposedException.ThrowIf(_disposed, this);
-            }
-        }
+        private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
     }
 }

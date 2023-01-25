@@ -32,6 +32,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_dsa.c
     pal_evp_pkey_ecdh.c
     pal_evp_pkey_eckey.c
+    pal_evp_pkey_eddsa.c
     pal_evp_pkey_rsa.c
     pal_evp_cipher.c
     pal_hmac.c
