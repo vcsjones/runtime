@@ -1251,6 +1251,36 @@ namespace System.Security.Cryptography
         public byte[]? X;
         public byte[]? Y;
     }
+    public abstract partial class Ed25519 : System.Security.Cryptography.EdDsa
+    {
+        protected Ed25519() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static new System.Security.Cryptography.Ed25519 Create() { throw null; }
+    }
+    public abstract partial class EdDsa : System.Security.Cryptography.AsymmetricAlgorithm
+    {
+        protected EdDsa() { }
+        public abstract byte[] ExportPrivateKey();
+        public abstract byte[] ExportPublicKey();
+        public abstract void GenerateKey();
+        public abstract int GetSignatureSize();
+        public void ImportPrivateKey(byte[] privateKey) { }
+        public abstract void ImportPrivateKey(System.ReadOnlySpan<byte> privateKey);
+        public void ImportPublicKey(byte[] publicKey) { }
+        public abstract void ImportPublicKey(System.ReadOnlySpan<byte> publicKey);
+        public byte[] SignData(byte[] data) { throw null; }
+        public byte[] SignData(System.ReadOnlySpan<byte> data) { throw null; }
+        public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { throw null; }
+        public bool TrySignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        protected abstract bool TrySignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten);
+        public bool VerifyData(byte[] data, byte[] signature) { throw null; }
+        public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature);
+    }
     public partial class FromBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         public FromBase64Transform() { }

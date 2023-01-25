@@ -250,6 +250,7 @@
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="ECDsaTests.cs" />
     <Compile Include="ECPemExportTests.cs" />
+    <Compile Include="Ed25519Tests.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
