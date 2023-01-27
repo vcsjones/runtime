@@ -22,6 +22,8 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("windows")]
         public Ed25519OpenSsl(SafeEvpPKeyHandle pkeyHandle) => throw new PlatformNotSupportedException();
 
+        public override bool HasPrivateKey => false;
+
         public override void GenerateKey() => throw new PlatformNotSupportedException();
 
         protected override int ExportPrivateKeyCore(Span<byte> destination) => throw new PlatformNotSupportedException();

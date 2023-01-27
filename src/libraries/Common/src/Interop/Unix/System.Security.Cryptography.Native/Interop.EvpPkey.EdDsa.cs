@@ -56,6 +56,10 @@ internal static partial class Interop
             int signatureLength,
             out int isValidSignature);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EdDsaHasPrivateKey")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool EdDsaHasPrivateKey(SafeEvpPKeyHandle pKey);
+
         internal static unsafe bool EdDsaVerifyData(
             SafeEvpPKeyHandle pKey,
             ReadOnlySpan<byte> data,

@@ -37,3 +37,5 @@ PALEXPORT int32_t CryptoNative_EdDsaVerifyData(
     const uint8_t* signature,
     int32_t signatureLength,
     int32_t* validSignature);
+
+PALEXPORT int32_t CryptoNative_EdDsaHasPrivateKey(EVP_PKEY* pKey);

@@ -1254,6 +1254,7 @@ namespace System.Security.Cryptography
     public abstract partial class Ed25519 : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected Ed25519() { }
+        public abstract bool HasPrivateKey { get; }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }
@@ -1296,6 +1297,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public Ed25519OpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
+        public override bool HasPrivateKey { get { throw null; } }
         protected override int ExportPrivateKeyCore(System.Span<byte> destination) { throw null; }
         protected override int ExportPublicKeyCore(System.Span<byte> destination) { throw null; }
         public override void GenerateKey() { }

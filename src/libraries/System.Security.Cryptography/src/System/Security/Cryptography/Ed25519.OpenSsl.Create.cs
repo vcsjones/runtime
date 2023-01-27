@@ -27,6 +27,8 @@ namespace System.Security.Cryptography
             set => _wrapped.KeySize = value;
         }
 
+        public override bool HasPrivateKey => _wrapped.HasPrivateKey;
+
         public override KeySizes[] LegalKeySizes => _wrapped.LegalKeySizes;
         public override string? KeyExchangeAlgorithm => _wrapped.KeyExchangeAlgorithm;
         public override string SignatureAlgorithm => _wrapped.SignatureAlgorithm;

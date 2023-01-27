@@ -38,6 +38,17 @@ namespace System.Security.Cryptography
             _pKey = newKey;
         }
 
+        public override bool HasPrivateKey
+        {
+            get
+            {
+                CheckDisposed();
+                GenerateKeyIfNeeded();
+
+                return Interop.Crypto.EdDsaHasPrivateKey(_pKey);
+            }
+        }
+
         [MemberNotNull(nameof(_pKey))]
         public override void GenerateKey()
         {

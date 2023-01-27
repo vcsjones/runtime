@@ -86,6 +86,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_Ed25519ImportPublicKey)
     DllImportEntry(CryptoNative_EdDsaExportPublicKey)
     DllImportEntry(CryptoNative_EdDsaExportPrivateKey)
+    DllImportEntry(CryptoNative_EdDsaHasPrivateKey)
     DllImportEntry(CryptoNative_EdDsaSignData)
     DllImportEntry(CryptoNative_EdDsaVerifyData)
     DllImportEntry(CryptoNative_EncodeAsn1Integer)

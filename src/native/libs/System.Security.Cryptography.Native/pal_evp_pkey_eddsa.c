@@ -213,3 +213,19 @@ cleanup:
     EVP_MD_CTX_free(digestCtx);
     return ret;
 }
+
+
+int32_t CryptoNative_EdDsaHasPrivateKey(EVP_PKEY* pKey)
+{
+    assert(pKey != NULL);
+    ERR_clear_error();
+
+    size_t neededSize = 0;
+
+    if (!EVP_PKEY_get_raw_private_key(pKey, NULL, &neededSize))
+    {
+        return 0;
+    }
+
+    return neededSize > 0 ? 1 : 0;
+}

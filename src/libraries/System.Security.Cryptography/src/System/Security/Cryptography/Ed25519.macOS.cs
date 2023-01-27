@@ -22,6 +22,16 @@ namespace System.Security.Cryptography
         {
         }
 
+        public override bool HasPrivateKey
+        {
+            get
+            {
+                CheckDisposed();
+                GenerateKeyIfNeeded();
+                return _privateKey is not null;
+            }
+        }
+
         [MemberNotNullWhen(true, nameof(_publicKey))]
         private bool IsInitialized => _publicKey is not null;
 

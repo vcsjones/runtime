@@ -32,6 +32,8 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm => "Ed25519";
         public override string? KeyExchangeAlgorithm => null;
 
+        public abstract bool HasPrivateKey { get; }
+
         public abstract void GenerateKey();
 
         protected abstract int ExportPrivateKeyCore(Span<byte> destination);
