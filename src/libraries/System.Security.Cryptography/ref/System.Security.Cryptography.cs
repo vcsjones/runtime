@@ -1288,6 +1288,22 @@ namespace System.Security.Cryptography
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature);
     }
+    public sealed partial class Ed25519OpenSsl : System.Security.Cryptography.Ed25519
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public Ed25519OpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
+        protected override int ExportPrivateKeyCore(System.Span<byte> destination) { throw null; }
+        protected override int ExportPublicKeyCore(System.Span<byte> destination) { throw null; }
+        public override void GenerateKey() { }
+        protected override void ImportPrivateKeyCore(System.ReadOnlySpan<byte> privateKey) { }
+        protected override void ImportPublicKeyCore(System.ReadOnlySpan<byte> publicKey) { }
+        protected override int SignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { throw null; }
+        protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
+    }
     public partial class FromBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         public FromBase64Transform() { }

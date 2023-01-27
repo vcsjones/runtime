@@ -43,6 +43,15 @@ namespace System.Security.Cryptography
         protected abstract int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination);
         protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature);
 
+        internal int ExportPrivateKeyImpl(Span<byte> destination) => ExportPrivateKeyCore(destination);
+        internal int ExportPublicKeyImpl(Span<byte> destination) => ExportPublicKeyCore(destination);
+
+        internal void ImportPrivateKeyImpl(ReadOnlySpan<byte> privateKey) => ImportPrivateKeyCore(privateKey);
+        internal void ImportPublicKeyImpl(ReadOnlySpan<byte> publicKey) => ImportPublicKeyCore(publicKey);
+
+        internal int SignDataImpl(ReadOnlySpan<byte> data, Span<byte> destination) => SignDataCore(data, destination);
+        internal bool VerifyDataImpl(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => VerifyDataCore(data, signature);
+
         public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < SignatureSizeInBytes)
