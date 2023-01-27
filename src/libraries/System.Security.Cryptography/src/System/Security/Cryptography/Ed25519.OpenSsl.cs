@@ -119,6 +119,7 @@ namespace System.Security.Cryptography
         private void ClearKeys()
         {
             _pKey?.Dispose();
+            _pKey = null;
         }
 
         protected override void Dispose(bool disposing)
