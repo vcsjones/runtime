@@ -31,6 +31,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] publicKey = ed25519.ExportPublicKey();
                 Assert.Equal(PrivateKeySize, privateKey.Length);
                 Assert.Equal(PublicKeySize, publicKey.Length);
+                Assert.NotEqual(publicKey, privateKey);
 
 
                 ed25519.GenerateKey();
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] publicKey2 = ed25519.ExportPublicKey();
                 Assert.Equal(PrivateKeySize, privateKey2.Length);
                 Assert.Equal(PublicKeySize, publicKey2.Length);
+                Assert.NotEqual(publicKey2, privateKey2);
 
                 Assert.NotEqual(privateKey, privateKey2);
                 Assert.NotEqual(publicKey, publicKey2);
@@ -57,6 +59,17 @@ namespace System.Security.Cryptography.Tests
 
             ed25519.Dispose();
             Assert.Throws<ObjectDisposedException>(() => ed25519.GenerateKey());
+        }
+
+        [Fact]
+        public static void ExportPrivateKey_ContainsOnlyPublicKey_Fails()
+        {
+            using (Ed25519 privateEd25519 = Ed25519.Create())
+            using (Ed25519 publicEd25519 = Ed25519.Create())
+            {
+                publicEd25519.ImportPublicKey(privateEd25519.ExportPublicKey());
+                Assert.ThrowsAny<CryptographicException>(() => publicEd25519.ExportPrivateKey());
+            }
         }
 
         [Fact]

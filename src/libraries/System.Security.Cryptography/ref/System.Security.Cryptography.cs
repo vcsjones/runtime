@@ -1251,32 +1251,39 @@ namespace System.Security.Cryptography
         public byte[]? X;
         public byte[]? Y;
     }
-    public abstract partial class Ed25519 : System.Security.Cryptography.EdDsa
+    public abstract partial class Ed25519 : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected Ed25519() { }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
+        public override string SignatureAlgorithm { get { throw null; } }
+        public int SignatureSizeInBytes { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static new System.Security.Cryptography.Ed25519 Create() { throw null; }
-    }
-    public abstract partial class EdDsa : System.Security.Cryptography.AsymmetricAlgorithm
-    {
-        protected EdDsa() { }
-        public abstract byte[] ExportPrivateKey();
-        public abstract byte[] ExportPublicKey();
+        public byte[] ExportPrivateKey() { throw null; }
+        public int ExportPrivateKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportPrivateKeyCore(System.Span<byte> destination);
+        public byte[] ExportPublicKey() { throw null; }
+        public int ExportPublicKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportPublicKeyCore(System.Span<byte> destination);
         public abstract void GenerateKey();
-        public abstract int GetSignatureSize();
         public void ImportPrivateKey(byte[] privateKey) { }
-        public abstract void ImportPrivateKey(System.ReadOnlySpan<byte> privateKey);
+        public void ImportPrivateKey(System.ReadOnlySpan<byte> privateKey) { }
+        protected abstract void ImportPrivateKeyCore(System.ReadOnlySpan<byte> privateKey);
         public void ImportPublicKey(byte[] publicKey) { }
-        public abstract void ImportPublicKey(System.ReadOnlySpan<byte> publicKey);
+        public void ImportPublicKey(System.ReadOnlySpan<byte> publicKey) { }
+        protected abstract void ImportPublicKeyCore(System.ReadOnlySpan<byte> publicKey);
         public byte[] SignData(byte[] data) { throw null; }
         public byte[] SignData(System.ReadOnlySpan<byte> data) { throw null; }
         public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { throw null; }
+        protected abstract int SignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination);
+        public bool TryExportPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryExportPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TrySignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TrySignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int bytesWritten);
         public bool VerifyData(byte[] data, byte[] signature) { throw null; }
         public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
         protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature);

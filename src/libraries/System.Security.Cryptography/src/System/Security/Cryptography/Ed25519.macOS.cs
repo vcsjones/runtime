@@ -25,16 +25,16 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(_publicKey))]
         private bool IsInitialized => _publicKey is not null;
 
-        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten)
+        protected override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
             CheckPrivateKey();
 
-            Debug.Assert(destination.Length >= GetSignatureSize());
-            bytesWritten = Interop.AppleCrypto.Ed25519Sign(_privateKey, data, destination);
-            Debug.Assert(bytesWritten == GetSignatureSize());
-            return true;
+            Debug.Assert(destination.Length >=SignatureSizeInBytes);
+            int written = Interop.AppleCrypto.Ed25519Sign(_privateKey, data, destination);
+            Debug.Assert(written == SignatureSizeInBytes);
+            return written;
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
@@ -70,32 +70,34 @@ namespace System.Security.Cryptography
             _publicKey = publicKey;
         }
 
-        public override byte[] ExportPrivateKey()
+        protected override int ExportPrivateKeyCore(Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
             CheckPrivateKey();
 
-            byte[] privateKey = GC.AllocateArray<byte>(PrivateKeySize, pinned: true);
-            _privateKey.AsSpan().CopyTo(privateKey);
-            return privateKey;
+            ReadOnlySpan<byte> privateKey = _privateKey;
+
+            privateKey.CopyTo(destination);
+            return privateKey.Length;
         }
 
-        public override byte[] ExportPublicKey()
+        protected override int ExportPublicKeyCore(Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
 
-            Debug.Assert(_publicKey is { Length : PublicKeySize });
-            return _publicKey.AsSpan().ToArray();
+            ReadOnlySpan<byte> publicKey = _publicKey;
+
+            publicKey.CopyTo(destination);
+            return publicKey.Length;
         }
 
-        [MemberNotNull(nameof(_publicKey))]
-        public override void ImportPublicKey(ReadOnlySpan<byte> publicKey)
+        protected override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey)
         {
             CheckDisposed();
 
-            if (publicKey.Length != PublicKeySize || !Interop.AppleCrypto.Ed25519ValidPublicKey(publicKey))
+            if (!Interop.AppleCrypto.Ed25519ValidPublicKey(publicKey))
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPublicKey);
             }
@@ -104,14 +106,9 @@ namespace System.Security.Cryptography
             _publicKey = publicKey.ToArray();
         }
 
-        public override void ImportPrivateKey(ReadOnlySpan<byte> privateKey)
+        protected override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey)
         {
             CheckDisposed();
-
-            if (privateKey.Length != PrivateKeySize)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-            }
 
             byte[] publicKeyBuffer = new byte[PublicKeySize];
 

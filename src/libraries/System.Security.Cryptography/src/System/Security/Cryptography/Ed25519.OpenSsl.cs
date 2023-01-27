@@ -25,38 +25,78 @@ namespace System.Security.Cryptography
         public override void GenerateKey()
         {
             CheckDisposed();
+            ClearKeys();
             _pKey = Interop.Crypto.Ed25519GenerateKey();
             Debug.Assert(!_pKey.IsInvalid);
         }
 
-        protected override bool TrySignDataCore(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten)
+        protected override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            GenerateKeyIfNeeded();
+
+            Debug.Assert(destination.Length >= SignatureSizeInBytes);
+
+            if (!Interop.Crypto.TryEdDsaSignData(_pKey, data, destination, out int written)
+                || written != SignatureSizeInBytes)
+            {
+                Debug.Fail("Failed to produce a signature or the amount written is unexpected.");
+                throw new CryptographicException();
+            }
+
+            return written;
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            GenerateKeyIfNeeded();
+
+            return Interop.Crypto.EdDsaVerifyData(_pKey, data, signature);
         }
 
-        public override byte[] ExportPrivateKey()
+        protected override int ExportPrivateKeyCore(Span<byte> destination)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            GenerateKeyIfNeeded();
+
+            if (!Interop.Crypto.TryEdDsaExportPrivateKey(_pKey, destination, out int written) || written != PrivateKeySize)
+            {
+                Debug.Fail("Failed to export the pubic key or the amount written is unexpected.");
+                throw new CryptographicException();
+            }
+
+            return written;
         }
 
-        public override byte[] ExportPublicKey()
+        protected override int ExportPublicKeyCore(Span<byte> destination)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            GenerateKeyIfNeeded();
+
+            if (!Interop.Crypto.TryEdDsaExportPublicKey(_pKey, destination, out int written) || written != PublicKeySize)
+            {
+                Debug.Fail("Failed to export the pubic key or the amount written is unpexpected.");
+                throw new CryptographicException();
+            }
+
+            return written;
         }
 
-        public override void ImportPublicKey(ReadOnlySpan<byte> publicKey)
+        protected override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            ClearKeys();
+
+            _pKey = Interop.Crypto.Ed25519ImportPublicKey(publicKey);
         }
 
-        public override void ImportPrivateKey(ReadOnlySpan<byte> privateKey)
+        protected override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey)
         {
-            throw new NotImplementedException();
+            CheckDisposed();
+            ClearKeys();
+
+            _pKey = Interop.Crypto.Ed25519ImportPrivateKey(privateKey);
         }
 
         private void ClearKeys()
@@ -74,5 +114,15 @@ namespace System.Security.Cryptography
         }
 
         private void CheckDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        [MemberNotNull(nameof(_pKey))]
+        private void GenerateKeyIfNeeded()
+        {
+            if (_pKey is null)
+            {
+                _pKey = Interop.Crypto.Ed25519GenerateKey();
+                Debug.Assert(!_pKey.IsInvalid);
+            }
+        }
     }
 }
