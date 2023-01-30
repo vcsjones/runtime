@@ -20,6 +20,13 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
+        public Ed25519OpenSsl() => throw new PlatformNotSupportedException();
+
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public Ed25519OpenSsl(SafeEvpPKeyHandle pkeyHandle) => throw new PlatformNotSupportedException();
 
         public override bool HasPrivateKey => false;

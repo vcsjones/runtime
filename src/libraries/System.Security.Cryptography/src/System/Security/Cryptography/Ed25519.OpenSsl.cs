@@ -12,8 +12,14 @@ namespace System.Security.Cryptography
         private SafeEvpPKeyHandle? _pKey;
         private bool _disposed;
 
-        internal Ed25519OpenSsl()
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public Ed25519OpenSsl()
         {
+            ThrowIfNotSupported();
         }
 
         [UnsupportedOSPlatform("android")]

@@ -8,23 +8,45 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    public interface IEd25519Implementation
+    {
+        static abstract Ed25519 Create();
+    }
+
+    public class Ed25519FactoryTests : Ed25519Tests<Ed25519FactoryTests.IEd25519Factory>
+    {
+        public sealed class IEd25519Factory : IEd25519Implementation
+        {
+            public static Ed25519 Create() => Ed25519.Create();
+        }
+    }
+
+    public class Ed25519OpenSslTests : Ed25519Tests<Ed25519OpenSslTests.IEd25519Factory>
+    {
+        public sealed class IEd25519Factory : IEd25519Implementation
+        {
+            public static Ed25519 Create() => new Ed25519OpenSsl();
+        }
+    }
+
     [SkipOnPlatform(UnsupportedPlatforms, "Not supported")]
-    public static class Ed25519Tests
+    public abstract class Ed25519Tests<TEd25519Factory> where TEd25519Factory : IEd25519Implementation
     {
         private const TestPlatforms UnsupportedPlatforms =
             TestPlatforms.Browser |
             TestPlatforms.Windows |
             TestPlatforms.iOS |
-            TestPlatforms.tvOS;
+            TestPlatforms.tvOS |
+            TestPlatforms.Android;
 
         private const int PrivateKeySize = 32;
         private const int PublicKeySize = 32;
         private const int SignatureSize = 64;
 
         [Fact]
-        public static void GenerateKey_ContainsPrivateAndPublic()
+        public void GenerateKey_ContainsPrivateAndPublic()
         {
-            using (Ed25519 ed25519 = Ed25519.Create())
+            using (Ed25519 ed25519 = TEd25519Factory.Create())
             {
                 ed25519.GenerateKey();
                 byte[] privateKey = ed25519.ExportPrivateKey();
@@ -46,23 +68,62 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
-        public static void GenerateKey_Disposed()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void General_UseAfterDisposed(bool forceKeyInToExistence)
         {
             Ed25519 ed25519 = Ed25519.Create();
 
-            ed25519.GenerateKey();
-            byte[] privateKey = ed25519.ExportPrivateKey();
-            byte[] publicKey = ed25519.ExportPublicKey();
-            Assert.Equal(PrivateKeySize, privateKey.Length);
-            Assert.Equal(PublicKeySize, publicKey.Length);
+            if (forceKeyInToExistence)
+            {
+                ed25519.GenerateKey();
+            }
 
             ed25519.Dispose();
+
+            byte[] signBuffer = new byte[SignatureSize];
+            byte[] privateKeyBuffer = new byte[PrivateKeySize];
+            byte[] publicKeyBuffer = new byte[PrivateKeySize];
+            byte[] privateKey = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60".HexToByteArray();
+            byte[] publicKey = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".HexToByteArray();
+
             Assert.Throws<ObjectDisposedException>(() => ed25519.GenerateKey());
+            Assert.Throws<ObjectDisposedException>(() => ed25519.HasPrivateKey);
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.TrySignData(ReadOnlySpan<byte>.Empty, signBuffer, out _));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.SignData(ReadOnlySpan<byte>.Empty, signBuffer));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.SignData(ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.SignData(Array.Empty<byte>()));
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.VerifyData(ReadOnlySpan<byte>.Empty, signBuffer));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.VerifyData(Array.Empty<byte>(), signBuffer));
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ImportPrivateKey(privateKey.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ImportPrivateKey(privateKey));
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ImportPublicKey(publicKey.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ImportPublicKey(publicKey));
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ExportPrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ExportPrivateKey(privateKeyBuffer));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.TryExportPrivateKey(privateKeyBuffer, out _));
+
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ExportPublicKey());
+            Assert.Throws<ObjectDisposedException>(() => ed25519.ExportPublicKey(publicKeyBuffer));
+            Assert.Throws<ObjectDisposedException>(() => ed25519.TryExportPublicKey(publicKeyBuffer, out _));
         }
 
         [Fact]
-        public static void ExportPrivateKey_ContainsOnlyPublicKey_Fails()
+        public void Dispose_AllowMultipleDispose()
+        {
+            Ed25519 ed25519 = Ed25519.Create();
+            ed25519.Dispose();
+            ed25519.Dispose(); // Assert.NoThrow
+        }
+
+        [Fact]
+        public void ExportPrivateKey_ContainsOnlyPublicKey_Fails()
         {
             using (Ed25519 privateEd25519 = Ed25519.Create())
             using (Ed25519 publicEd25519 = Ed25519.Create())
@@ -73,7 +134,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void SignData_Allocating_Span_Roundtrip()
+        public void SignData_Allocating_Span_Roundtrip()
         {
             using (Ed25519 privateEd25519 = Ed25519.Create())
             using (Ed25519 publicEd25519 = Ed25519.Create())
@@ -88,7 +149,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void VerifyData_TamperedData_False()
+        public void VerifyData_TamperedData_False()
         {
             using (Ed25519 ed25519 = Ed25519.Create())
             {
@@ -99,7 +160,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void VerifyData_TamperedSignature_False()
+        public void VerifyData_TamperedSignature_False()
         {
             using (Ed25519 ed25519 = Ed25519.Create())
             {
@@ -113,20 +174,36 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void VerifyData_TruncatedSignature_False()
+        public void VerifyData_TruncatedSignature_False()
         {
             using (Ed25519 ed25519 = Ed25519.Create())
             {
                 ReadOnlySpan<byte> data = "potatos"u8;
                 byte[] signature = ed25519.SignData(data);
                 Assert.Equal(SignatureSize, signature.Length);
-                Assert.False(ed25519.VerifyData(data, signature.AsSpan(0..^1)), "invalid signature");
+
+                Array.Resize(ref signature, SignatureSize - 1);
+                Assert.False(ed25519.VerifyData(data, signature), "invalid signature");
+            }
+        }
+
+        [Fact]
+        public void VerifyData_TrailingNull_False()
+        {
+            using (Ed25519 ed25519 = Ed25519.Create())
+            {
+                ReadOnlySpan<byte> data = "potatos"u8;
+                byte[] signature = ed25519.SignData(data);
+                Assert.Equal(SignatureSize, signature.Length);
+
+                Array.Resize(ref signature, SignatureSize + 1);
+                Assert.False(ed25519.VerifyData(data, signature), "invalid signature");
             }
         }
 
         [Theory]
         [MemberData(nameof(Rfc8032TestVectors))]
-        public static void VerifyTestVectors(byte[] privateKey, byte[] publicKey, byte[] message, byte[] signature)
+        public void VerifyTestVectors(byte[] privateKey, byte[] publicKey, byte[] message, byte[] signature)
         {
             using (Ed25519 ed25519 = Ed25519.Create())
             {
@@ -139,6 +216,31 @@ namespace System.Security.Cryptography.Tests
                 ed25519.ImportPrivateKey(privateKey);
                 Assert.Equal(publicKey, ed25519.ExportPublicKey());
                 Assert.True(ed25519.VerifyData(message, signature), "valid signature");
+            }
+        }
+
+        [Fact]
+        public void HasPrivateKey_CorrectAnswer()
+        {
+            using (Ed25519 ed25519 = Ed25519.Create())
+            {
+                // test when key generation is forced.
+                Assert.True(ed25519.HasPrivateKey, nameof(ed25519.HasPrivateKey));
+            }
+
+            using (Ed25519 ed25519 = Ed25519.Create())
+            {
+                // test when importing a key.
+                ed25519.ImportPrivateKey("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60".HexToByteArray());
+                Assert.True(ed25519.HasPrivateKey, nameof(ed25519.HasPrivateKey));
+            }
+
+            using (Ed25519 ed25519 = Ed25519.Create())
+            {
+                Assert.True(ed25519.HasPrivateKey, nameof(ed25519.HasPrivateKey));
+
+                ed25519.ImportPublicKey("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".HexToByteArray());
+                Assert.False(ed25519.HasPrivateKey, nameof(ed25519.HasPrivateKey));
             }
         }
 
