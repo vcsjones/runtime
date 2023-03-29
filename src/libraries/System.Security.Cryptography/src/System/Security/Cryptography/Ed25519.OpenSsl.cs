@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
             Debug.Assert(!_pKey.IsInvalid);
         }
 
-        protected override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination)
+        protected internal override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
             return written;
         }
 
-        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
+        protected internal override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
             return Interop.Crypto.EdDsaVerifyData(_pKey, data, signature);
         }
 
-        protected override int ExportPrivateKeyCore(Span<byte> destination)
+        protected internal override int ExportPrivateKeyCore(Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
             return written;
         }
 
-        protected override int ExportPublicKeyCore(Span<byte> destination)
+        protected internal override int ExportPublicKeyCore(Span<byte> destination)
         {
             CheckDisposed();
             GenerateKeyIfNeeded();
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
             return written;
         }
 
-        protected override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey)
+        protected internal override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey)
         {
             CheckDisposed();
             ClearKeys();
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
             _pKey = Interop.Crypto.Ed25519ImportPublicKey(publicKey);
         }
 
-        protected override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey)
+        protected internal override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey)
         {
             CheckDisposed();
             ClearKeys();

@@ -36,23 +36,14 @@ namespace System.Security.Cryptography
 
         public abstract void GenerateKey();
 
-        protected abstract int ExportPrivateKeyCore(Span<byte> destination);
-        protected abstract int ExportPublicKeyCore(Span<byte> destination);
+        protected internal abstract int ExportPrivateKeyCore(Span<byte> destination);
+        protected internal abstract int ExportPublicKeyCore(Span<byte> destination);
 
-        protected abstract void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey);
-        protected abstract void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey);
+        protected internal abstract void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey);
+        protected internal abstract void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey);
 
-        protected abstract int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination);
-        protected abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature);
-
-        internal int ExportPrivateKeyImpl(Span<byte> destination) => ExportPrivateKeyCore(destination);
-        internal int ExportPublicKeyImpl(Span<byte> destination) => ExportPublicKeyCore(destination);
-
-        internal void ImportPrivateKeyImpl(ReadOnlySpan<byte> privateKey) => ImportPrivateKeyCore(privateKey);
-        internal void ImportPublicKeyImpl(ReadOnlySpan<byte> publicKey) => ImportPublicKeyCore(publicKey);
-
-        internal int SignDataImpl(ReadOnlySpan<byte> data, Span<byte> destination) => SignDataCore(data, destination);
-        internal bool VerifyDataImpl(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => VerifyDataCore(data, signature);
+        protected internal abstract int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination);
+        protected internal abstract bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature);
 
         public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, out int bytesWritten)
         {

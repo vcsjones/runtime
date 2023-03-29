@@ -33,11 +33,11 @@ namespace System.Security.Cryptography
 
         public override void GenerateKey() => throw new PlatformNotSupportedException();
 
-        protected override int ExportPrivateKeyCore(Span<byte> destination) => throw new PlatformNotSupportedException();
-        protected override int ExportPublicKeyCore(Span<byte> destination) => throw new PlatformNotSupportedException();
-        protected override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey) => throw new PlatformNotSupportedException();
-        protected override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey) => throw new PlatformNotSupportedException();
-        protected override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination) => throw new PlatformNotSupportedException();
-        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => throw new PlatformNotSupportedException();
+        protected internal override int ExportPrivateKeyCore(Span<byte> destination) => throw new PlatformNotSupportedException();
+        protected internal override int ExportPublicKeyCore(Span<byte> destination) => throw new PlatformNotSupportedException();
+        protected internal override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey) => throw new PlatformNotSupportedException();
+        protected internal override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey) => throw new PlatformNotSupportedException();
+        protected internal override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination) => throw new PlatformNotSupportedException();
+        protected internal override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => throw new PlatformNotSupportedException();
     }
 }

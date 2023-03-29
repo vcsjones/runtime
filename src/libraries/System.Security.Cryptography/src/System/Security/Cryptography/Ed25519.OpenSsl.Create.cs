@@ -34,12 +34,12 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm => _wrapped.SignatureAlgorithm;
 
         public override void GenerateKey() => _wrapped.GenerateKey();
-        protected override int ExportPrivateKeyCore(Span<byte> destination) => _wrapped.ExportPrivateKeyImpl(destination);
-        protected override int ExportPublicKeyCore(Span<byte> destination) => _wrapped.ExportPublicKeyImpl(destination);
-        protected override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey) => _wrapped.ImportPrivateKeyImpl(privateKey);
-        protected override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey) => _wrapped.ImportPublicKeyImpl(publicKey);
-        protected override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination) => _wrapped.SignDataImpl(data, destination);
-        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => _wrapped.VerifyDataImpl(data, signature);
+        protected internal override int ExportPrivateKeyCore(Span<byte> destination) => _wrapped.ExportPrivateKeyCore(destination);
+        protected internal override int ExportPublicKeyCore(Span<byte> destination) => _wrapped.ExportPublicKeyCore(destination);
+        protected internal override void ImportPrivateKeyCore(ReadOnlySpan<byte> privateKey) => _wrapped.ImportPrivateKeyCore(privateKey);
+        protected internal override void ImportPublicKeyCore(ReadOnlySpan<byte> publicKey) => _wrapped.ImportPublicKeyCore(publicKey);
+        protected internal override int SignDataCore(ReadOnlySpan<byte> data, Span<byte> destination) => _wrapped.SignDataCore(data, destination);
+        protected internal override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature) => _wrapped.VerifyDataCore(data, signature);
 
         public override byte[] ExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
