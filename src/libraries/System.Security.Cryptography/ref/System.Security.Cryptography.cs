@@ -1255,13 +1255,18 @@ namespace System.Security.Cryptography
     {
         protected Ed25519() { }
         public abstract bool HasPrivateKey { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("windows")]
+        public static bool IsSupported { get { throw null; } }
         public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static new System.Security.Cryptography.Ed25519 Create() { throw null; }
@@ -1304,13 +1309,13 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public Ed25519OpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
         public override bool HasPrivateKey { get { throw null; } }
-        protected override int ExportPrivateKeyCore(System.Span<byte> destination) { throw null; }
-        protected override int ExportPublicKeyCore(System.Span<byte> destination) { throw null; }
+        protected internal override int ExportPrivateKeyCore(System.Span<byte> destination) { throw null; }
+        protected internal override int ExportPublicKeyCore(System.Span<byte> destination) { throw null; }
         public override void GenerateKey() { }
-        protected override void ImportPrivateKeyCore(System.ReadOnlySpan<byte> privateKey) { }
-        protected override void ImportPublicKeyCore(System.ReadOnlySpan<byte> publicKey) { }
-        protected override int SignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { throw null; }
-        protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected internal override void ImportPrivateKeyCore(System.ReadOnlySpan<byte> privateKey) { }
+        protected internal override void ImportPublicKeyCore(System.ReadOnlySpan<byte> publicKey) { }
+        protected internal override int SignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { throw null; }
+        protected internal override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
     }
     public partial class FromBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {

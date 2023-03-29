@@ -7,6 +7,13 @@ namespace System.Security.Cryptography
 {
     public abstract partial class Ed25519
     {
+        [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        [UnsupportedOSPlatformGuard("windows")]
+        public static bool IsSupported => false;
+
         public static new partial Ed25519 Create()
         {
             throw new PlatformNotSupportedException();

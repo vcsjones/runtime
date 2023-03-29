@@ -9,6 +9,14 @@ namespace System.Security.Cryptography
 {
     public abstract partial class Ed25519
     {
+        // CryptoKit added support in 10.15, our min macOS target.
+        [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("windows")]
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        public static bool IsSupported => true;
+
         public static new partial Ed25519 Create() => new Ed25519CryptoKit();
     }
 

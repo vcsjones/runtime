@@ -9,6 +9,12 @@ namespace System.Security.Cryptography
 {
     public abstract partial class Ed25519
     {
+        [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("windows")]
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable;
         public static new partial Ed25519 Create() => new Ed25519Wrapper(new Ed25519OpenSsl());
     }
 

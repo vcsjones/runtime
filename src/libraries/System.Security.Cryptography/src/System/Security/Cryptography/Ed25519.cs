@@ -20,7 +20,6 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("windows")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [UnsupportedOSPlatform("maccatalyst")]
         public static new partial Ed25519 Create();
 
         protected Ed25519()
