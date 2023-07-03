@@ -1774,10 +1774,14 @@ namespace System.Security.Cryptography
     }
     public static partial class PemEncoding
     {
+        public static System.Security.Cryptography.PemFields Find(System.ReadOnlySpan<byte> pemData) { throw null; }
         public static System.Security.Cryptography.PemFields Find(System.ReadOnlySpan<char> pemData) { throw null; }
         public static int GetEncodedSize(int labelLength, int dataLength) { throw null; }
+        public static bool TryFind(System.ReadOnlySpan<byte> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
         public static bool TryFind(System.ReadOnlySpan<char> pemData, out System.Security.Cryptography.PemFields fields) { throw null; }
+        public static bool TryWrite(System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> data, System.Span<byte> destination, out int charsWritten) { throw null; }
         public static bool TryWrite(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static byte[] Write(System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> data) { throw null; }
         public static char[] Write(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
         public static string WriteString(System.ReadOnlySpan<char> label, System.ReadOnlySpan<byte> data) { throw null; }
     }

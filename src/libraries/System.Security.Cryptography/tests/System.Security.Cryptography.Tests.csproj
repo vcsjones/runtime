@@ -277,6 +277,7 @@
     <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />
     <Compile Include="PemEncodingFindTests.cs" />
+    <Compile Include="PemEncodingFindUtf8Tests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
     <Compile Include="RC2Provider.cs" />

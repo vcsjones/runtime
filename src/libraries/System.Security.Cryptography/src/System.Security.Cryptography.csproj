@@ -441,6 +441,7 @@
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.cs" />
     <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
+    <Compile Include="System\Security\Cryptography\PemEncoding.Utf8.cs" />
     <Compile Include="System\Security\Cryptography\PemEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\PemFields.cs" />
     <Compile Include="System\Security\Cryptography\PemKeyHelpers.cs" />
