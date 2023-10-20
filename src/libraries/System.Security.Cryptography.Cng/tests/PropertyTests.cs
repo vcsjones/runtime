@@ -160,5 +160,29 @@ namespace System.Security.Cryptography.Cng.Tests
             CngProperty property = new CngProperty("banana", null, CngPropertyOptions.CustomProperty);
             Assert.Null(property.GetValue());
         }
+
+        [Fact]
+        public static void TestConstructorSpan()
+        {
+            string name = "dotnet-test";
+            ReadOnlySpan<byte> value = [1, 2, 3, 4, 5];
+
+            CngProperty property = new CngProperty(name, value, CngPropertyOptions.CustomProperty);
+            AssertExtensions.SequenceEqual(value, property.GetValue());
+        }
+
+        [Fact]
+        public static void TestConstructorSpan_NameNull()
+        {
+            string name = null!;
+            var value = new byte[12];
+            value[5] = 1;
+            value[6] = 2;
+            value[7] = 3;
+
+            AssertExtensions.ThrowsAny<ArgumentNullException>(
+                "name",
+                () => new CngProperty(name, (ReadOnlySpan<byte>)value, CngPropertyOptions.CustomProperty));
+        }
     }
 }
