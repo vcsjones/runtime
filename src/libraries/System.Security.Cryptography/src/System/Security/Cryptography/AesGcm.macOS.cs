@@ -9,6 +9,8 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm
     {
+        public static KeySizes NonceByteSizes { get; } = new KeySizes(12, 12, 1);
+
         private byte[]? _key;
 
         // CryptoKit added AES.GCM in macOS 10.15, which is our minimum target for macOS.

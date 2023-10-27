@@ -12,9 +12,6 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("tvos")]
     public sealed partial class AesGcm : IDisposable
     {
-        private const int NonceSize = 12;
-        public static KeySizes NonceByteSizes { get; } = new KeySizes(NonceSize, NonceSize, 1);
-
         [Obsolete(Obsoletions.AesGcmTagConstructorMessage, DiagnosticId = Obsoletions.AesGcmTagConstructorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AesGcm(ReadOnlySpan<byte> key)
         {

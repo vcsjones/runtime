@@ -12,6 +12,7 @@ namespace System.Security.Cryptography
         private SafeKeyHandle _keyHandle;
 
         public static bool IsSupported => true;
+        public static KeySizes NonceByteSizes { get; } = new KeySizes(12, 12, 1);
         public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
 
         [MemberNotNull(nameof(_keyHandle))]
