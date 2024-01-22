@@ -174,15 +174,60 @@ namespace System.Security.Cryptography.Cng.Tests
         [Fact]
         public static void TestConstructorSpan_NameNull()
         {
-            string name = null!;
-            var value = new byte[12];
+            string name = null;
+            byte[] value = new byte[12];
             value[5] = 1;
             value[6] = 2;
             value[7] = 3;
 
-            AssertExtensions.ThrowsAny<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "name",
                 () => new CngProperty(name, (ReadOnlySpan<byte>)value, CngPropertyOptions.CustomProperty));
+        }
+
+        [Fact]
+        public static void TestConstructorSpan_NullComesBackNull()
+        {
+            const string PropertyName = "my-prop";
+            CngKeyCreationParameters parameters = new()
+            {
+                Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+            };
+
+            parameters.Parameters.Add(
+                new CngProperty(
+                    PropertyName,
+                    (ReadOnlySpan<byte>)null,
+                    CngPropertyOptions.CustomProperty));
+
+            using (CngKey key = CngKey.Create(CngAlgorithm.Rsa, keyName: null, parameters))
+            {
+                Assert.Null(key.GetProperty(PropertyName, CngPropertyOptions.CustomProperty).GetValue());
+            }
+        }
+
+        [Fact]
+        public static void TestConstructorSpan_EmptyComesBackNull()
+        {
+            const string PropertyName = "my-prop";
+            CngKeyCreationParameters parameters = new()
+            {
+                Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+            };
+
+            // Do not change to collection literal. We want the ref of the span to point to a non-null adddress.
+            ReadOnlySpan<byte> realMemory = stackalloc byte[1].Slice(1);
+
+            parameters.Parameters.Add(
+                new CngProperty(
+                    PropertyName,
+                    realMemory,
+                    CngPropertyOptions.CustomProperty));
+
+            using (CngKey key = CngKey.Create(CngAlgorithm.Rsa, keyName: null, parameters))
+            {
+                Assert.Null(key.GetProperty(PropertyName, CngPropertyOptions.CustomProperty).GetValue());
+            }
         }
     }
 }
