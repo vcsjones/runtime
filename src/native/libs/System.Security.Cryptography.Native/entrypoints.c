@@ -167,6 +167,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpPKeyDuplicate)
     DllImportEntry(CryptoNative_EvpPkeyGetDsa)
     DllImportEntry(CryptoNative_EvpPkeyGetEcKey)
+    DllImportEntry(CryptoNative_EvpPKeyImportRSAParameters)
     DllImportEntry(CryptoNative_EvpPkeySetDsa)
     DllImportEntry(CryptoNative_EvpPkeySetEcKey)
     DllImportEntry(CryptoNative_EvpPKeySize)

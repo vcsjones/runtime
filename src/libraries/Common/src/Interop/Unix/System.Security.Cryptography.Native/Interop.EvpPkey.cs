@@ -56,6 +56,56 @@ internal static partial class Interop
             int len,
             int algId);
 
+        [LibraryImport(Libraries.CryptoNative)]
+        private static unsafe partial SafeEvpPKeyHandle CryptoNative_EvpPKeyImportRSAParameters(
+            byte* d, int dLen,
+            byte* dp, int dpLen,
+            byte* dq, int dqLen,
+            byte* exponent, int exponentLen,
+            byte* inverseQ, int inverseQLen,
+            byte* modulus, int modulusLen,
+            byte* p, int pLen,
+            byte* q, int qLen);
+
+        internal static unsafe SafeEvpPKeyHandle EvpPKeyImportRSAParameters(
+            byte[]? d,
+            byte[]? dp,
+            byte[]? dq,
+            byte[]? exponent,
+            byte[]? inverseQ,
+            byte[]? modulus,
+            byte[]? p,
+            byte[]? q)
+        {
+            fixed (byte* pD = d)
+            fixed (byte* pDp = dp)
+            fixed (byte* pDq = dq)
+            fixed (byte* pExponent = exponent)
+            fixed (byte* pInverseQ = inverseQ)
+            fixed (byte* pModulus = modulus)
+            fixed (byte* pP = p)
+            fixed (byte* pQ = q)
+            {
+                SafeEvpPKeyHandle handle = CryptoNative_EvpPKeyImportRSAParameters(
+                    pD, d?.Length ?? 0,
+                    pDp, dp?.Length ?? 0,
+                    pDq, dq?.Length ?? 0,
+                    pExponent, exponent?.Length ?? 0,
+                    pInverseQ, inverseQ?.Length ?? 0,
+                    pModulus, modulus?.Length ?? 0,
+                    pP, p?.Length ?? 0,
+                    pQ, q?.Length ?? 0);
+
+                if (handle.IsInvalid)
+                {
+                    handle.Dispose();
+                    throw CreateOpenSslCryptographicException();
+                }
+
+                return handle;
+            }
+        }
+
         internal static unsafe SafeEvpPKeyHandle DecodeSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             EvpAlgorithmId algorithmId)

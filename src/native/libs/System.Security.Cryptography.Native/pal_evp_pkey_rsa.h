@@ -79,3 +79,13 @@ PALEXPORT int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
                                              const uint8_t* signature,
                                              int32_t signatureLen);
 
+
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyImportRSAParameters(
+    unsigned char* d, int32_t dLen,
+    unsigned char* dp, int32_t dpLen,
+    unsigned char* dq, int32_t dqLen,
+    unsigned char* exponent, int32_t exponentLen,
+    unsigned char* inverseQ, int32_t inverseQLen,
+    unsigned char* modulus, int32_t modulusLen,
+    unsigned char* p, int32_t pLen,
+    unsigned char* q, int32_t qLen);

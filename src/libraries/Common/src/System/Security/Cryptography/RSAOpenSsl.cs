@@ -451,34 +451,18 @@ namespace System.Security.Cryptography
             ValidateParameters(ref parameters);
             ThrowIfDisposed();
 
-            if (parameters.D != null)
-            {
-                AsnWriter writer = RSAKeyFormatHelper.WritePkcs8PrivateKey(parameters);
-                ArraySegment<byte> pkcs8 = writer.RentAndEncode();
+            SafeEvpPKeyHandle newKey = Interop.Crypto.EvpPKeyImportRSAParameters(
+                parameters.D,
+                parameters.DP,
+                parameters.DQ,
+                parameters.Exponent,
+                parameters.InverseQ,
+                parameters.Modulus,
+                parameters.P,
+                parameters.Q);
 
-                try
-                {
-                    ImportPkcs8PrivateKey(pkcs8, checkAlgorithm: false, out _);
-                }
-                finally
-                {
-                    CryptoPool.Return(pkcs8);
-                }
-            }
-            else
-            {
-                AsnWriter writer = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
-                ArraySegment<byte> spki = writer.RentAndEncode();
-
-                try
-                {
-                    ImportSubjectPublicKeyInfo(spki, checkAlgorithm: false, out _);
-                }
-                finally
-                {
-                    CryptoPool.Return(spki);
-                }
-            }
+            Debug.Assert(!newKey.IsInvalid);
+            SetKey(newKey);
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)

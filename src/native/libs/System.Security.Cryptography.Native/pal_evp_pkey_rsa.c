@@ -392,3 +392,147 @@ static int HasNoPrivateKey(const RSA* rsa)
 
     return 0;
 }
+
+EVP_PKEY* CryptoNative_EvpPKeyImportRSAParameters(
+    unsigned char* d, int32_t dLen,
+    unsigned char* dp, int32_t dpLen,
+    unsigned char* dq, int32_t dqLen,
+    unsigned char* exponent, int32_t exponentLen,
+    unsigned char* inverseQ, int32_t inverseQLen,
+    unsigned char* modulus, int32_t modulusLen,
+    unsigned char* p, int32_t pLen,
+    unsigned char* q, int32_t qLen)
+{
+    ERR_clear_error();
+
+    (void)d;
+    (void)dLen;
+    (void)dp;
+    (void)dpLen;
+    (void)dq;
+    (void)dqLen;
+    (void)inverseQ;
+    (void)inverseQLen;
+    (void)p;
+    (void)pLen;
+    (void)q;
+    (void)qLen;
+
+    EVP_PKEY* ret = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+    EVP_PKEY_CTX* verify = NULL;
+    BIGNUM* nBn = NULL;
+    BIGNUM* eBn = NULL;
+    BIGNUM* dBn = NULL;
+    BIGNUM* dpBn = NULL;
+    BIGNUM* dqBn = NULL;
+    BIGNUM* inverseQBn = NULL;
+    BIGNUM* pBn = NULL;
+    BIGNUM* qBn = NULL;
+    OSSL_PARAM_BLD* builder = NULL;
+
+    if ((builder = OSSL_PARAM_BLD_new()) == NULL)
+    {
+        goto error;
+    }
+
+    if (modulus && ((nBn = BN_bin2bn(modulus, modulusLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "n", nBn)))
+    {
+        goto error;
+    }
+
+    if (exponent && ((eBn = BN_bin2bn(exponent, exponentLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "e", eBn)))
+    {
+        goto error;
+    }
+
+    if (d && ((dBn = BN_bin2bn(d, dLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "d", dBn)))
+    {
+        goto error;
+    }
+
+    if (dp && ((dpBn = BN_bin2bn(dp, dpLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "rsa-exponent1", dpBn)))
+    {
+        goto error;
+    }
+
+    if (dq && ((dqBn = BN_bin2bn(dq, dqLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "rsa-exponent2", dqBn)))
+    {
+        goto error;
+    }
+
+    if (inverseQ && ((inverseQBn = BN_bin2bn(inverseQ, inverseQLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "rsa-coefficient1", inverseQBn)))
+    {
+        goto error;
+    }
+
+    if (p && ((pBn = BN_bin2bn(p, pLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "rsa-factor1", pBn)))
+    {
+        goto error;
+    }
+
+    if (q && ((qBn = BN_bin2bn(q, qLen, NULL)) == NULL || !OSSL_PARAM_BLD_push_BN(builder, "rsa-factor2", qBn)))
+    {
+        goto error;
+    }
+
+    OSSL_PARAM* params = OSSL_PARAM_BLD_to_param(builder);
+
+    ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+
+    if (ctx == NULL)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_fromdata_init(ctx) <= 0)
+    {
+        goto error;
+    }
+
+    if (EVP_PKEY_fromdata(ctx, &ret, EVP_PKEY_KEYPAIR, params) <= 0)
+    {
+        goto error;
+    }
+
+    verify = EVP_PKEY_CTX_new(ret, NULL);
+
+    if (verify == NULL)
+    {
+        goto error;
+    }
+
+    if (d)
+    {
+        if (EVP_PKEY_check(verify) != 1)
+        {
+            goto error;
+        }
+    }
+    else
+    {
+        if (EVP_PKEY_public_check(verify) != 1)
+        {
+            goto error;
+        }
+    }
+
+    goto done;
+
+error:
+    if (ret) EVP_PKEY_free(ret);
+    ret = NULL;
+done:
+    if (ctx) EVP_PKEY_CTX_free(ctx);
+    if (verify) EVP_PKEY_CTX_free(verify);
+    if (nBn) BN_free(nBn);
+    if (eBn) BN_free(eBn);
+    if (dBn) BN_clear_free(dBn);
+    if (dpBn) BN_clear_free(dpBn);
+    if (dqBn) BN_clear_free(dqBn);
+    if (inverseQBn) BN_clear_free(inverseQBn);
+    if (pBn) BN_clear_free(pBn);
+    if (qBn) BN_clear_free(qBn);
+
+    return ret;
+}

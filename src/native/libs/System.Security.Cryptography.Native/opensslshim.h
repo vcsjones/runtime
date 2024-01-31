@@ -46,6 +46,7 @@
 #include <openssl/provider.h>
 #include <openssl/params.h>
 #include <openssl/core_names.h>
+#include <openssl/param_build.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -379,6 +380,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    LIGHTUP_FUNCTION(EVP_PKEY_CTX_new_from_name) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_keygen_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_oaep_md) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
@@ -393,6 +395,8 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata) \
+    LIGHTUP_FUNCTION(EVP_PKEY_fromdata_init) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
     RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
@@ -479,6 +483,8 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_end) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_BN) \
+    LIGHTUP_FUNCTION(OSSL_PARAM_construct_ulong) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -676,6 +682,13 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     LIGHTUP_FUNCTION(EC_GROUP_set_curve_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_get_affine_coordinates_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
+    REQUIRED_FUNCTION(EVP_PKEY_print_public_fp) \
+    REQUIRED_FUNCTION(OSSL_PARAM_set_BN) \
+    REQUIRED_FUNCTION(OSSL_PARAM_BLD_new) \
+    REQUIRED_FUNCTION(OSSL_PARAM_BLD_to_param) \
+    REQUIRED_FUNCTION(OSSL_PARAM_BLD_push_uint) \
+    REQUIRED_FUNCTION(OSSL_PARAM_BLD_push_BN) \
+
 
 // Declare pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
@@ -891,6 +904,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
 #define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_CTX_new_from_name EVP_PKEY_CTX_new_from_name_ptr
 #define EVP_PKEY_CTX_set_rsa_keygen_bits EVP_PKEY_CTX_set_rsa_keygen_bits_ptr
 #define EVP_PKEY_CTX_set_rsa_oaep_md EVP_PKEY_CTX_set_rsa_oaep_md_ptr
 #define EVP_PKEY_CTX_set_rsa_padding EVP_PKEY_CTX_set_rsa_padding_ptr
@@ -905,6 +919,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_fromdata EVP_PKEY_fromdata_ptr
+#define EVP_PKEY_fromdata_init EVP_PKEY_fromdata_init_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
 #define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
@@ -991,6 +1007,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr
 #define OSSL_PARAM_construct_end OSSL_PARAM_construct_end_ptr
+#define OSSL_PARAM_construct_BN OSSL_PARAM_construct_BN_ptr
+#define OSSL_PARAM_construct_ulong OSSL_PARAM_construct_ulong_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
@@ -1191,6 +1209,13 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EC_GROUP_set_curve_GF2m EC_GROUP_set_curve_GF2m_ptr
 #define EC_POINT_get_affine_coordinates_GF2m EC_POINT_get_affine_coordinates_GF2m_ptr
 #define EC_POINT_set_affine_coordinates_GF2m EC_POINT_set_affine_coordinates_GF2m_ptr
+
+#define EVP_PKEY_print_public_fp EVP_PKEY_print_public_fp_ptr
+#define OSSL_PARAM_set_BN OSSL_PARAM_set_BN_ptr
+#define OSSL_PARAM_BLD_new OSSL_PARAM_BLD_new_ptr
+#define OSSL_PARAM_BLD_to_param OSSL_PARAM_BLD_to_param_ptr
+#define OSSL_PARAM_BLD_push_uint OSSL_PARAM_BLD_push_uint_ptr
+#define OSSL_PARAM_BLD_push_BN OSSL_PARAM_BLD_push_BN_ptr
 
 
 // STACK_OF types will have been declared with inline functions to handle the pointer casting.
