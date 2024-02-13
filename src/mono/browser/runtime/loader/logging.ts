@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-console */
+
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
 const methods = ["debug", "log", "trace", "warn", "info", "error"];
@@ -11,11 +14,11 @@ let theConsoleApi: any;
 let originalConsoleMethods: any;
 let threadNamePrefix: string;
 
-export function mono_set_thread_name(threadName: string) {
-    threadNamePrefix = threadName;
+export function set_thread_prefix(threadPrefix: string) {
+    threadNamePrefix = threadPrefix;
 }
 
-export function mono_log_debug(msg: string, ...data: any) {
+export function mono_log_debug(msg: string, ...data: any[]) {
     if (loaderHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);
     }
@@ -34,13 +37,23 @@ export function mono_log_warn(msg: string, ...data: any) {
 }
 
 export function mono_log_error(msg: string, ...data: any) {
-    if (data && data.length > 0 && data[0] && typeof data[0] === "object" && data[0].silent) {
+    if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
         // don't log silent errors
-        return;
+        if (data[0].silent) {
+            return;
+        }
+        if (data[0].toString) {
+            console.error(prefix + msg, data[0].toString());
+        }
+        if (data[0].toString) {
+            console.error(prefix + msg, data[0].toString());
+            return;
+        }
     }
     console.error(prefix + msg, ...data);
 }
-
+let tick = "";
+let last = new Date().valueOf();
 function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
     return function (...args: any[]) {
         try {
@@ -57,15 +70,19 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
             }
 
             if (typeof payload === "string") {
-                if (payload[0] == "[") {
-                    const now = new Date().toISOString();
-                    if (ENVIRONMENT_IS_WORKER) {
-                        payload = `[${threadNamePrefix}][${now}] ${payload}`;
-                    } else {
-                        payload = `[${now}] ${payload}`;
+                if (WasmEnableThreads) {
+                    if (ENVIRONMENT_IS_WORKER && payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
+                        // muting emscripten noise
+                        return;
                     }
-                } else if (ENVIRONMENT_IS_WORKER) {
-                    payload = `[${threadNamePrefix}] ${payload}`;
+                    if (payload.indexOf("MONO_WASM: ") === 0 || payload.indexOf("[MONO]") === 0) {
+                        const now = new Date();
+                        if (last !== now.valueOf()) {
+                            tick = now.toISOString().substring(11, 23);
+                            last = now.valueOf();
+                        }
+                        payload = `[${threadNamePrefix} ${tick}] ${payload}`;
+                    }
                 }
             }
 
@@ -91,13 +108,13 @@ export function setup_proxy_console(id: string, console: Console, origin: string
         ...console
     };
 
-    setupWS();
-
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
     consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("error", logWSError);
     consoleWebSocket.addEventListener("close", logWSClose);
+
+    setupWS();
 }
 
 export function teardown_proxy_console(message?: string) {
@@ -128,7 +145,7 @@ export function teardown_proxy_console(message?: string) {
 }
 
 function send(msg: string) {
-    if (consoleWebSocket.readyState === WebSocket.OPEN) {
+    if (consoleWebSocket && consoleWebSocket.readyState === WebSocket.OPEN) {
         consoleWebSocket.send(msg);
     }
     else {
@@ -137,11 +154,11 @@ function send(msg: string) {
 }
 
 function logWSError(event: Event) {
-    originalConsoleMethods.error(`[${threadNamePrefix}] websocket error: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] proxy console websocket error: ${event}`, event);
 }
 
 function logWSClose(event: Event) {
-    originalConsoleMethods.error(`[${threadNamePrefix}] websocket closed: ${event}`, event);
+    originalConsoleMethods.debug(`[${threadNamePrefix}] proxy console websocket closed: ${event}`, event);
 }
 
 function setupWS() {
