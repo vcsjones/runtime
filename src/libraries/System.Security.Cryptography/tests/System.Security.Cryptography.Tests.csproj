@@ -318,6 +318,7 @@
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
+    <Compile Include="X509Certificates\CertLoaderTests.cs" />
     <Compile Include="X509Certificates\ChainHolder.cs" />
     <Compile Include="X509Certificates\ChainPolicyTests.cs" />
     <Compile Include="X509Certificates\ChainTests.cs" />

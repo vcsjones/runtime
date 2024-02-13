@@ -329,6 +329,12 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509IterationCountExceededException.cs"
              Link="Common\System\Security\Cryptography\X509IterationCountExceededException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -675,6 +681,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
   </ItemGroup>
 
@@ -894,6 +901,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
@@ -1031,6 +1039,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
   </ItemGroup>
 
@@ -1145,6 +1154,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.ECKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.X500Name.cs" />
   </ItemGroup>
@@ -1756,6 +1766,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsHelpers.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsInterop.crypt32.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsStructs.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.CustomExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
