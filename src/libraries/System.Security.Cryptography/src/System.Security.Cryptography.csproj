@@ -335,6 +335,8 @@
              Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509IterationCountExceededException.cs"
              Link="Common\System\Security\Cryptography\X509IterationCountExceededException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"

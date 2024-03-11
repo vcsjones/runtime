@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 
@@ -51,6 +52,11 @@ namespace Internal.Cryptography
                 { Length: 0 } => src,
                 _ => (byte[])src.Clone(),
             };
+        }
+
+        internal static bool ContainsNull<T>(this ReadOnlySpan<T> span)
+        {
+            return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span));
         }
 
         internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

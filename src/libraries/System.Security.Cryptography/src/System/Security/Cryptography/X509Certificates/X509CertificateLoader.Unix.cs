@@ -7,13 +7,22 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
+            throw new Exception();
         }
 
         public static partial X509Certificate2 LoadCertificateFromFile(string path)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
+            throw new Exception();
         }
+
+        //public static partial X509Certificate2 LoadPkcs12(
+        //    ReadOnlySpan<byte> data,
+        //    ReadOnlySpan<char> password,
+        //    X509KeyStorageFlags keyStorageFlags,
+        //    Pkcs12LoaderLimits? loaderLimits)
+        //{
+        //    throw new Exception();
+        //}
 
         public static partial X509Certificate2Collection LoadPkcs12Collection(
             ReadOnlySpan<byte> data,
@@ -21,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits? loaderLimits)
         {
-            throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
+            throw new Exception();
         }
     }
 }

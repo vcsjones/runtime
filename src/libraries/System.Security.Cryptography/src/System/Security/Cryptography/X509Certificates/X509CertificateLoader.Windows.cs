@@ -29,6 +29,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static partial X509Certificate2 LoadCertificateFromFile(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             unsafe
             {
                 fixed (char* pathPtr = path)
@@ -38,6 +40,37 @@ namespace System.Security.Cryptography.X509Certificates
                         pathPtr);
                 }
             }
+        }
+
+        public static partial X509Certificate2Collection LoadPkcs12Collection(
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits? loaderLimits)
+        {
+            throw new Exception();
+        }
+
+        public static partial X509Certificate2 LoadPkcs12FromFile(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits? loaderLimits)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+
+            throw new Exception();
+        }
+
+        public static partial X509Certificate2Collection LoadPkcs12CollectionFromFile(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits? loaderLimits)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+
+            throw new Exception();
         }
 
         private static unsafe X509Certificate2 LoadCertificate(
