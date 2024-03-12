@@ -46,7 +46,7 @@ PALEXPORT X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc);
 
 PALEXPORT void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack);
 
-PALEXPORT int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
+PALEXPORT int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE_CTX* ctx,
                                                       int32_t year,
                                                       int32_t month,
                                                       int32_t day,

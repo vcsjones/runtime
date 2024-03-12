@@ -934,7 +934,7 @@ Return values:
 0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
 1 on success.
 */
-int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
+int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE_CTX* ctx,
                                             int32_t year,
                                             int32_t month,
                                             int32_t day,
@@ -957,7 +957,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-    X509_VERIFY_PARAM* verifyParams = X509_STORE_get0_param(ctx);
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_CTX_get0_param(ctx);
 
     if (!verifyParams)
     {

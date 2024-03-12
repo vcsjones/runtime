@@ -331,20 +331,52 @@ int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx)
 {
     ERR_clear_error();
 
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_CTX_get0_param(ctx);
+
+    time_t time = (time_t)-1;
+
+    if (verifyParams)
+    {
+        time = X509_VERIFY_PARAM_get_time(verifyParams);
+    }
+
     X509* leaf = X509_STORE_CTX_get0_cert(ctx);
     X509Stack* untrusted = X509_STORE_CTX_get0_untrusted(ctx);
     X509_STORE* store = X509_STORE_CTX_get0_store(ctx);
 
     X509_STORE_CTX_cleanup(ctx);
-    return CryptoNative_X509StoreCtxInit(ctx, store, leaf, untrusted);
+    int32_t init = CryptoNative_X509StoreCtxInit(ctx, store, leaf, untrusted);
+
+    if (init != 0 && time != (time_t)-1)
+    {
+        verifyParams = X509_STORE_CTX_get0_param(ctx);
+        X509_VERIFY_PARAM_set_time(verifyParams, time);
+    }
+
+    return init;
 }
 
 int32_t CryptoNative_X509StoreCtxRebuildChain(X509_STORE_CTX* ctx)
 {
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_CTX_get0_param(ctx);
+
+    time_t time = (time_t)-1;
+
+    if (verifyParams)
+    {
+        time = X509_VERIFY_PARAM_get_time(verifyParams);
+    }
+
     // Callee clears the error queue already
     if (!CryptoNative_X509StoreCtxReset(ctx))
     {
         return -1;
+    }
+
+    if (time != (time_t)-1)
+    {
+        verifyParams = X509_STORE_CTX_get0_param(ctx);
+        X509_VERIFY_PARAM_set_time(verifyParams, time);
     }
 
     return X509_verify_cert(ctx);
@@ -851,8 +883,25 @@ int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx
         return 0;
     }
 
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_CTX_get0_param(storeCtx);
+
+    time_t time = (time_t)-1;
+
+    if (verifyParams)
+    {
+        time = X509_VERIFY_PARAM_get_time(verifyParams);
+    }
+
     X509_STORE_CTX_cleanup(storeCtx);
-    return CryptoNative_X509StoreCtxInit(storeCtx, store, leafDup, untrusted);
+    int32_t init = CryptoNative_X509StoreCtxInit(storeCtx, store, leafDup, untrusted);
+
+    if (init != 0 && time != (time_t)-1)
+    {
+        verifyParams = X509_STORE_CTX_get0_param(storeCtx);
+        X509_VERIFY_PARAM_set_time(verifyParams, time);
+    }
+
+    return init;
 }
 
 static char* BuildOcspCacheFilename(char* cachePath, X509* subject)

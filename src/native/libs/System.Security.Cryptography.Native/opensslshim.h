@@ -687,6 +687,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(X509_verify_cert_error_string) \
     REQUIRED_FUNCTION(X509_VERIFY_PARAM_clear_flags) \
     REQUIRED_FUNCTION(X509_VERIFY_PARAM_get_flags) \
+    REQUIRED_FUNCTION(X509_VERIFY_PARAM_get_time) \
     REQUIRED_FUNCTION(X509_VERIFY_PARAM_set_time) \
     LIGHTUP_FUNCTION(EC_GF2m_simple_method) \
     LIGHTUP_FUNCTION(EC_GROUP_get_curve_GF2m) \
@@ -1216,6 +1217,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_verify_cert_error_string X509_verify_cert_error_string_ptr
 #define X509_VERIFY_PARAM_clear_flags X509_VERIFY_PARAM_clear_flags_ptr
 #define X509_VERIFY_PARAM_get_flags X509_VERIFY_PARAM_get_flags_ptr
+#define X509_VERIFY_PARAM_get_time X509_VERIFY_PARAM_get_time_ptr
 #define X509_VERIFY_PARAM_set_time X509_VERIFY_PARAM_set_time_ptr
 #define EC_GF2m_simple_method EC_GF2m_simple_method_ptr
 #define EC_GROUP_get_curve_GF2m EC_GROUP_get_curve_GF2m_ptr

@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
+using System.Threading;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using X509VerifyStatusCodeUniversal = Interop.Crypto.X509VerifyStatusCodeUniversal;
@@ -21,6 +22,8 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed class OpenSslX509ChainProcessor : IChainPal
     {
+        private static SafeX509StoreHandle? s_defaultTrustStore;
+
         private delegate X509ChainStatusFlags MapVersionSpecificCode(Interop.Crypto.X509VerifyStatusCode code);
 
         // The average chain is 3 (End-Entity, Intermediate, Root)
@@ -50,6 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
         private readonly SafeX509StoreCtxHandle _storeCtx;
         private readonly DateTime _verificationTime;
         private readonly TimeSpan _downloadTimeout;
+        private readonly bool _ownsStore;
         private WorkingChain? _workingChain;
 
         private OpenSslX509ChainProcessor(
@@ -58,7 +62,8 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509StackHandle untrusted,
             SafeX509StoreCtxHandle storeCtx,
             DateTime verificationTime,
-            TimeSpan downloadTimeout)
+            TimeSpan downloadTimeout,
+            bool ownsStore)
         {
             _leafHandle = leafHandle;
             _store = store;
@@ -66,13 +71,23 @@ namespace System.Security.Cryptography.X509Certificates
             _storeCtx = storeCtx;
             _verificationTime = verificationTime;
             _downloadTimeout = downloadTimeout;
+            _ownsStore = ownsStore;
         }
 
         public void Dispose()
         {
             _storeCtx?.Dispose();
             _untrustedLookup?.Dispose();
-            _store?.Dispose();
+
+            if (_ownsStore)
+            {
+                _store?.Dispose();
+            }
+            else
+            {
+                _store = null!;
+            }
+
             _workingChain?.Dispose();
 
             // We don't own this one.
@@ -107,6 +122,7 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509StoreHandle? store = null;
             SafeX509StackHandle? untrusted = null;
             SafeX509StoreCtxHandle? storeCtx = null;
+            bool ownsStore = true;
 
             try
             {
@@ -114,10 +130,9 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypto.X509StackAddMultiple(untrusted, s_userIntermediateStore.GetNativeCollection());
                 Interop.Crypto.X509StackAddMultiple(untrusted, s_userPersonalStore.GetNativeCollection());
 
-                store = GetTrustStore(trustMode, customTrustStore, untrusted, systemTrust);
+                (store, ownsStore) = GetTrustStore(trustMode, customTrustStore, untrusted, systemTrust);
 
                 Interop.Crypto.X509StackAddMultiple(untrusted, systemIntermediate);
-                Interop.Crypto.X509StoreSetVerifyTime(store, verificationTime);
 
                 storeCtx = Interop.Crypto.X509StoreCtxCreate();
 
@@ -126,24 +141,30 @@ namespace System.Security.Cryptography.X509Certificates
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
+                Interop.Crypto.X509StoreSetVerifyTime(storeCtx, verificationTime);
+
                 return new OpenSslX509ChainProcessor(
                     leafHandle,
                     store,
                     untrusted,
                     storeCtx,
                     verificationTime,
-                    remainingDownloadTime);
+                    remainingDownloadTime,
+                    ownsStore);
             }
             catch
             {
-                store?.Dispose();
+                if (ownsStore)
+                {
+                    store?.Dispose();
+                }
                 untrusted?.Dispose();
                 storeCtx?.Dispose();
                 throw;
             }
         }
 
-        private static SafeX509StoreHandle GetTrustStore(
+        private static (SafeX509StoreHandle, bool) GetTrustStore(
             X509ChainTrustMode trustMode,
             X509Certificate2Collection? customTrustStore,
             SafeX509StackHandle untrusted,
@@ -166,11 +187,25 @@ namespace System.Security.Cryptography.X509Certificates
                         }
                     }
 
-                    return Interop.Crypto.X509ChainNew(customTrust, SafeX509StackHandle.InvalidHandle);
+                    return (Interop.Crypto.X509ChainNew(customTrust, SafeX509StackHandle.InvalidHandle), true);
                 }
             }
+            else
+            {
+                if (s_defaultTrustStore is null)
+                {
+                    SafeX509StoreHandle store = Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
 
-            return Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
+                    if (Interlocked.CompareExchange(ref s_defaultTrustStore, store, null) is not null)
+                    {
+                        // Another thread already updated the field so the exchange failed. Dispose of the one we just created.
+                        store.Dispose();
+                    }
+                }
+
+                return (s_defaultTrustStore, false);
+            }
+
         }
 
         internal Interop.Crypto.X509VerifyStatusCode FindFirstChain(X509Certificate2Collection? extraCerts)
@@ -733,7 +768,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (newStore != null)
             {
-                _store.Dispose();
+                if (_ownsStore)
+                {
+                    _store.Dispose();
+                }
+
                 _store = newStore;
             }
         }

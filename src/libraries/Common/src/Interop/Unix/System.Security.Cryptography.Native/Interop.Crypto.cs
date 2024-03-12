@@ -90,7 +90,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(
-            SafeX509StoreHandle ctx,
+            SafeX509StoreCtxHandle ctx,
             int year,
             int month,
             int day,
@@ -128,7 +128,7 @@ internal static partial class Interop
             return GetDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
         }
 
-        internal static void X509StoreSetVerifyTime(SafeX509StoreHandle ctx, DateTime verifyTime)
+        internal static void X509StoreSetVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
         {
             // OpenSSL is going to convert our input time to universal, so we should be in Local or
             // Unspecified (local-assumed).
