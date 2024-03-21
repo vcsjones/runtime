@@ -24,7 +24,18 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags,
             ref X509Certificate2? earlyReturn);
 
+        static partial void LoadPkcs12NoLimits(
+            ReadOnlyMemory<byte> data,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            ref X509Certificate2Collection? earlyReturn);
+
         private static partial X509Certificate2 LoadPkcs12(
+            ref BagState bagState,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags);
+
+        private static partial X509Certificate2Collection LoadPkcs12Collection(
             ref BagState bagState,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags);
@@ -52,6 +63,36 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ReadCertsAndKeys(ref bags, data, ref password, loaderLimits);
                 return LoadPkcs12(ref bags, password, keyStorageFlags);
+            }
+            finally
+            {
+                bags.Dispose();
+            }
+        }
+
+        private static X509Certificate2Collection LoadPkcs12Collection(
+            ReadOnlyMemory<byte> data,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits loaderLimits)
+        {
+            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
+            {
+                X509Certificate2Collection? earlyReturn = null;
+                LoadPkcs12NoLimits(data, password, keyStorageFlags, ref earlyReturn);
+
+                if (earlyReturn is not null)
+                {
+                    return earlyReturn;
+                }
+            }
+
+            BagState bags = default;
+
+            try
+            {
+                ReadCertsAndKeys(ref bags, data, ref password, loaderLimits);
+                return LoadPkcs12Collection(ref bags, password, keyStorageFlags);
             }
             finally
             {

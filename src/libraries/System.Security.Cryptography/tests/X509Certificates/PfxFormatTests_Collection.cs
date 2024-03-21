@@ -20,6 +20,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, nonExportFlags);
             ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, exportFlags);
+            ReadPfxFromNewLoader(pfxBytes, correctPassword, expectedCert, null, otherWork, nonExportFlags);
+            ReadPfxFromNewLoader(pfxBytes, correctPassword, expectedCert, null, otherWork, exportFlags);
         }
 
         protected override void ReadMultiPfx(
@@ -45,6 +47,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 expectedOrder,
                 perCertOtherWork,
                 nonExportFlags | X509KeyStorageFlags.Exportable);
+
+            ReadPfxFromNewLoader(
+                pfxBytes,
+                correctPassword,
+                expectedSingleCert,
+                expectedOrder,
+                perCertOtherWork,
+                nonExportFlags);
+
+            ReadPfxFromNewLoader(
+                pfxBytes,
+                correctPassword,
+                expectedSingleCert,
+                expectedOrder,
+                perCertOtherWork,
+                nonExportFlags | X509KeyStorageFlags.Exportable);
         }
 
         private void ReadPfx(
@@ -58,6 +76,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (ImportedCollection imported = Cert.Import(pfxBytes, correctPassword, flags))
             {
                 X509Certificate2Collection coll = imported.Collection;
+                Assert.Equal(expectedOrder?.Length ?? 1, coll.Count);
+
+                Span<X509Certificate2> testOrder = expectedOrder == null ?
+                    MemoryMarshal.CreateSpan(ref expectedCert, 1) :
+                    expectedOrder.AsSpan();
+
+                for (int i = 0; i < testOrder.Length; i++)
+                {
+                    X509Certificate2 actual = coll[i];
+                    AssertCertEquals(testOrder[i], actual);
+                    otherWork?.Invoke(actual);
+                }
+            }
+        }
+
+        private void ReadPfxFromNewLoader(
+            byte[] pfxBytes,
+            string correctPassword,
+            X509Certificate2 expectedCert,
+            X509Certificate2[] expectedOrder,
+            Action<X509Certificate2> otherWork,
+            X509KeyStorageFlags flags)
+        {
+            X509Certificate2Collection coll = X509CertificateLoader.LoadPkcs12Collection(
+                pfxBytes,
+                correctPassword,
+                flags);
+
+            using (ImportedCollection imported = new ImportedCollection(coll))
+            {
                 Assert.Equal(expectedOrder?.Length ?? 1, coll.Count);
 
                 Span<X509Certificate2> testOrder = expectedOrder == null ?
@@ -103,6 +151,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => coll.Import(pfxBytes, bestPassword, importFlags));
+
+            if (OperatingSystem.IsWindows())
+            {
+                if (altWin32Error == 0 || ex.HResult != altWin32Error)
+                {
+                    if (secondAltWin32Error == 0 || ex.HResult != secondAltWin32Error)
+                    {
+                        Assert.Equal(win32Error, ex.HResult);
+                    }
+                }
+            }
+            else
+            {
+                Assert.NotNull(ex.InnerException);
+            }
+
+            ex = Assert.ThrowsAny<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12Collection(pfxBytes, bestPassword, importFlags));
 
             if (OperatingSystem.IsWindows())
             {

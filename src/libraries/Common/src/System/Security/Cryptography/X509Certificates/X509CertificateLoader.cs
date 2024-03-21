@@ -352,11 +352,27 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred while loading the PKCS#12/PFX.
         /// </exception>
-        public static partial X509Certificate2Collection LoadPkcs12Collection(
+        public static X509Certificate2Collection LoadPkcs12Collection(
             ReadOnlySpan<byte> data,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
-            Pkcs12LoaderLimits? loaderLimits = null);
+            Pkcs12LoaderLimits? loaderLimits = null)
+        {
+            unsafe
+            {
+                fixed (byte* pinned = data)
+                {
+                    using (PointerMemoryManager<byte> manager = new(pinned, data.Length))
+                    {
+                        return LoadPkcs12Collection(
+                            manager.Memory,
+                            password,
+                            keyStorageFlags,
+                            loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                    }
+                }
+            }
+        }
 
         /// <summary>
         ///   Opens the specified file, reads the contents as a PKCS#12 PFX and extracts a certificate.

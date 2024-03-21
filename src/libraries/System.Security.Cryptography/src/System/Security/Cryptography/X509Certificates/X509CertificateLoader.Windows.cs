@@ -42,15 +42,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public static partial X509Certificate2Collection LoadPkcs12Collection(
-            ReadOnlySpan<byte> data,
-            ReadOnlySpan<char> password,
-            X509KeyStorageFlags keyStorageFlags,
-            Pkcs12LoaderLimits? loaderLimits)
-        {
-            throw new Exception();
-        }
-
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
@@ -65,12 +56,14 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags)
         {
             SafeCertContextHandle? bestCert = null;
+            bool havePrivKey = false;
 
             using (SafeCertStoreHandle storeHandle = ImportPfx(ref bagState, password, keyStorageFlags))
             {
                 // Find the first cert with private key. If none, then simply take the very first cert.
                 // Along the way, delete the persisted keys of any cert we don't accept.
                 SafeCertContextHandle? nextCert = null;
+
                 while (Interop.crypt32.CertEnumCertificatesInStore(storeHandle, ref nextCert))
                 {
                     Debug.Assert(nextCert is not null);
@@ -95,7 +88,9 @@ namespace System.Security.Cryptography.X509Certificates
                             //
                             // Set it up as our chosen one but keep iterating
                             // as we need to free up the keys of any remaining certs.
+                            bestCert?.Dispose();
                             bestCert = nextCert.Duplicate();
+                            havePrivKey = true;
                         }
                     }
                     else
@@ -117,10 +112,42 @@ namespace System.Security.Cryptography.X509Certificates
             const X509KeyStorageFlags DeleteUnless =
                 X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.EphemeralKeySet;
 
-            bool deleteKeyContainer = ((keyStorageFlags & DeleteUnless) == 0);
+            bool deleteKeyContainer = havePrivKey && ((keyStorageFlags & DeleteUnless) == 0);
 
             CertificatePal pal = new CertificatePal(bestCert, deleteKeyContainer);
             return new X509Certificate2(pal);
+        }
+
+        private static partial X509Certificate2Collection LoadPkcs12Collection(
+            ref BagState bagState,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags)
+        {
+            X509Certificate2Collection coll = new X509Certificate2Collection();
+
+            // If PersistKeySet is set we don't delete the key, so that it persists.
+            // If EphemeralKeySet is set we don't delete the key, because there's no file, so it's a wasteful call.
+            const X509KeyStorageFlags DeleteUnless =
+                X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.EphemeralKeySet;
+
+            bool deleteKeyContainer = ((keyStorageFlags & DeleteUnless) == 0);
+
+            using (SafeCertStoreHandle storeHandle = ImportPfx(ref bagState, password, keyStorageFlags))
+            {
+                SafeCertContextHandle? nextCert = null;
+
+                while (Interop.crypt32.CertEnumCertificatesInStore(storeHandle, ref nextCert))
+                {
+                    Debug.Assert(nextCert is not null);
+                    Debug.Assert(!nextCert.IsInvalid);
+
+                    bool deleteThis = deleteKeyContainer && nextCert.HasPersistedPrivateKey;
+                    CertificatePal pal = new CertificatePal(nextCert.Duplicate(), deleteThis);
+                    coll.Add(new X509Certificate2(pal));
+                }
+            }
+
+            return coll;
         }
 
         private static unsafe X509Certificate2 LoadCertificate(
