@@ -2,16 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
+using System.Security.Cryptography.Asn1.Pkcs12;
 using Internal.Cryptography;
+using System.Security.Cryptography.Pkcs;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        private const int ErrorInvalidPasswordHResult = unchecked((int)0x80070056);
+        private const int CRYPT_E_BAD_DECODE = unchecked((int)0x80092002);
+        private const int ERROR_INVALID_PASSWORD = unchecked((int)0x80070056);
+        private const int NTE_FAIL = unchecked((int)0x80090020);
+
+        static partial void LoadPkcs12NoLimits(
+            ReadOnlyMemory<byte> data,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            ref X509Certificate2? earlyReturn);
+
+        private static partial X509Certificate2 LoadPkcs12(
+            ref BagState bagState,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags);
 
         private static X509Certificate2 LoadPkcs12(
             ReadOnlyMemory<byte> data,
@@ -19,7 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            if (ReferenceEqual(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
+            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
             {
                 X509Certificate2? earlyReturn = null;
                 LoadPkcs12NoLimits(data, password, keyStorageFlags, ref earlyReturn);
@@ -30,18 +46,23 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            using (BagState bags = default)
-            {
-                ReadCertsAndKeys(ref bags, data, password, loaderLimits);
+            BagState bags = default;
 
-                throw new Exception("Finish writing this");
+            try
+            {
+                ReadCertsAndKeys(ref bags, data, ref password, loaderLimits);
+                return LoadPkcs12(ref bags, password, keyStorageFlags);
+            }
+            finally
+            {
+                bags.Dispose();
             }
         }
 
         private static void ReadCertsAndKeys(
-            ref BagState bags,
+            ref BagState bagState,
             ReadOnlyMemory<byte> data,
-            ReadOnlySpan<char> password,
+            ref ReadOnlySpan<char> password,
             Pkcs12LoaderLimits loaderLimits)
         {
             try
@@ -56,7 +77,11 @@ namespace System.Security.Cryptography.X509Certificates
                 ReadOnlyMemory<byte> authSafeMemory =
                     Helpers.DecodeOctetStringAsMemory(pfxAsn.AuthSafe.Content);
                 ReadOnlySpan<byte> authSafeContents = authSafeMemory.Span;
-                bool ambiguousPassword = password.IsEmpty;
+
+                if (!password.IsEmpty)
+                {
+                    bagState.LockPassword();
+                }
 
                 if (pfxAsn.MacData.HasValue)
                 {
@@ -67,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     bool verified = false;
 
-                    if (ambiguousPassword)
+                    if (!bagState.LockedPassword)
                     {
                         if (!pfxAsn.VerifyMac(password, authSafeContents))
                         {
@@ -83,11 +108,11 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         throw new CryptographicException(SR.Cryptography_Pfx_BadPassword)
                         {
-                            HResult = ErrorInvalidPasswordHResult,
+                            HResult = ERROR_INVALID_PASSWORD,
                         };
                     }
 
-                    ambiguousPassword = false;
+                    bagState.ConfirmPassword();
                 }
 
                 AsnValueReader outer = new AsnValueReader(authSafeContents, AsnEncodingRules.BER);
@@ -95,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
                 outer.ThrowIfNotEmpty();
 
                 ReadOnlyMemory<byte> rebind = pfxAsn.AuthSafe.Content;
-                bags.Init(loaderLimits);
+                bagState.Init(loaderLimits);
 
                 int? workRemaining = loaderLimits.TotalKdfIterationLimit;
 
@@ -111,9 +136,11 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else if (safeContentsAsn.ContentType == Oids.Pkcs7Encrypted)
                     {
-                        if (ambiguousPassword)
+                        bagState.PrepareDecryptBuffer(authSafeContents.Length);
+
+                        if (!bagState.LockedPassword)
                         {
-                            ambiguousPassword = false;
+                            bagState.LockPassword();
                             int? workRemainingSave = workRemaining;
 
                             try
@@ -122,46 +149,20 @@ namespace System.Security.Cryptography.X509Certificates
                                     safeContentsAsn,
                                     loaderLimits,
                                     password,
-                                    authSafeContents.Length,
-                                    ref decryptBuffer,
-                                    ref workRemaining,
-                                    ref decryptBufferOffset);
-
-                                try
-                                {
-                                    AsnValueReader test =
-                                        new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
-
-                                    test.ReadSequence();
-                                    test.ThrowIfNotEmpty();
-                                }
-                                catch (AsnContentException)
-                                {
-                                    throw new CryptographicException();
-                                }
+                                    ref bagState,
+                                    ref workRemaining);
                             }
                             catch (CryptographicException)
                             {
                                 password = password.ContainsNull() ? "" : default;
                                 workRemaining = workRemainingSave;
-                                decryptBufferOffset = 0;
-
-//#error why is this here and not above?
-                                if (!loaderLimits.AllowMultipleEncryptedSegments &&
-                                    decryptBuffer is not null)
-                                {
-                                    CryptoPool.Return(decryptBuffer);
-                                    decryptBuffer = null;
-                                }
 
                                 contentData = DecryptSafeContents(
                                     safeContentsAsn,
                                     loaderLimits,
                                     password,
-                                    authSafeContents.Length,
-                                    ref decryptBuffer,
-                                    ref workRemaining,
-                                    ref decryptBufferOffset);
+                                    ref bagState,
+                                    ref workRemaining);
                             }
                         }
                         else
@@ -170,10 +171,8 @@ namespace System.Security.Cryptography.X509Certificates
                                 safeContentsAsn,
                                 loaderLimits,
                                 password,
-                                authSafeContents.Length,
-                                ref decryptBuffer,
-                                ref workRemaining,
-                                ref decryptBufferOffset);
+                                ref bagState,
+                                ref workRemaining);
                         }
                     }
                     else
@@ -187,24 +186,273 @@ namespace System.Security.Cryptography.X509Certificates
                         contentData,
                         loaderLimits,
                         ref workRemaining,
-                        ref certBags,
-                        ref certBagIdx,
-                        ref keyBags,
-                        ref keyBagIdx);
+                        ref bagState);
                 }
             }
             catch (AsnContentException e)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e)
+                {
+                    HResult = CRYPT_E_BAD_DECODE,
+                };
             }
         }
 
-        private struct BagState : IDisposable
+        private static void ProcessSafeContents(
+            ReadOnlyMemory<byte> contentData,
+            Pkcs12LoaderLimits loaderLimits,
+            ref int? workRemaining,
+            ref BagState bagState)
+        {
+            AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
+            AsnValueReader reader = outer.ReadSequence();
+            outer.ThrowIfNotEmpty();
+
+            while (reader.HasData)
+            {
+                SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
+
+                if (bag.BagId == Oids.Pkcs12CertBag)
+                {
+                    CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
+
+                    if (certBag.CertId == Oids.Pkcs12X509CertBagType)
+                    {
+                        if (bagState.CertCount >= loaderLimits.MaxCertificates)
+                        {
+                            throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.MaxCertificates));
+                        }
+
+                        if (bag.BagAttributes is not null)
+                        {
+                            FilterAttributes(
+                                loaderLimits,
+                                ref bag,
+                                static (limits, oid) => limits.PreserveUnknownAttributes || oid == Oids.LocalKeyId);
+                        }
+
+                        bagState.AddCert(bag);
+                    }
+                }
+                else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                {
+                    if (bagState.KeyCount >= loaderLimits.MaxKeys)
+                    {
+                        throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.MaxKeys));
+                    }
+
+                    if (bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                    {
+                        EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(
+                            bag.BagValue,
+                            AsnEncodingRules.BER);
+
+                        int kdfCount = GetKdfCount(epki.EncryptionAlgorithm);
+
+                        if (kdfCount > loaderLimits.IndividualKdfIterationLimit || kdfCount > workRemaining)
+                        {
+                            throw new Pkcs12LoadLimitExceededException(
+                                kdfCount > loaderLimits.IndividualKdfIterationLimit ?
+                                    nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit) :
+                                    nameof(Pkcs12LoaderLimits.TotalKdfIterationLimit));
+                        }
+
+                        if (workRemaining.HasValue)
+                        {
+                            workRemaining -= kdfCount;
+                        }
+                    }
+
+                    if (bag.BagAttributes is not null)
+                    {
+                        FilterAttributes(
+                            loaderLimits,
+                            ref bag,
+                            static (limits, attrType) =>
+                                attrType switch
+                                {
+                                    Oids.LocalKeyId => true,
+                                    "1.2.840.113549.1.9.20" => limits.PreserveKeyName,
+                                    "1.3.6.1.4.1.311.17.1" => limits.PreserveStorageProvider,
+                                    _ => limits.PreserveUnknownAttributes,
+                                });
+                    }
+
+                    bagState.AddKey(bag);
+                }
+            }
+        }
+
+        private static void FilterAttributes(
+            Pkcs12LoaderLimits loaderLimits,
+            ref SafeBagAsn bag,
+            Func<Pkcs12LoaderLimits, string, bool> filter)
+        {
+            if (bag.BagAttributes is not null)
+            {
+                // Should this dedup/fail-on-dup?
+                int attrIdx = -1;
+
+                for (int i = bag.BagAttributes.Length - 1; i > attrIdx; i--)
+                {
+                    string attrType = bag.BagAttributes[i].AttrType;
+
+                    if (filter(loaderLimits, attrType))
+                    {
+                        attrIdx++;
+
+                        if (i > attrIdx)
+                        {
+                            AttributeAsn attr = bag.BagAttributes[i];
+                            bag.BagAttributes[i] = bag.BagAttributes[attrIdx];
+
+                            // After swapping, back up one position to check if the attribute
+                            // swapped into this position should also be preserved.
+                            i++;
+
+#if DEBUG
+                            // In debug we'll do a full swap, just so the full set of input
+                            // attributes can be seen under a debugger before the reducing
+                            // Array.Resize
+                            bag.BagAttributes[attrIdx] = attr;
+#endif
+                        }
+                    }
+                }
+
+                attrIdx++;
+
+                if (attrIdx < bag.BagAttributes.Length)
+                {
+                    if (attrIdx == 0)
+                    {
+                        bag.BagAttributes = null;
+                    }
+                    else
+                    {
+                        Array.Resize(ref bag.BagAttributes, attrIdx);
+                    }
+                }
+            }
+        }
+
+        private static ReadOnlyMemory<byte> DecryptSafeContents(
+            ContentInfoAsn safeContentsAsn,
+            Pkcs12LoaderLimits loaderLimits,
+            ReadOnlySpan<char> passwordSpan,
+            ref BagState bagState,
+            ref int? workRemaining)
+        {
+            EncryptedDataAsn encryptedData =
+                EncryptedDataAsn.Decode(safeContentsAsn.Content, AsnEncodingRules.BER);
+
+            // https://tools.ietf.org/html/rfc5652#section-8
+            if (encryptedData.Version != 0 && encryptedData.Version != 2)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            // Since the contents are supposed to be the BER-encoding of an instance of
+            // SafeContents (https://tools.ietf.org/html/rfc7292#section-4.1) that implies the
+            // content type is simply "data", and that content is present.
+            if (encryptedData.EncryptedContentInfo.ContentType != Oids.Pkcs7Data)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            if (!encryptedData.EncryptedContentInfo.EncryptedContent.HasValue)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            ReadOnlyMemory<byte> encryptedContent =
+                encryptedData.EncryptedContentInfo.EncryptedContent.Value;
+
+            int kdfCount = GetKdfCount(encryptedData.EncryptedContentInfo.ContentEncryptionAlgorithm);
+
+            if (kdfCount > loaderLimits.IndividualKdfIterationLimit || kdfCount > workRemaining)
+            {
+                throw new Pkcs12LoadLimitExceededException(
+                    kdfCount > loaderLimits.IndividualKdfIterationLimit ?
+                        nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit) :
+                        nameof(Pkcs12LoaderLimits.TotalKdfIterationLimit));
+            }
+
+            if (workRemaining.HasValue)
+            {
+                workRemaining -= kdfCount;
+            }
+
+            return bagState.DecryptSafeContents(
+                encryptedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
+                passwordSpan,
+                encryptedContent.Span);
+        }
+
+        private static int GetKdfCount(in AlgorithmIdentifierAsn algorithmIdentifier)
+        {
+            if (!algorithmIdentifier.Parameters.HasValue)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            switch (algorithmIdentifier.Algorithm)
+            {
+                case Oids.PbeWithMD5AndDESCBC:
+                case Oids.PbeWithMD5AndRC2CBC:
+                case Oids.PbeWithSha1AndDESCBC:
+                case Oids.PbeWithSha1AndRC2CBC:
+                case Oids.Pkcs12PbeWithShaAnd3Key3Des:
+                case Oids.Pkcs12PbeWithShaAnd2Key3Des:
+                case Oids.Pkcs12PbeWithShaAnd128BitRC2:
+                case Oids.Pkcs12PbeWithShaAnd40BitRC2:
+                    PBEParameter pbeParameter = PBEParameter.Decode(
+                        algorithmIdentifier.Parameters.Value,
+                        AsnEncodingRules.BER);
+
+                    return pbeParameter.IterationCount;
+                case Oids.PasswordBasedEncryptionScheme2:
+                    PBES2Params pbes2Params = PBES2Params.Decode(
+                        algorithmIdentifier.Parameters.Value,
+                        AsnEncodingRules.BER);
+
+                    if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
+                    {
+                        throw new CryptographicException(
+                            SR.Format(
+                                SR.Cryptography_UnknownAlgorithmIdentifier,
+                                pbes2Params.EncryptionScheme.Algorithm));
+                    }
+
+                    if (!pbes2Params.KeyDerivationFunc.Parameters.HasValue)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
+                        pbes2Params.KeyDerivationFunc.Parameters.Value,
+                        AsnEncodingRules.BER);
+
+                    return pbkdf2Params.IterationCount;
+                default:
+                    throw new CryptographicException(
+                        SR.Format(
+                            SR.Cryptography_UnknownAlgorithmIdentifier,
+                            algorithmIdentifier.Algorithm));
+            }
+        }
+
+        private struct BagState
         {
             private SafeBagAsn[]? _certBags;
             private SafeBagAsn[]? _keyBags;
+            private byte[]? _decryptBuffer;
+            private byte[]? _keyDecryptBuffer;
             private int _certCount;
             private int _keyCount;
+            private int _decryptBufferOffset;
+            private int _keyDecryptBufferOffset;
+            private byte _passwordState;
 
             internal void Init(Pkcs12LoaderLimits loaderLimits)
             {
@@ -212,6 +460,7 @@ namespace System.Security.Cryptography.X509Certificates
                 _keyBags = ArrayPool<SafeBagAsn>.Shared.Rent(loaderLimits.MaxKeys.GetValueOrDefault(10));
                 _certCount = 0;
                 _keyCount = 0;
+                _decryptBufferOffset = 0;
             }
 
             public void Dispose()
@@ -221,13 +470,386 @@ namespace System.Security.Cryptography.X509Certificates
                     ArrayPool<SafeBagAsn>.Shared.Return(_certBags, clearArray: true);
                 }
 
-                if (_certBags is not null)
+                if (_keyBags is not null)
                 {
                     ArrayPool<SafeBagAsn>.Shared.Return(_keyBags, clearArray: true);
                 }
 
-                _certBags = _keyBags = null;
-                _certCount = _keyCount = 0;
+                if (_decryptBuffer is not null)
+                {
+                    CryptoPool.Return(_decryptBuffer, _decryptBufferOffset);
+                }
+
+                if (_keyDecryptBuffer is not null)
+                {
+                    CryptoPool.Return(_keyDecryptBuffer, _keyDecryptBufferOffset);
+                }
+
+                this = default;
+            }
+
+            public readonly int CertCount => _certCount;
+
+            public readonly int KeyCount => _keyCount;
+
+            internal bool LockedPassword => (_passwordState & 1) != 0;
+
+            internal void LockPassword()
+            {
+                _passwordState |= 1;
+            }
+
+            private bool ConfirmedPassword => (_passwordState & 2) != 0;
+
+            internal void ConfirmPassword()
+            {
+                // Confirming it (verifying it was correct), also locks it.
+                _passwordState |= 3;
+            }
+
+            internal void PrepareDecryptBuffer(int upperBound)
+            {
+                if (_decryptBuffer is null)
+                {
+                    _decryptBuffer = CryptoPool.Rent(upperBound);
+                }
+                else
+                {
+                    Debug.Assert(_decryptBuffer.Length >= upperBound);
+                }
+            }
+
+            internal ReadOnlyMemory<byte> DecryptSafeContents(
+                in AlgorithmIdentifierAsn algorithmIdentifier,
+                ReadOnlySpan<char> passwordSpan,
+                ReadOnlySpan<byte> encryptedContent)
+            {
+                Debug.Assert(_decryptBuffer is not null);
+                Debug.Assert(_decryptBuffer.Length - _decryptBufferOffset >= encryptedContent.Length);
+
+                // In case anything goes wrong decrypting, clear the whole buffer in the cleanup
+                int saveOffset = _decryptBufferOffset;
+                _decryptBufferOffset = _decryptBuffer.Length;
+
+                try
+                {
+                    int written = PasswordBasedEncryption.Decrypt(
+                        algorithmIdentifier,
+                        passwordSpan,
+                        default,
+                        encryptedContent,
+                        _decryptBuffer.AsSpan(saveOffset));
+
+                    _decryptBufferOffset = saveOffset + written;
+
+                    try
+                    {
+                        AsnValueReader reader = new AsnValueReader(
+                            _decryptBuffer.AsSpan(saveOffset, written),
+                            AsnEncodingRules.BER);
+
+                        reader.ReadSequence();
+                        reader.ThrowIfNotEmpty();
+                    }
+                    catch (AsnContentException)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
+                        {
+                            HResult = CRYPT_E_BAD_DECODE,
+                        };
+                    }
+
+                    ConfirmPassword();
+
+                    return new ReadOnlyMemory<byte>(
+                        _decryptBuffer,
+                        saveOffset,
+                        written);
+                }
+                catch (CryptographicException e)
+                {
+                    CryptographicOperations.ZeroMemory(
+                        _decryptBuffer.AsSpan(saveOffset, _decryptBufferOffset - saveOffset));
+
+                    _decryptBufferOffset = saveOffset;
+
+                    if (e.HResult != CRYPT_E_BAD_DECODE)
+                    {
+                        e.HResult = ConfirmedPassword ? NTE_FAIL : ERROR_INVALID_PASSWORD;
+                    }
+
+                    throw;
+                }
+            }
+
+            internal void AddCert(SafeBagAsn bag)
+            {
+                Debug.Assert(_certBags is not null);
+
+                GrowIfNeeded(ref _certBags, _certCount);
+                _certBags[_certCount] = bag;
+                _certCount++;
+            }
+
+            internal void AddKey(SafeBagAsn bag)
+            {
+                Debug.Assert(_keyBags is not null);
+
+                GrowIfNeeded(ref _keyBags, _keyCount);
+                _keyBags[_keyCount] = bag;
+                _keyCount++;
+            }
+
+            private static void GrowIfNeeded(ref SafeBagAsn[] array, int index)
+            {
+                if (array.Length <= index)
+                {
+                    SafeBagAsn[] next = ArrayPool<SafeBagAsn>.Shared.Rent(index);
+                    array.AsSpan().CopyTo(next);
+                    ArrayPool<SafeBagAsn>.Shared.Return(array, clearArray: true);
+                    array = next;
+                }
+            }
+
+            internal void UnshroudKeys(ReadOnlySpan<char> password)
+            {
+                Debug.Assert(_keyBags is not null);
+
+                int spaceRequired = 0;
+
+                for (int i = 0; i < _keyCount; i++)
+                {
+                    SafeBagAsn bag = _keyBags[i];
+
+                    if (bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                    {
+                        spaceRequired += bag.BagValue.Length;
+                    }
+                }
+
+                _keyDecryptBuffer = CryptoPool.Rent(spaceRequired);
+
+                for (int i = 0; i < _keyCount; i++)
+                {
+                    SafeBagAsn bag = _keyBags[i];
+
+                    if (bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                    {
+                        ArraySegment<byte> decrypted = default;
+                        int contentRead = 0;
+
+                        if (!LockedPassword)
+                        {
+                            try
+                            {
+                                decrypted = KeyFormatHelper.DecryptPkcs8(
+                                    password,
+                                    bag.BagValue,
+                                    out contentRead);
+
+                                try
+                                {
+                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    reader.ReadSequence();
+                                    reader.ThrowIfNotEmpty();
+                                }
+                                catch (AsnContentException)
+                                {
+                                    CryptoPool.Return(decrypted);
+                                    decrypted = default;
+                                    throw new CryptographicException();
+                                }
+                            }
+                            catch (CryptographicException)
+                            {
+                                password = password.ContainsNull() ? "" : default;
+                            }
+                        }
+
+                        if (decrypted.Array is null)
+                        {
+                            try
+                            {
+                                decrypted = KeyFormatHelper.DecryptPkcs8(
+                                    password,
+                                    bag.BagValue,
+                                    out contentRead);
+
+                                try
+                                {
+                                    AsnValueReader reader = new AsnValueReader(decrypted, AsnEncodingRules.BER);
+                                    reader.ReadSequence();
+                                    reader.ThrowIfNotEmpty();
+                                }
+                                catch (AsnContentException)
+                                {
+                                    CryptoPool.Return(decrypted);
+                                    decrypted = default;
+                                    throw new CryptographicException();
+                                }
+                            }
+                            catch (CryptographicException)
+                            {
+                                // Windows 10 compatibility:
+                                // If anything goes wrong loading this key, just ignore it.
+                                // If no one ended up needing it, no harm/no foul.
+                                // If this has a LocalKeyId and something references it, then it'll fail.
+
+                                continue;
+                            }
+                        }
+
+                        ConfirmPassword();
+
+                        Debug.Assert(decrypted.Array is not null);
+                        Debug.Assert(_keyDecryptBuffer.Length - _keyDecryptBufferOffset >= decrypted.Count);
+                        decrypted.AsSpan().CopyTo(_keyDecryptBuffer.AsSpan(_keyDecryptBufferOffset));
+
+                        ReadOnlyMemory<byte> newBagValue = new(
+                            _keyDecryptBuffer,
+                            _keyDecryptBufferOffset,
+                            decrypted.Count);
+
+                        CryptoPool.Return(decrypted);
+                        _keyDecryptBufferOffset += newBagValue.Length;
+
+                        if (contentRead != bag.BagValue.Length)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        }
+
+                        bag.BagValue = newBagValue;
+                        bag.BagId = Oids.Pkcs12KeyBag;
+                    }
+                }
+            }
+
+            internal ArraySegment<byte> ToPfx(ReadOnlySpan<char> password)
+            {
+                Debug.Assert(_certBags is not null);
+                Debug.Assert(_keyBags is not null);
+
+                ContentInfoAsn safeContents = new ContentInfoAsn
+                {
+                    ContentType = Oids.Pkcs7Data,
+                };
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
+                writer.PushOctetString();
+                writer.PushSequence();
+
+                for (int i = 0; i < _certCount; i++)
+                {
+                    SafeBagAsn bag = _certBags[i];
+                    bag.Encode(writer);
+                }
+
+                for (int i = 0; i < _keyCount; i++)
+                {
+                    SafeBagAsn bag = _keyBags[i];
+                    bag.Encode(writer);
+                }
+
+                writer.PopSequence();
+                writer.PopOctetString();
+                safeContents.Content = writer.Encode();
+                writer.Reset();
+
+                writer.PushSequence();
+                safeContents.Encode(writer);
+                writer.PopSequence();
+                byte[] authSafe = writer.Encode();
+                writer.Reset();
+
+                HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA1;
+                byte[] macKey = new byte[20];
+                Span<byte> salt = stackalloc byte[macKey.Length];
+
+#if NETCOREAPP3_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+                RandomNumberGenerator.Fill(salt);
+#else
+                // "Randomly" produce the all zero salt.
+                salt.Clear();
+#endif
+
+                Pkcs12Kdf.DeriveMacKey(
+                    password,
+                    hashAlgorithm,
+                    1,
+                    salt,
+                    macKey);
+
+                using (IncrementalHash mac = IncrementalHash.CreateHMAC(hashAlgorithm, macKey))
+                {
+                    mac.AppendData(authSafe);
+
+                    if (!mac.TryGetHashAndReset(macKey, out int bytesWritten) || bytesWritten != macKey.Length)
+                    {
+                        Debug.Fail($"TryGetHashAndReset wrote {bytesWritten} of {macKey.Length} bytes");
+                        throw new CryptographicException();
+                    }
+                }
+
+                // https://tools.ietf.org/html/rfc7292#section-4
+                //
+                // PFX ::= SEQUENCE {
+                //   version    INTEGER {v3(3)}(v3,...),
+                //   authSafe   ContentInfo,
+                //   macData    MacData OPTIONAL
+                // }
+                {
+                    writer.PushSequence();
+
+                    writer.WriteInteger(3);
+
+                    writer.PushSequence();
+                    {
+                        writer.WriteObjectIdentifierForCrypto(Oids.Pkcs7Data);
+
+                        Asn1Tag contextSpecific0 = new Asn1Tag(TagClass.ContextSpecific, 0);
+
+                        writer.PushSequence(contextSpecific0);
+                        {
+                            writer.WriteOctetString(authSafe);
+                            writer.PopSequence(contextSpecific0);
+                        }
+
+                        writer.PopSequence();
+                    }
+
+                    // https://tools.ietf.org/html/rfc7292#section-4
+                    //
+                    // MacData ::= SEQUENCE {
+                    //   mac        DigestInfo,
+                    //   macSalt    OCTET STRING,
+                    //   iterations INTEGER DEFAULT 1
+                    //   -- Note: The default is for historical reasons and its use is
+                    //   -- deprecated.
+                    // }
+                    writer.PushSequence();
+                    {
+                        writer.PushSequence();
+                        {
+                            writer.PushSequence();
+                            {
+                                writer.WriteObjectIdentifierForCrypto(Oids.Sha1);
+                                writer.PopSequence();
+                            }
+
+                            writer.WriteOctetString(macKey);
+                            writer.PopSequence();
+                        }
+
+                        writer.WriteOctetString(salt);
+                        writer.PopSequence();
+                    }
+
+                    writer.PopSequence();
+                }
+
+                byte[] ret = CryptoPool.Rent(writer.GetEncodedLength());
+                int written = writer.Encode(ret);
+                return new ArraySegment<byte>(ret, 0, written);
             }
         }
     }

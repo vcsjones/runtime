@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates
                 new ReadOnlyMemory<byte>(data),
                 password.AsSpan(),
                 keyStorageFlags,
-                loaderLimits);
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return LoadPkcs12FromFile(
                 path,
-                new ReadOnlySpan<char>(psasword),
+                password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }
@@ -397,7 +397,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return LoadPkcs12CollectionFromFile(
                 path,
-                new ReadOnlySpan<char>(password),
+                password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }

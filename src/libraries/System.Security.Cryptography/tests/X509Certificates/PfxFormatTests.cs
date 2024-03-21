@@ -90,9 +90,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string bestPassword,
             // NTE_FAIL
             int win32Error = -2146893792,
-            int altWin32Error = 0)
+            int altWin32Error = 0,
+            int secondAltWin32Error = 0)
         {
-            ReadUnreadablePfx(pfxBytes, bestPassword, s_importFlags, win32Error, altWin32Error);
+            ReadUnreadablePfx(pfxBytes, bestPassword, s_importFlags, win32Error, altWin32Error, secondAltWin32Error);
         }
 
         protected abstract void ReadEmptyPfx(byte[] pfxBytes, string correctPassword);
@@ -104,7 +105,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509KeyStorageFlags importFlags,
             // NTE_FAIL
             int win32Error = -2146893792,
-            int altWin32Error = 0);
+            int altWin32Error = 0,
+            int secondAltWin32Error = 0);
 
         [Fact]
         public void EmptyPfx_NoMac()
@@ -226,8 +228,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 if (s_loaderFailsKeysEarly || associateKey || encryptKeySafe)
                 {
                     // NTE_FAIL, falling back to CRYPT_E_BAD_ENCODE if padding happened to work out.
-                    ReadUnreadablePfx(pfxBytes, null, altWin32Error: -2146885630);
-                    ReadUnreadablePfx(pfxBytes, string.Empty, altWin32Error: -2146885630);
+                    // The new cert loader gets ERROR_INVALID_PASSWORD since it doesn't see both a
+                    // success and a failure in the win32 layer.
+                    ReadUnreadablePfx(pfxBytes, null, altWin32Error: -2146885630, secondAltWin32Error: -2147024810);
+                    ReadUnreadablePfx(pfxBytes, string.Empty, altWin32Error: -2146885630, secondAltWin32Error: -2147024810);
                 }
                 else
                 {
