@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Reflection;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -322,10 +326,10 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(data);
 
             return LoadPkcs12Collection(
-                new ReadOnlySpan<byte>(data),
-                password.AsSpan(),
+                new ReadOnlyMemory<byte>(data),
+                password,
                 keyStorageFlags,
-                loaderLimits);
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults);
         }
 
         /// <summary>
@@ -455,7 +459,184 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(path);
+
+            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
+            {
+                X509Certificate2Collection? coll = null;
+
+                LoadPkcs12NoLimits(path, password, keyStorageFlags, ref coll);
+
+                if (coll is not null)
+                {
+                    return coll;
+                }
+            }
+
+            (byte[]? rented, int length, MemoryMappedFile? mapped) = ReadAllBytesIfBerSequence(path);
+
+            if (rented is not null)
+            {
+                Debug.Assert(mapped is null);
+
+                try
+                {
+                    return LoadPkcs12Collection(
+                        new ReadOnlyMemory<byte>(rented, 0, length),
+                        password,
+                        keyStorageFlags,
+                        loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, length);
+                }
+            }
+            else
+            {
+                Debug.Assert(mapped is not null);
+
+                using (mapped)
+                using (MemoryMappedViewAccessor accessor = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                {
+                    unsafe
+                    {
+                        byte* pointer = null;
+
+                        try
+                        {
+                            accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+
+                            using (PointerMemoryManager<byte> manager = new(pointer, length))
+                            {
+                                return LoadPkcs12Collection(
+                                    manager.Memory,
+                                    password,
+                                    keyStorageFlags,
+                                    loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                            }
+                        }
+                        finally
+                        {
+                            if (pointer != null)
+                            {
+                                accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TODO: Get this made into a public method.
+        private static readonly TryReadLength s_tryReadLength = (TryReadLength)typeof(AsnDecoder).GetMethod(
+            nameof(TryReadLength), BindingFlags.Static | BindingFlags.NonPublic)!.CreateDelegate(typeof(TryReadLength));
+
+        private delegate bool TryReadLength(
+            ReadOnlySpan<byte> source,
+            AsnEncodingRules ruleSet,
+            out int? length,
+            out int bytesRead);
+
+        private static (byte[]?, int, MemoryMappedFile?) ReadAllBytesIfBerSequence(string path)
+        {
+            // The expected header in a PFX is 30 82 XX XX, but since it's BER-encoded
+            // it could be up to 30 FE 00 00 00 .. XX YY ZZ AA and still be within the
+            // bounds of what we can load into an array. 30 FE would be followed by 0x7E bytes,
+            // so we need 0x81 total bytes for a tag and length using a maximal BER encoding.
+            Span<byte> earlyBuf = stackalloc byte[0x81];
+
+            try
+            {
+                using (FileStream stream = File.OpenRead(path))
+                {
+                    int read = stream.ReadAtLeast(earlyBuf, 2);
+
+                    if (earlyBuf[0] != 0x30 || earlyBuf[1] is 0 or 1)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
+                        {
+                            HResult = CRYPT_E_BAD_DECODE,
+                        };
+                    }
+
+                    int totalLength;
+
+                    if (earlyBuf[1] < 0x80)
+                    {
+                        // The two bytes we already read, plus the interpreted length
+                        totalLength = earlyBuf[1] + 2;
+                    }
+                    else if (earlyBuf[1] == 0x80)
+                    {
+                        // indeterminate length
+                        long streamLength = stream.Length;
+
+                        if (streamLength < 1_048_576)
+                        {
+                            totalLength = (int)streamLength;
+                        }
+                        else
+                        {
+                            totalLength = -1;
+                        }
+                    }
+                    else
+                    {
+                        int lengthLength = earlyBuf[1] - 0x80;
+                        int toRead = lengthLength - read;
+
+                        if (toRead > 0)
+                        {
+                            int localRead = stream.ReadAtLeast(earlyBuf.Slice(read), toRead);
+                            read += localRead;
+                        }
+
+                        ReadOnlySpan<byte> lengthPart = earlyBuf.Slice(1, read - 1);
+
+                        if (!s_tryReadLength(lengthPart, AsnEncodingRules.BER, out int? decoded, out int decodedLength))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
+                            {
+                                HResult = CRYPT_E_BAD_DECODE,
+                            };
+                        }
+
+                        Debug.Assert(decoded.HasValue);
+
+                        // The interpreted value, the bytes involved in the length (which includes earlyBuf[1]),
+                        // and the tag (earlyBuf[0])
+                        totalLength = decoded.GetValueOrDefault() + decodedLength + 1;
+                    }
+
+                    if (totalLength >= 0)
+                    {
+                        byte[] rented = CryptoPool.Rent(totalLength);
+                        earlyBuf.Slice(0, read).CopyTo(rented);
+
+                        stream.ReadExactly(rented.AsSpan(read, totalLength - read));
+                        return (rented, totalLength, null);
+                    }
+
+                    MemoryMappedFile mapped = MemoryMappedFile.CreateFromFile(
+                        stream,
+                        mapName: null,
+                        capacity: stream.Length,
+                        MemoryMappedFileAccess.Read,
+                        HandleInheritability.None,
+                        leaveOpen: false);
+
+                    return (null, (int)long.Min(int.MaxValue, stream.Length), mapped);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new CryptographicException(SR.Arg_CryptographyException, e);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                throw new CryptographicException(SR.Arg_CryptographyException, e);
+            }
         }
     }
 }

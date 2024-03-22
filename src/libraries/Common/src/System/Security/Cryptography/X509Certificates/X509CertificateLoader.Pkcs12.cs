@@ -30,6 +30,12 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags,
             ref X509Certificate2Collection? earlyReturn);
 
+        static partial void LoadPkcs12NoLimits(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            ref X509Certificate2Collection? earlyReturn);
+
         private static partial X509Certificate2 LoadPkcs12(
             ref BagState bagState,
             ReadOnlySpan<char> password,

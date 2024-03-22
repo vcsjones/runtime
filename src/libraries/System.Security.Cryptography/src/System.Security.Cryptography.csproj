@@ -1798,6 +1798,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Formats.Asn1" />
+    <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
