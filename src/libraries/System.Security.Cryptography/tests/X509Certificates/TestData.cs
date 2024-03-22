@@ -4227,7 +4227,7 @@ YvvL0LiXzFyomg==
 
         // This is an RSA-1024 certificate, "CN=outer" which has an extension with
         // the unregistered OID 0.0.1 that is a PEM-encoded ECDSA-secp521r1
-        // certificate ("CN=iinner").
+        // certificate ("CN=inner").
         internal static readonly byte[] NestedCertificates = (
             "3082041930820382A00302010202084062D86F6A371DD7300D06092A864886F7" +
             "0D01010B05003010310E300C060355040313056F75746572301E170D32343031" +

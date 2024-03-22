@@ -34,6 +34,12 @@ namespace System.Security.Cryptography.X509Certificates
             string path,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
+            ref X509Certificate2? earlyReturn);
+
+        static partial void LoadPkcs12NoLimits(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
             ref X509Certificate2Collection? earlyReturn);
 
         private static partial X509Certificate2 LoadPkcs12(

@@ -290,7 +290,26 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(path);
+
+            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
+            {
+                X509Certificate2? earlyReturn = null;
+
+                LoadPkcs12NoLimits(path, password, keyStorageFlags, ref earlyReturn);
+
+                if (earlyReturn is not null)
+                {
+                    return earlyReturn;
+                }
+            }
+
+            return LoadFromFile(
+                path,
+                password,
+                keyStorageFlags,
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults,
+                LoadPkcs12);
         }
 
         /// <summary>
@@ -473,6 +492,27 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            return LoadFromFile(
+                path,
+                password,
+                keyStorageFlags,
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults,
+                LoadPkcs12Collection);
+        }
+
+        private delegate T LoadFromFileFunc<T>(
+            ReadOnlyMemory<byte> data,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits loaderLimits);
+
+        private static T LoadFromFile<T>(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits loaderLimits,
+            LoadFromFileFunc<T> loader)
+        {
             (byte[]? rented, int length, MemoryMappedFile? mapped) = ReadAllBytesIfBerSequence(path);
 
             if (rented is not null)
@@ -481,11 +521,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                    return LoadPkcs12Collection(
+                    return loader(
                         new ReadOnlyMemory<byte>(rented, 0, length),
                         password,
                         keyStorageFlags,
-                        loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                        loaderLimits);
                 }
                 finally
                 {
@@ -509,11 +549,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                             using (PointerMemoryManager<byte> manager = new(pointer, length))
                             {
-                                return LoadPkcs12Collection(
+                                return loader(
                                     manager.Memory,
                                     password,
                                     keyStorageFlags,
-                                    loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                                    loaderLimits);
                             }
                         }
                         finally
