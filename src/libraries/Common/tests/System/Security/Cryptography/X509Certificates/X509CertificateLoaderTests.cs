@@ -8,50 +8,34 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    public class X509CertificateLoaderTests_FromByteArray :
-        X509CertificateLoaderTests<X509CertificateLoaderTests_FromByteArray.Traits>
+    public class X509CertificateLoaderTests_FromByteArray : X509CertificateLoaderTests
     {
-        public sealed class Traits : ICertificateLoaderTraits
-        {
-            public static void NullInputAssert(Action action) =>
-                AssertExtensions.Throws<ArgumentNullException>("data", action);
-
-            public static bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
-            {
-                if (bytes is null)
-                {
-                    contentType = X509ContentType.Unknown;
-                    return false;
-                }
-
-                contentType = X509Certificate2.GetCertContentType(bytes);
-                return true;
-            }
-        }
+        protected override void NullInputAssert(Action action) =>
+            AssertExtensions.Throws<ArgumentNullException>("data", action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(bytes);
 
         protected override X509Certificate2 LoadCertificateFileOnly(string path) =>
             X509CertificateLoader.LoadCertificate(File.ReadAllBytes(path));
-    }
 
-    public class X509CertificateLoaderTests_FromByteSpan :
-        X509CertificateLoaderTests<X509CertificateLoaderTests_FromByteSpan.Traits>
-    {
-        public sealed class Traits : ICertificateLoaderTraits
+        protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
         {
-            public static bool IsNativeInput => false;
-
-            public static void NullInputAssert(Action action) =>
-                Assert.ThrowsAny<CryptographicException>(action);
-
-            public static bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
+            if (bytes is null)
             {
                 contentType = X509ContentType.Unknown;
                 return false;
             }
+
+            contentType = X509Certificate2.GetCertContentType(bytes);
+            return true;
         }
+    }
+
+    public class X509CertificateLoaderTests_FromByteSpan : X509CertificateLoaderTests
+    {
+        protected override void NullInputAssert(Action action) =>
+            Assert.ThrowsAny<CryptographicException>(action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(new ReadOnlySpan<byte>(bytes));
@@ -98,28 +82,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
+        {
+            contentType = X509ContentType.Unknown;
+            return false;
+        }
     }
 
-    public class X509CertificateLoaderTests_FromFile :
-        X509CertificateLoaderTests<X509CertificateLoaderTests_FromFile.Traits>
+    public class X509CertificateLoaderTests_FromFile : X509CertificateLoaderTests
     {
-        public sealed class Traits : ICertificateLoaderTraits
-        {
-            public static void NullInputAssert(Action action) =>
-                AssertExtensions.Throws<ArgumentNullException>("path", action);
-
-            public static bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
-            {
-                if (path is null)
-                {
-                    contentType = X509ContentType.Unknown;
-                    return false;
-                }
-
-                contentType = X509Certificate2.GetCertContentType(path);
-                return true;
-            }
-        }
+        protected override void NullInputAssert(Action action) =>
+            AssertExtensions.Throws<ArgumentNullException>("path", action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificateFromFile(path);
@@ -141,17 +115,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 File.Delete(path);
             }
         }
+
+        protected override bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType)
+        {
+            if (path is null)
+            {
+                contentType = X509ContentType.Unknown;
+                return false;
+            }
+
+            contentType = X509Certificate2.GetCertContentType(path);
+            return true;
+        }
     }
 
-    public interface ICertificateLoaderTraits
+    public abstract class X509CertificateLoaderTests
     {
-        public static abstract void NullInputAssert(Action action);
-        public static abstract bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType);
-    }
-
-    public abstract class X509CertificateLoaderTests<TTraits>
-        where TTraits : ICertificateLoaderTraits
-    {
+        protected abstract void NullInputAssert(Action action);
         protected abstract X509Certificate2 LoadCertificate(byte[] bytes, string path);
         protected abstract X509Certificate2 LoadCertificateFileOnly(string path);
 
@@ -161,10 +141,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected virtual X509Certificate2 LoadCertificateAtOffset(byte[] bytes, int offset) =>
             LoadCertificateNoFile(bytes.AsSpan(offset).ToArray());
 
+        protected abstract bool TryGetContentType(byte[] bytes, string path, out X509ContentType contentType);
+
         [Fact]
         public void LoadNull()
         {
-            TTraits.NullInputAssert(() => LoadCertificate(null, null));
+            NullInputAssert(() => LoadCertificate(null, null));
         }
 
         [Fact]
@@ -176,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (TTraits.TryGetContentType(data, path, out X509ContentType actualType))
+            if (TryGetContentType(data, path, out X509ContentType actualType))
             {
                 Assert.Equal(contentType, actualType);
             }
