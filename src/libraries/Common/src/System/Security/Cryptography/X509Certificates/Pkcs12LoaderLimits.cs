@@ -24,7 +24,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         ///   Gets a shared reference to the default loader limits.
         /// </summary>
+        /// <remarks>
+        ///   The singleton instance returned from this property is equivalent to an
+        ///   instance produced via the default constructor, except the properties
+        ///   prohibit reassignment.  As with the default constructor, the individual
+        ///   property values may change over time.
+        /// </remarks>
         /// <value>A shared reference to the default loader limits.</value>
+        /// <seealso cref="IsReadOnly" />
         public static Pkcs12LoaderLimits Defaults { get; } = MakeReadOnly(new Pkcs12LoaderLimits());
 
         /// <summary>
@@ -61,6 +68,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Initializes a new instance of the <see cref="Pkcs12LoaderLimits"/> class
         ///   with default values.
         /// </summary>
+        /// <remarks>
+        ///   The default values for each property on a default instance of this class
+        ///   are chosen as a compromise between maximizing compatibility and minimizing
+        ///   "nuisance" work.  The defaults for any given property may vary over time.
+        /// </remarks>
         public Pkcs12LoaderLimits()
         {
         }
