@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (workRemaining.HasValue)
                         {
-                            workRemaining -= kdfCount;
+                            workRemaining = checked(workRemaining - kdfCount);
                         }
                     }
 
@@ -433,7 +433,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (workRemaining.HasValue)
             {
-                workRemaining -= kdfCount;
+                workRemaining = checked(workRemaining - kdfCount);
             }
 
             return bagState.DecryptSafeContents(
@@ -444,54 +444,66 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static int GetKdfCount(in AlgorithmIdentifierAsn algorithmIdentifier)
         {
-            if (!algorithmIdentifier.Parameters.HasValue)
+            int rawCount = GetRawKdfCount(in algorithmIdentifier);
+
+            if (rawCount < 0)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            switch (algorithmIdentifier.Algorithm)
+            return rawCount;
+
+            static int GetRawKdfCount(in AlgorithmIdentifierAsn algorithmIdentifier)
             {
-                case Oids.PbeWithMD5AndDESCBC:
-                case Oids.PbeWithMD5AndRC2CBC:
-                case Oids.PbeWithSha1AndDESCBC:
-                case Oids.PbeWithSha1AndRC2CBC:
-                case Oids.Pkcs12PbeWithShaAnd3Key3Des:
-                case Oids.Pkcs12PbeWithShaAnd2Key3Des:
-                case Oids.Pkcs12PbeWithShaAnd128BitRC2:
-                case Oids.Pkcs12PbeWithShaAnd40BitRC2:
-                    PBEParameter pbeParameter = PBEParameter.Decode(
-                        algorithmIdentifier.Parameters.Value,
-                        AsnEncodingRules.BER);
+                if (!algorithmIdentifier.Parameters.HasValue)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-                    return pbeParameter.IterationCount;
-                case Oids.PasswordBasedEncryptionScheme2:
-                    PBES2Params pbes2Params = PBES2Params.Decode(
-                        algorithmIdentifier.Parameters.Value,
-                        AsnEncodingRules.BER);
+                switch (algorithmIdentifier.Algorithm)
+                {
+                    case Oids.PbeWithMD5AndDESCBC:
+                    case Oids.PbeWithMD5AndRC2CBC:
+                    case Oids.PbeWithSha1AndDESCBC:
+                    case Oids.PbeWithSha1AndRC2CBC:
+                    case Oids.Pkcs12PbeWithShaAnd3Key3Des:
+                    case Oids.Pkcs12PbeWithShaAnd2Key3Des:
+                    case Oids.Pkcs12PbeWithShaAnd128BitRC2:
+                    case Oids.Pkcs12PbeWithShaAnd40BitRC2:
+                        PBEParameter pbeParameter = PBEParameter.Decode(
+                            algorithmIdentifier.Parameters.Value,
+                            AsnEncodingRules.BER);
 
-                    if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
-                    {
+                        return pbeParameter.IterationCount;
+                    case Oids.PasswordBasedEncryptionScheme2:
+                        PBES2Params pbes2Params = PBES2Params.Decode(
+                            algorithmIdentifier.Parameters.Value,
+                            AsnEncodingRules.BER);
+
+                        if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
+                        {
+                            throw new CryptographicException(
+                                SR.Format(
+                                    SR.Cryptography_UnknownAlgorithmIdentifier,
+                                    pbes2Params.EncryptionScheme.Algorithm));
+                        }
+
+                        if (!pbes2Params.KeyDerivationFunc.Parameters.HasValue)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        }
+
+                        Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
+                            pbes2Params.KeyDerivationFunc.Parameters.Value,
+                            AsnEncodingRules.BER);
+
+                        return pbkdf2Params.IterationCount;
+                    default:
                         throw new CryptographicException(
                             SR.Format(
                                 SR.Cryptography_UnknownAlgorithmIdentifier,
-                                pbes2Params.EncryptionScheme.Algorithm));
-                    }
-
-                    if (!pbes2Params.KeyDerivationFunc.Parameters.HasValue)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
-
-                    Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                        pbes2Params.KeyDerivationFunc.Parameters.Value,
-                        AsnEncodingRules.BER);
-
-                    return pbkdf2Params.IterationCount;
-                default:
-                    throw new CryptographicException(
-                        SR.Format(
-                            SR.Cryptography_UnknownAlgorithmIdentifier,
-                            algorithmIdentifier.Algorithm));
+                                algorithmIdentifier.Algorithm));
+                }
             }
         }
 
