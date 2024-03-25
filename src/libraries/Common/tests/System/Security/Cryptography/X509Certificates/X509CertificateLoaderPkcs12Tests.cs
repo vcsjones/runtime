@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits);
 
-        protected virtual X509Certificate2 LoadPfxNoFile(
+        protected X509Certificate2 LoadPfxNoFile(
             byte[] bytes,
             string password = "",
             X509KeyStorageFlags? keyStorageFlags = null,
@@ -277,7 +277,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return LoadPfx(bytes, null, password, keyStorageFlags, loaderLimits);
         }
 
-        protected virtual X509Certificate2 LoadPfxAtOffset(
+        protected X509Certificate2 LoadPfxAtOffset(
             byte[] bytes,
             int offset,
             string password = "",
@@ -376,7 +376,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false)]
         public void LoadPfx_Single_WithPassword(bool ignorePrivateKeys)
         {
-            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits(Pkcs12LoaderLimits.Defaults)
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
                 IgnorePrivateKeys = ignorePrivateKeys,
             };
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false)]
         public void LoadPfx_Single_NoPassword(bool ignorePrivateKeys, bool useNull)
         {
-            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits(Pkcs12LoaderLimits.Defaults)
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
                 IgnorePrivateKeys = ignorePrivateKeys,
             };
@@ -433,6 +433,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public void LoadPfx_Single_EmptyPassword_WithWrongPassword()
+        {
+            CryptographicException ex = Assert.Throws<CryptographicException>(
+                () => LoadPfxNoFile(TestData.PfxWithNoPassword, "asdf"));
+
+            Assert.Contains("password", ex.Message);
+            Assert.Equal(ERROR_INVALID_PASSWORD, ex.HResult);
+        }
+
+        [Fact]
         public void LoadPfx_WithTrailingData()
         {
             byte[] data = TestData.PfxWithNoPassword;
@@ -442,6 +452,149 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.Equal("CN=MyName", cert.Subject);
             }
+        }
+
+        private void LoadPfx_VerifyLimit(
+            string propertyTested,
+            bool fail,
+            byte[] bytes,
+            string path,
+            string password,
+            Pkcs12LoaderLimits loaderLimits)
+        {
+            Func<X509Certificate2> test;
+
+            if (bytes is null)
+            {
+                test = () => LoadPfxFileOnly(path, password, EphemeralIfPossible, loaderLimits);
+            }
+            else if (path is null)
+            {
+                test = () => LoadPfxNoFile(bytes, password, EphemeralIfPossible, loaderLimits);
+            }
+            else
+            {
+                test = () => LoadPfx(bytes, path, password, EphemeralIfPossible, loaderLimits);
+            }
+
+            if (fail)
+            {
+                Pkcs12LoadLimitExceededException ex =
+                    AssertExtensions.Throws<Pkcs12LoadLimitExceededException>(() => test());
+
+                Assert.Contains(propertyTested, ex.Message);
+            }
+            else
+            {
+                // Assert.NoThrow
+                test()?.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadPfx_VerifyMacIterationLimit(bool failLimit)
+        {
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                MacIterationLimit = failLimit ? 1999 : 2000,
+            };
+
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.MacIterationLimit),
+                failLimit,
+                TestData.PfxData,
+                TestFiles.PfxFile,
+                TestData.PfxDataPassword,
+                loaderLimits);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadPfx_VerifyKdfIterationLimit(bool failLimit)
+        {
+            // TODO: Replace the test input for this test with content that uses a lower limit
+            // for the certificates authsafe than for the key(s), then show that the low limit
+            // passes with IgnorePrivateKeys.
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                IndividualKdfIterationLimit = failLimit ? 1999 : 2000,
+            };
+
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit),
+                failLimit,
+                TestData.PfxData,
+                TestFiles.PfxFile,
+                TestData.PfxDataPassword,
+                loaderLimits);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadPfx_VerifyTotalKdfIterationLimit(bool failLimit)
+        {
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                TotalKdfIterationLimit = failLimit ? 3999 : 4000,
+            };
+
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.TotalKdfIterationLimit),
+                failLimit,
+                TestData.PfxData,
+                TestFiles.PfxFile,
+                TestData.PfxDataPassword,
+                loaderLimits);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void LoadPfx_VerifyCertificateLimit(int? certLimit)
+        {
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                MaxCertificates = certLimit,
+            };
+
+            bool expectFailure = certLimit.GetValueOrDefault(int.MaxValue) < 3;
+
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.MaxCertificates),
+                expectFailure,
+                TestData.ChainPfxBytes,
+                TestFiles.ChainPfxFile,
+                TestData.ChainPfxPassword,
+                loaderLimits);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        public void LoadPfx_VerifyKeysLimit(int? keysLimit)
+        {
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                MaxKeys = keysLimit,
+            };
+
+            bool expectFailure = keysLimit.GetValueOrDefault(int.MaxValue) < 1;
+
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.MaxKeys),
+                expectFailure,
+                TestData.ChainPfxBytes,
+                TestFiles.ChainPfxFile,
+                TestData.ChainPfxPassword,
+                loaderLimits);
         }
     }
 }

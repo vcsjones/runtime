@@ -312,10 +312,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (kdfCount > loaderLimits.IndividualKdfIterationLimit || kdfCount > workRemaining)
                         {
-                            throw new Pkcs12LoadLimitExceededException(
-                                kdfCount > loaderLimits.IndividualKdfIterationLimit ?
-                                    nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit) :
-                                    nameof(Pkcs12LoaderLimits.TotalKdfIterationLimit));
+                            string propertyName = kdfCount > loaderLimits.IndividualKdfIterationLimit ?
+                                nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit) :
+                                nameof(Pkcs12LoaderLimits.TotalKdfIterationLimit);
+
+                            throw new Pkcs12LoadLimitExceededException(propertyName);
                         }
 
                         if (workRemaining.HasValue)
