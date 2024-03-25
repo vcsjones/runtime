@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static partial X509Certificate2 LoadCertificateFromFile(string path)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             unsafe
             {

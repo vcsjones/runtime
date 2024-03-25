@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
             {

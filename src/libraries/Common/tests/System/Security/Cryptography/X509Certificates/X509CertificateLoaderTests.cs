@@ -13,6 +13,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void NullInputAssert(Action action) =>
             AssertExtensions.Throws<ArgumentNullException>("data", action);
 
+        protected override void EmptyInputAssert(Action action) =>
+            Assert.Throws<CryptographicException>(action);
+
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(bytes);
 
@@ -36,6 +39,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     {
         protected override void NullInputAssert(Action action) =>
             Assert.ThrowsAny<CryptographicException>(action);
+
+        protected override void EmptyInputAssert(Action action) =>
+            Assert.Throws<CryptographicException>(action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(new ReadOnlySpan<byte>(bytes));
@@ -95,6 +101,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void NullInputAssert(Action action) =>
             AssertExtensions.Throws<ArgumentNullException>("path", action);
 
+        protected override void EmptyInputAssert(Action action) =>
+            AssertExtensions.Throws<ArgumentException>("path", action);
+
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificateFromFile(path);
 
@@ -132,6 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public abstract class X509CertificateLoaderTests
     {
         protected abstract void NullInputAssert(Action action);
+        protected abstract void EmptyInputAssert(Action action);
         protected abstract X509Certificate2 LoadCertificate(byte[] bytes, string path);
         protected abstract X509Certificate2 LoadCertificateFileOnly(string path);
 
@@ -152,11 +162,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void LoadEmpty()
         {
-            Assert.ThrowsAny<CryptographicException>(
-                () => LoadCertificate(Array.Empty<byte>(), string.Empty));
+            EmptyInputAssert(() => LoadCertificate(Array.Empty<byte>(), string.Empty));
         }
 
-        public void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
+        private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
             if (TryGetContentType(data, path, out X509ContentType actualType))
             {

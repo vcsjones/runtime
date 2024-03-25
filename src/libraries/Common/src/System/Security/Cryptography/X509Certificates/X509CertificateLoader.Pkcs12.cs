@@ -120,6 +120,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
+                AsnDecoder.ReadSequence(data.Span, AsnEncodingRules.BER, out _, out _, out int trimLength);
+                data = data.Slice(0, trimLength);
+
                 PfxAsn pfxAsn = PfxAsn.Decode(data, AsnEncodingRules.BER);
 
                 if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
@@ -287,8 +290,13 @@ namespace System.Security.Cryptography.X509Certificates
                         bagState.AddCert(bag);
                     }
                 }
-                else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                else if (bag.BagId is Oids.Pkcs12KeyBag or Oids.Pkcs12ShroudedKeyBag)
                 {
+                    if (loaderLimits.IgnorePrivateKeys)
+                    {
+                        continue;
+                    }
+
                     if (bagState.KeyCount >= loaderLimits.MaxKeys)
                     {
                         throw new Pkcs12LoadLimitExceededException(nameof(Pkcs12LoaderLimits.MaxKeys));
