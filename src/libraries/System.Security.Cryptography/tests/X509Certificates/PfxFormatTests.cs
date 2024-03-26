@@ -1114,6 +1114,120 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        public void TwoCerts_TwoKeys_ManySafeContentsValues_UnencryptedAuthSafes_NoMac(bool invertCertOrder, bool invertKeyOrder)
+        {
+            string pw = invertCertOrder ? "" : null;
+
+            using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx, null, s_exportableImportFlags))
+            {
+                X509Certificate2Collection certs = ic.Collection;
+                X509Certificate2 first = certs[0];
+                X509Certificate2 second = certs[1];
+
+                if (invertCertOrder)
+                {
+                    X509Certificate2 tmp = first;
+                    first = second;
+                    second = tmp;
+                }
+
+                using (AsymmetricAlgorithm firstKey = first.GetRSAPrivateKey())
+                using (AsymmetricAlgorithm secondKey = second.GetRSAPrivateKey())
+                {
+                    AsymmetricAlgorithm firstAdd = firstKey;
+                    AsymmetricAlgorithm secondAdd = secondKey;
+
+                    if (invertKeyOrder != invertCertOrder)
+                    {
+                        AsymmetricAlgorithm tmp = firstKey;
+                        firstAdd = secondAdd;
+                        secondAdd = tmp;
+                    }
+
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    Pkcs12SafeContents firstKeyContents = new Pkcs12SafeContents();
+                    Pkcs12SafeContents secondKeyContents = new Pkcs12SafeContents();
+                    Pkcs12SafeContents firstCertContents = new Pkcs12SafeContents();
+                    Pkcs12SafeContents secondCertContents = new Pkcs12SafeContents();
+
+                    Pkcs12SafeContents irrelevant = new Pkcs12SafeContents();
+                    irrelevant.AddSecret(new Oid("0.0"), new byte[] { 0x05, 0x00 });
+
+                    Pkcs12SafeBag firstAddedKeyBag = firstKeyContents.AddShroudedKey(firstAdd, pw, s_windowsPbe);
+                    Pkcs12SafeBag secondAddedKeyBag = secondKeyContents.AddShroudedKey(secondAdd, pw, s_windowsPbe);
+                    Pkcs12SafeBag firstCertBag = firstCertContents.AddCertificate(first);
+                    Pkcs12SafeBag secondCertBag = secondCertContents.AddCertificate(second);
+                    Pkcs12SafeBag firstKeyBag = firstAddedKeyBag;
+                    Pkcs12SafeBag secondKeyBag = secondAddedKeyBag;
+
+                    if (invertKeyOrder != invertCertOrder)
+                    {
+                        Pkcs12SafeBag tmp = firstKeyBag;
+                        firstKeyBag = secondKeyBag;
+                        secondKeyBag = tmp;
+                    }
+
+                    firstCertBag.Attributes.Add(s_keyIdOne);
+                    firstKeyBag.Attributes.Add(s_keyIdOne);
+
+                    Pkcs9LocalKeyId secondKeyId = new Pkcs9LocalKeyId(second.GetCertHash());
+                    secondCertBag.Attributes.Add(secondKeyId);
+                    secondKeyBag.Attributes.Add(secondKeyId);
+
+                    // 2C, 1K, 1C, 2K
+                    // With some non-participating contents values sprinkled in for good measure.
+                    AddContents(irrelevant, builder, pw, encrypt: false);
+                    AddContents(secondCertContents, builder, pw, encrypt: false);
+                    AddContents(irrelevant, builder, pw, encrypt: false);
+                    AddContents(firstKeyContents, builder, pw, encrypt: false);
+                    AddContents(firstCertContents, builder, pw, encrypt: false);
+                    AddContents(irrelevant, builder, pw, encrypt: false);
+                    AddContents(secondKeyContents, builder, pw, encrypt: false);
+                    AddContents(irrelevant, builder, pw, encrypt: false);
+
+                    builder.SealWithoutIntegrity();
+                    byte[] pfxBytes = builder.Encode();
+
+                    X509Certificate2[] expectedOrder = { first, second };
+
+                    Action<X509Certificate2> followup = CheckKeyConsistency;
+
+                    // For unknown reasons, CheckKeyConsistency on this test fails
+                    // on Windows 7 with an Access Denied in all variations for
+                    // Collections, and in invertCertOrder: true for Single.
+                    //
+                    // Obviously this hit some sort of weird corner case in the Win7
+                    // loader, but it's not important to the test.
+
+                    if (OperatingSystem.IsWindows() &&
+                        !PlatformDetection.IsWindows8xOrLater)
+                    {
+                        followup = null;
+                    }
+
+                    ReadMultiPfx(
+                        pfxBytes,
+                        "",
+                        first,
+                        expectedOrder,
+                        followup);
+
+                    ReadMultiPfx(
+                        pfxBytes,
+                        null,
+                        first,
+                        expectedOrder,
+                        followup);
+                }
+            }
+        }
+
         private static void CheckKeyConsistency(X509Certificate2 cert)
         {
             byte[] data = { 2, 7, 4 };

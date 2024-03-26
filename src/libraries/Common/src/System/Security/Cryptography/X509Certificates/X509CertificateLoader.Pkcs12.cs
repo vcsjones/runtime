@@ -7,8 +7,8 @@ using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
-using Internal.Cryptography;
 using System.Security.Cryptography.Pkcs;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -696,7 +696,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            internal void UnshroudKeys(ReadOnlySpan<char> password)
+            internal void UnshroudKeys(ref ReadOnlySpan<char> password)
             {
                 Debug.Assert(_keyBags is not null);
 
