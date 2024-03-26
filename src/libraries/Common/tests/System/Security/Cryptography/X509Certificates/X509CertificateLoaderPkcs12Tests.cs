@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    public abstract class X509CertificateLoaderPkcs12Tests
+    public abstract partial class X509CertificateLoaderPkcs12Tests
     {
         private const int ERROR_INVALID_PASSWORD = -2147024810;
 
@@ -454,6 +454,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public void LoadPfx_Empty()
+        {
+            AssertExtensions.Throws<CryptographicException>(
+                () => LoadPfxNoFile(TestData.EmptyPfx),
+                "The provided PFX data contains no certificates.");
+        }
+
         private void LoadPfx_VerifyLimit(
             string propertyTested,
             bool fail,
@@ -595,6 +603,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 TestFiles.ChainPfxFile,
                 TestData.ChainPfxPassword,
                 loaderLimits);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadPfx_VerifyIgnoreEncryptedSafes(bool ignoreEncrypted)
+        {
+            // TODO: Replace the data in this test with a PFX that has certificates
+            // in two authsafes, with the encrypted one first, so we see that it does
+            // load certificates still, just not the ones from the encrypted set.
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                IgnoreEncryptedAuthSafes = ignoreEncrypted,
+            };
+
+            if (ignoreEncrypted)
+            {
+                AssertExtensions.Throws<CryptographicException>(
+                    () => LoadPfx(
+                        TestData.PfxData,
+                        TestFiles.PfxFile,
+                        TestData.PfxDataPassword,
+                        default,
+                        loaderLimits),
+                    "The provided PFX data contains no certificates.");
+            }
+            else
+            {
+                X509Certificate2 cert = LoadPfx(
+                    TestData.PfxData,
+                    TestFiles.PfxFile,
+                    TestData.PfxDataPassword,
+                    default,
+                    loaderLimits);
+
+                using (cert)
+                {
+                    Assert.Equal("CN=MyName", cert.Subject);
+                }
+            }
         }
     }
 }

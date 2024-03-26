@@ -192,6 +192,11 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else if (safeContentsAsn.ContentType == Oids.Pkcs7Encrypted)
                     {
+                        if (loaderLimits.IgnoreEncryptedAuthSafes)
+                        {
+                            continue;
+                        }
+
                         bagState.PrepareDecryptBuffer(authSafeContents.Length);
 
                         if (!bagState.LockedPassword)
@@ -284,7 +289,13 @@ namespace System.Security.Cryptography.X509Certificates
                             FilterAttributes(
                                 loaderLimits,
                                 ref bag,
-                                static (limits, oid) => limits.PreserveUnknownAttributes || oid == Oids.LocalKeyId);
+                                static (limits, oid) =>
+                                    oid switch
+                                    {
+                                        Oids.LocalKeyId => true,
+                                        "1.2.840.113549.1.9.20" => limits.PreserveCertificateAlias,
+                                        _ => limits.PreserveUnknownAttributes,
+                                    });
                         }
 
                         bagState.AddCert(bag);
