@@ -45,9 +45,17 @@ namespace System.Security.Cryptography.X509Certificates
         ///   before sending them to the underlying system loader.
         /// </value>
         /// <remarks>
-        ///   The system loader may have its own limits where only part
-        ///   of the contents are respected, or where the load is rejected.
-        ///   Using this set of limits only affects the .NET layer of filtering.
+        ///   <para>
+        ///     The system loader may have its own limits where only part
+        ///     of the contents are respected, or where the load is rejected.
+        ///     Using this set of limits only affects the .NET layer of filtering.
+        ///   </para>
+        ///   <para>
+        ///     The <see cref="X509CertificateLoader" /> class checks for reference
+        ///     equality to this property to determine if filtering should be bypassed.
+        ///     Making a new Pkcs12LoaderLimits value that has all of the same property
+        ///     values may give different results for certain inputs.
+        ///   </para>
         /// </remarks>
         public static Pkcs12LoaderLimits DangerousNoLimits { get; } =
             MakeReadOnly(
