@@ -292,18 +292,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
-            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
-            {
-                X509Certificate2? earlyReturn = null;
-
-                LoadPkcs12NoLimits(path, password, keyStorageFlags, ref earlyReturn);
-
-                if (earlyReturn is not null)
-                {
-                    return earlyReturn;
-                }
-            }
-
             return LoadFromFile(
                 path,
                 password,
@@ -479,18 +467,6 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits? loaderLimits = null)
         {
             ArgumentNullException.ThrowIfNull(path);
-
-            if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
-            {
-                X509Certificate2Collection? coll = null;
-
-                LoadPkcs12NoLimits(path, password, keyStorageFlags, ref coll);
-
-                if (coll is not null)
-                {
-                    return coll;
-                }
-            }
 
             return LoadFromFile(
                 path,
