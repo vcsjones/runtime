@@ -495,7 +495,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 // Assert.NoThrow
-                test()?.Dispose();
+                test().Dispose();
             }
         }
 
