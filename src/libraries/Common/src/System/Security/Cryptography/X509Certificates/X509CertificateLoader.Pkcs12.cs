@@ -57,16 +57,24 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            BagState bags = default;
+            BagState bagState = default;
 
             try
             {
-                ReadCertsAndKeys(ref bags, data, ref password, loaderLimits);
-                return LoadPkcs12(ref bags, password, keyStorageFlags);
+                ReadCertsAndKeys(ref bagState, data, ref password, loaderLimits);
+
+                if (bagState.CertCount == 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Pfx_NoCertificates);
+                }
+
+                bagState.UnshroudKeys(ref password);
+
+                return LoadPkcs12(ref bagState, password, keyStorageFlags);
             }
             finally
             {
-                bags.Dispose();
+                bagState.Dispose();
             }
         }
 
@@ -87,16 +95,24 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            BagState bags = default;
+            BagState bagState = default;
 
             try
             {
-                ReadCertsAndKeys(ref bags, data, ref password, loaderLimits);
-                return LoadPkcs12Collection(ref bags, password, keyStorageFlags);
+                ReadCertsAndKeys(ref bagState, data, ref password, loaderLimits);
+
+                if (bagState.CertCount == 0)
+                {
+                    return new X509Certificate2Collection();
+                }
+
+                bagState.UnshroudKeys(ref password);
+
+                return LoadPkcs12Collection(ref bagState, password, keyStorageFlags);
             }
             finally
             {
-                bags.Dispose();
+                bagState.Dispose();
             }
         }
 
@@ -515,7 +531,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private struct BagState
+        private partial struct BagState
         {
             private SafeBagAsn[]? _certBags;
             private SafeBagAsn[]? _keyBags;
@@ -572,7 +588,7 @@ namespace System.Security.Cryptography.X509Certificates
                 _passwordState |= 1;
             }
 
-            private bool ConfirmedPassword => (_passwordState & 2) != 0;
+            internal bool ConfirmedPassword => (_passwordState & 2) != 0;
 
             internal void ConfirmPassword()
             {

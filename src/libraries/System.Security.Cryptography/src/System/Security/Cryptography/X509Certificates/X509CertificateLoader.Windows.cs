@@ -223,7 +223,6 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags)
         {
-            bagState.UnshroudKeys(ref password);
             ArraySegment<byte> reassembled = bagState.ToPfx(password);
             SafeCertStoreHandle storeHandle = ImportPfx(reassembled, password, keyStorageFlags);
             CryptoPool.Return(reassembled);
