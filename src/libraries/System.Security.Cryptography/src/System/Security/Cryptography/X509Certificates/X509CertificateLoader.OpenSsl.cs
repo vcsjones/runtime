@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Certificate2(pal);
         }
 
-        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey)
+        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey, ImportState importState)
         {
             OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)certAndKey.Cert!;
 

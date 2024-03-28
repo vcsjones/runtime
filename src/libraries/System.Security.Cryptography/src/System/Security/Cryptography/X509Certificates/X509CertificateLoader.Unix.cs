@@ -12,11 +12,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey);
+        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey, ImportState importState);
 
         private static partial AsymmetricAlgorithm? CreateKey(string algorithm);
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data);
+
+        static partial void InitializeImportState(ref ImportState importState, X509KeyStorageFlags keyStorageFlags);
 
         private static partial X509Certificate2 LoadPkcs12(
             ref BagState bagState,
@@ -27,6 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             CertKeyMatcher matcher = default;
             CertAndKey[]? certsAndKeys = null;
+            ImportState importState = default;
 
             try
             {
@@ -52,7 +55,9 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 Debug.Assert(matchIndex >= 0);
-                X509Certificate2 ret = FromCertAndKey(certsAndKeys[matchIndex]);
+
+                InitializeImportState(ref importState, keyStorageFlags);
+                X509Certificate2 ret = FromCertAndKey(certsAndKeys[matchIndex], importState);
                 certsAndKeys[matchIndex] = default;
 
                 return ret;
@@ -64,6 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
                     CertKeyMatcher.Free(certsAndKeys, bagState.CertCount);
                 }
 
+                importState.Dispose();
                 matcher.Dispose();
             }
         }
@@ -77,6 +83,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             CertKeyMatcher matcher = default;
             CertAndKey[]? certsAndKeys = null;
+            ImportState importState = default;
 
             try
             {
@@ -86,11 +93,13 @@ namespace System.Security.Cryptography.X509Certificates
                 // Windows compat: Don't allow double-bind for EphemeralKeySet loads.
                 certsAndKeys = matcher.MatchCertAndKeys(ref bagState, !ephemeral);
 
+                InitializeImportState(ref importState, keyStorageFlags);
+
                 X509Certificate2Collection coll = new X509Certificate2Collection();
 
                 for (int i = bagState.CertCount - 1; i >= 0; i--)
                 {
-                    coll.Add(FromCertAndKey(certsAndKeys[i]));
+                    coll.Add(FromCertAndKey(certsAndKeys[i], importState));
                     certsAndKeys[i] = default;
                 }
 
@@ -103,6 +112,7 @@ namespace System.Security.Cryptography.X509Certificates
                     CertKeyMatcher.Free(certsAndKeys, bagState.CertCount);
                 }
 
+                importState.Dispose();
                 matcher.Dispose();
             }
         }
@@ -510,6 +520,16 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     CryptoPool.Return(rented, _clearSize);
                 }
+            }
+        }
+
+        private partial struct ImportState
+        {
+            partial void DisposeCore();
+
+            internal void Dispose()
+            {
+                DisposeCore();
             }
         }
     }

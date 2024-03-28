@@ -1271,6 +1271,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleTrustStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.ExportPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.LoaderPal.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.macOS.cs" />
   </ItemGroup>
 
