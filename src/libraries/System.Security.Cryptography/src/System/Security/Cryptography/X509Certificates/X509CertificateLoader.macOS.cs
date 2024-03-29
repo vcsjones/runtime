@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Asn1;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Security.Cryptography.Apple;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,14 +14,71 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
         {
-            return new X509Certificate2(LoadX509Der(data));
+            if (data.IsEmpty)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            return new X509Certificate2(LoadX509(data));
         }
 
         public static partial X509Certificate2 LoadCertificateFromFile(string path)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
-            return LoadFromFile(path, default, default, default!, (memory, _, _, _) => LoadCertificate(memory.Span));
+            using (FileStream stream = File.OpenRead(path))
+            {
+                int length = (int)long.Min(int.MaxValue, stream.Length);
+
+                if (length > MemoryMappedFileCutoff)
+                {
+                    MemoryMappedFile mapped = MemoryMappedFile.CreateFromFile(
+                        stream,
+                        mapName: null,
+                        capacity: stream.Length,
+                        MemoryMappedFileAccess.Read,
+                        HandleInheritability.None,
+                        leaveOpen: false);
+
+                    using (mapped)
+                    using (MemoryMappedViewAccessor accessor = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                    {
+                        unsafe
+                        {
+                            byte* pointer = null;
+
+                            try
+                            {
+                                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+
+                                ReadOnlySpan<byte> data = new(pointer, length);
+                                return LoadCertificate(data);
+                            }
+                            finally
+                            {
+                                if (pointer != null)
+                                {
+                                    accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    byte[] buf = CryptoPool.Rent(length);
+
+                    try
+                    {
+                        stream.ReadAtLeast(buf, length);
+                        return LoadCertificate(buf.AsSpan(0, length));
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(buf, length);
+                    }
+                }
+            }
         }
 
         static partial void InitializeImportState(ref ImportState importState, X509KeyStorageFlags keyStorageFlags)
@@ -89,10 +149,15 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
         {
-            return LoadX509Der(data.Span);
+            ReadOnlySpan<byte> span = data.Span;
+            AsnValueReader reader = new AsnValueReader(span, AsnEncodingRules.DER);
+            reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+
+            return LoadX509(span);
         }
 
-        private static AppleCertificatePal LoadX509Der(ReadOnlySpan<byte> data)
+        private static AppleCertificatePal LoadX509(ReadOnlySpan<byte> data)
         {
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
                 data,

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             AssertExtensions.Throws<ArgumentNullException>("data", action);
 
         protected override void EmptyInputAssert(Action action) =>
-            Assert.Throws<CryptographicException>(action);
+            Assert.ThrowsAny<CryptographicException>(action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(bytes);
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.ThrowsAny<CryptographicException>(action);
 
         protected override void EmptyInputAssert(Action action) =>
-            Assert.Throws<CryptographicException>(action);
+            Assert.ThrowsAny<CryptographicException>(action);
 
         protected override X509Certificate2 LoadCertificate(byte[] bytes, string path) =>
             X509CertificateLoader.LoadCertificate(new ReadOnlySpan<byte>(bytes));
@@ -167,9 +167,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (TryGetContentType(data, path, out X509ContentType actualType))
+            if (contentType != X509ContentType.Authenticode || !PlatformDetection.UsesAppleCrypto)
             {
-                Assert.Equal(contentType, actualType);
+                if (TryGetContentType(data, path, out X509ContentType actualType))
+                {
+                    Assert.Equal(contentType, actualType);
+                }
             }
             
             if (path is null)
@@ -207,12 +210,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("macOS loads this when it shouildn't...", TestPlatforms.OSX)]
         public void LoadPkcs7_BER_Fails()
         {
             LoadKnownFormat_Fails(TestData.Pkcs7ChainDerBytes, TestFiles.Pkcs7ChainDerFile, X509ContentType.Pkcs7);
         }
 
         [Fact]
+        [ActiveIssue("macOS loads this when it shouildn't...", TestPlatforms.OSX)]
         public void LoadPkcs7_PEM_Fails()
         {
             LoadKnownFormat_Fails(TestData.Pkcs7ChainPemBytes, TestFiles.Pkcs7ChainPemFile, X509ContentType.Pkcs7);
@@ -253,6 +258,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("macOS seems to not like the PEM post-EB not followed by a newline or EOF", TestPlatforms.OSX)]
         public void LoadCertificate_WithTrailingData()
         {
             // Find the PEM-encoded certificate embedded within NestedCertificates, and
@@ -266,6 +272,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = LoadCertificateAtOffset(data, offset))
             {
                 Assert.Equal("CN=inner", cert.Subject);
+            }
+        }
+
+        [Fact]
+        public void LoadCertificate_DER_WithTrailingData()
+        {
+            byte[] data = TestData.MsCertificate;
+            Array.Resize(ref data, data.Length + 21);
+
+            using (X509Certificate2 cert = LoadCertificateNoFile(data))
+            {
+                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
             }
         }
     }

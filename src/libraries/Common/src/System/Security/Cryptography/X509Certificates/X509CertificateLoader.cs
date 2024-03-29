@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.X509Certificates
     [UnsupportedOSPlatform("browser")]
     public static partial class X509CertificateLoader
     {
+        private const int MemoryMappedFileCutoff = 1_048_576;
+
         /// <summary>
         ///   Loads a single X.509 certificate from <paramref name="data"/>, in either the PEM
         ///   or DER encoding.
@@ -588,7 +590,7 @@ namespace System.Security.Cryptography.X509Certificates
                         // indeterminate length
                         long streamLength = stream.Length;
 
-                        if (streamLength < 1_048_576)
+                        if (streamLength < MemoryMappedFileCutoff)
                         {
                             totalLength = (int)streamLength;
                         }
