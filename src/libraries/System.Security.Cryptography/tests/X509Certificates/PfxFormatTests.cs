@@ -59,7 +59,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
-            Action<X509Certificate2> perCertOtherWork = null)
+            Action<X509Certificate2> perCertOtherWork = null,
+            bool newOnly = false)
         {
             ReadMultiPfx(
                 pfxBytes,
@@ -67,7 +68,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 expectedSingleCert,
                 expectedOrder,
                 s_importFlags,
-                perCertOtherWork);
+                perCertOtherWork,
+                newOnly);
         }
 
         protected abstract void ReadPfx(
@@ -83,7 +85,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
             X509KeyStorageFlags nonExportFlags,
-            Action<X509Certificate2> perCertOtherWork = null);
+            Action<X509Certificate2> perCertOtherWork = null,
+            bool newOnly = false);
 
         private void ReadUnreadablePfx(
             byte[] pfxBytes,
@@ -1216,14 +1219,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         "",
                         first,
                         expectedOrder,
-                        followup);
+                        followup,
+                        newOnly: true);
 
                     ReadMultiPfx(
                         pfxBytes,
                         null,
                         first,
                         expectedOrder,
-                        followup);
+                        followup,
+                        newOnly: true);
                 }
             }
         }

@@ -167,8 +167,9 @@ namespace System.Security.Cryptography.X509Certificates
 
                     // Non-X.509 cert-type bags should have already been removed.
                     Debug.Assert(certBag.CertId == Oids.Pkcs12X509CertBagType);
+                    ReadOnlyMemory<byte> certData = Helpers.DecodeOctetStringAsMemory(certBag.CertValue);
 
-                    ICertificatePalCore pal = LoadX509Der(certBag.CertValue);
+                    ICertificatePalCore pal = LoadX509Der(certData);
                     Debug.Assert(pal is not null);
 
                     _certAndKeys[_certCount].Cert = pal;
@@ -204,9 +205,12 @@ namespace System.Security.Cryptography.X509Certificates
                                 // in PrivateKeyInfoAsn.Decode
                                 key.ImportPkcs8PrivateKey(safeBag.BagValue.Span, out int _);
 
-                                _rentedSpki ??=
-                                    ArrayPool<RentedSubjectPublicKeyInfo>.Shared.Rent(bagState.KeyCount);
-                                _rentedSpki.AsSpan().Clear();
+                                if (_rentedSpki is null)
+                                {
+                                    _rentedSpki =
+                                        ArrayPool<RentedSubjectPublicKeyInfo>.Shared.Rent(bagState.KeyCount);
+                                    _rentedSpki.AsSpan().Clear();
+                                }
 
                                 ExtractPublicKey(ref _rentedSpki[_keyCount], key, safeBag.BagValue.Length);
                             }
@@ -268,7 +272,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     // If no matching key was found, but there are keys,
                     // compare SubjectPublicKeyInfo values
-                    if (matchingKeyIdx == -1 && keyBags.Length > 0)
+                    if (matchingKeyIdx == -1 && _rentedSpki is not null)
                     {
                         for (int i = 0; i < keyBags.Length; i++)
                         {
@@ -310,6 +314,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                             if (allowDoubleBind)
                             {
+
                                 AsymmetricAlgorithm? key = CreateKey(cert.KeyAlgorithm);
 
                                 if (key is null)

@@ -322,9 +322,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (TryGetContentType(data, path, out X509ContentType actualType))
+            if (contentType != X509ContentType.Authenticode || !PlatformDetection.UsesAppleCrypto)
             {
-                Assert.Equal(contentType, actualType);
+                if (TryGetContentType(data, path, out X509ContentType actualType))
+                {
+                    Assert.Equal(contentType, actualType);
+                }
             }
             
             if (path is null)

@@ -150,6 +150,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
         {
             ReadOnlySpan<byte> span = data.Span;
+
             AsnValueReader reader = new AsnValueReader(span, AsnEncodingRules.DER);
             reader.ReadSequence();
             reader.ThrowIfNotEmpty();

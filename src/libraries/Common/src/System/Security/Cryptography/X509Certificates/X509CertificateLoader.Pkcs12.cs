@@ -720,7 +720,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 for (int i = 0; i < _keyCount; i++)
                 {
-                    SafeBagAsn bag = _keyBags[i];
+                    ref SafeBagAsn bag = ref _keyBags[i];
 
                     if (bag.BagId == Oids.Pkcs12ShroudedKeyBag)
                     {
