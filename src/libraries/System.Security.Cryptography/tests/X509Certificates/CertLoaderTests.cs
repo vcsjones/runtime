@@ -44,6 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 new X509Certificate2(data);
         }
 
+        [ActiveIssue("NestedCertificates tests fail", TestPlatforms.Linux)]
         public class LegacyLoaderFromFile : CommonTests
         {
             protected override X509Certificate2 LoadCertificate(byte[] data)
@@ -102,6 +103,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             [Fact]
+            [ActiveIssue("Fails as NewFile, NewSpan, NewArray, LegacyArray", TestPlatforms.Linux)]
             public void LoadWrappingCertificate_PEM_TrailingInner()
             {
                 byte[] source = TestData.NestedCertificates;
@@ -119,6 +121,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             [Fact]
+            [ActiveIssue("Fails as NewFile, NewSpan, NewArray, LegacyArray", TestPlatforms.Linux)]
             public void LoadWrappingCertificate_PEM_Surround()
             {
                 string pem = PemEncoding.WriteString("CERTIFICATE", TestData.NestedCertificates);

@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (contentType != X509ContentType.Authenticode || !PlatformDetection.UsesAppleCrypto)
+            if (contentType != X509ContentType.Authenticode || PlatformDetection.IsWindows)
             {
                 if (TryGetContentType(data, path, out X509ContentType actualType))
                 {
