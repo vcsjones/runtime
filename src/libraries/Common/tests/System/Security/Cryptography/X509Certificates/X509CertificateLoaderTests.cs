@@ -210,14 +210,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("macOS loads this when it shouildn't...", TestPlatforms.OSX)]
         public void LoadPkcs7_BER_Fails()
         {
             LoadKnownFormat_Fails(TestData.Pkcs7ChainDerBytes, TestFiles.Pkcs7ChainDerFile, X509ContentType.Pkcs7);
         }
 
         [Fact]
-        [ActiveIssue("macOS loads this when it shouildn't...", TestPlatforms.OSX)]
         public void LoadPkcs7_PEM_Fails()
         {
             LoadKnownFormat_Fails(TestData.Pkcs7ChainPemBytes, TestFiles.Pkcs7ChainPemFile, X509ContentType.Pkcs7);
