@@ -301,6 +301,9 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #if FEATURE_IMPLICIT_BYREFS
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
@@ -433,6 +436,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD32:
         case TYP_SIMD64:
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         {
             this->vlType = VLT_REG_FP;
 
@@ -784,11 +790,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     else
     {
         JITDUMP("Debug: New V%02u debug range: %s\n", m_varNum,
-                m_VariableLiveRanges->empty()
-                    ? "first"
-                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
-                          ? "new var or location"
-                          : "not adjacent");
+                m_VariableLiveRanges->empty()                                                   ? "first"
+                : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) ? "new var or location"
+                                                                                                : "not adjacent");
         // Creates new live range with invalid end
         m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
         m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
@@ -1679,9 +1683,9 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 }
 
 /*============================================================================
-*           INTERFACE (public) Functions for PrologScopeInfo
-*============================================================================
-*/
+ *           INTERFACE (public) Functions for PrologScopeInfo
+ *============================================================================
+ */
 
 //------------------------------------------------------------------------
 // psiBegProlog: Initializes the PrologScopeInfo creating open psiScopes or
@@ -1721,8 +1725,6 @@ void CodeGen::psiBegProlog()
                     regNumber otherRegNum = REG_NA;
                     for (unsigned nCnt = 0; nCnt < structDesc.eightByteCount; nCnt++)
                     {
-                        var_types regType = TYP_UNDEF;
-
                         if (nCnt == 0)
                         {
                             regNum = lclVarDsc->GetArgReg();
@@ -1735,12 +1737,6 @@ void CodeGen::psiBegProlog()
                         {
                             assert(false && "Invalid eightbyte number.");
                         }
-
-                        regType = compiler->GetEightByteType(structDesc, nCnt);
-#ifdef DEBUG
-                        regType = compiler->mangleVarArgsType(regType);
-                        assert(genMapRegNumToRegArgNum((nCnt == 0 ? regNum : otherRegNum), regType) != (unsigned)-1);
-#endif // DEBUG
                     }
 
                     varLocation.storeVariableInRegisters(regNum, otherRegNum);
@@ -1789,7 +1785,6 @@ void CodeGen::psiBegProlog()
                     regType = lclVarDsc->GetHfaType();
                 }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
                 varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);
             }

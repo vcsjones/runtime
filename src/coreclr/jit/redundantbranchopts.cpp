@@ -24,7 +24,9 @@ PhaseStatus Compiler::optRedundantBranches()
     public:
         bool madeChanges;
 
-        OptRedundantBranchesDomTreeVisitor(Compiler* compiler) : DomTreeVisitor(compiler), madeChanges(false)
+        OptRedundantBranchesDomTreeVisitor(Compiler* compiler)
+            : DomTreeVisitor(compiler)
+            , madeChanges(false)
         {
         }
 
@@ -927,6 +929,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    Metrics.RedundantBranchesEliminated++;
     return true;
 }
 
@@ -1599,7 +1602,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // If this pred is in the set that will reuse block, do nothing.
     // Else revise pred to branch directly to the appropriate successor of block.
     //
-    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocksEditing())
     {
         // If this was an ambiguous pred, skip.
         //
@@ -1683,6 +1686,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
     // We optimized.
     //
+    Metrics.JumpThreadingsPerformed++;
     fgModified = true;
     return true;
 }

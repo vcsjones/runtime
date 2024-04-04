@@ -45,7 +45,6 @@ protected:
     GenTreeLclVarCommon* m_dstLclNode           = nullptr;
     LclVarDsc*           m_dstVarDsc            = nullptr;
     unsigned             m_dstLclOffset         = 0;
-    bool                 m_dstUseLclFld         = false;
     bool                 m_dstSingleStoreLclVar = false;
 
     enum class BlockTransformation
@@ -93,7 +92,8 @@ GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)
 //    Most class members are initialized via in-class member initializers.
 //
 MorphInitBlockHelper::MorphInitBlockHelper(Compiler* comp, GenTree* store, bool initBlock = true)
-    : m_comp(comp), m_initBlock(initBlock)
+    : m_comp(comp)
+    , m_initBlock(initBlock)
 {
     assert(store->OperIsStore());
     assert((m_initBlock == store->OperIsInitBlkOp()) && (!m_initBlock == store->OperIsCopyBlkOp()));
@@ -531,8 +531,8 @@ GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
 {
     *commaPool = nullptr;
 
-    GenTree* sideEffects = nullptr;
-    auto addSideEffect   = [&sideEffects](GenTree* sideEff) {
+    GenTree* sideEffects   = nullptr;
+    auto     addSideEffect = [&sideEffects](GenTree* sideEff) {
         sideEff->gtNext = sideEffects;
         sideEffects     = sideEff;
     };
@@ -609,7 +609,6 @@ protected:
     unsigned             m_srcLclNum            = BAD_VAR_NUM;
     LclVarDsc*           m_srcVarDsc            = nullptr;
     GenTreeLclVarCommon* m_srcLclNode           = nullptr;
-    bool                 m_srcUseLclFld         = false;
     unsigned             m_srcLclOffset         = 0;
     bool                 m_srcSingleStoreLclVar = false;
 
@@ -647,7 +646,8 @@ GenTree* MorphCopyBlockHelper::MorphCopyBlock(Compiler* comp, GenTree* tree)
 // Notes:
 //    Most class members are initialized via in-class member initializers.
 //
-MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store) : MorphInitBlockHelper(comp, store, false)
+MorphCopyBlockHelper::MorphCopyBlockHelper(Compiler* comp, GenTree* store)
+    : MorphInitBlockHelper(comp, store, false)
 {
 }
 
@@ -1116,9 +1116,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     }
     else if (m_dstDoFldStore)
     {
-        m_srcUseLclFld = m_srcVarDsc != nullptr;
-
-        if (!m_srcUseLclFld)
+        if (m_srcLclNum == BAD_VAR_NUM)
         {
             addr = m_src->AsIndir()->Addr();
 
@@ -1143,8 +1141,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     else
     {
         assert(m_srcDoFldStore);
-        fieldCnt       = m_srcVarDsc->lvFieldCnt;
-        m_dstUseLclFld = m_dstVarDsc != nullptr;
+        fieldCnt = m_srcVarDsc->lvFieldCnt;
 
         // Clear the def flags, we'll reuse the node below and reset them.
         if (m_dstLclNode != nullptr)
@@ -1152,7 +1149,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             m_dstLclNode->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
         }
 
-        if (!m_dstUseLclFld)
+        if (m_dstLclNum == BAD_VAR_NUM)
         {
             addr = m_store->AsIndir()->Addr();
 
@@ -1242,7 +1239,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     {
         JITDUMP("All fields of destination of field-by-field copy are dying, skipping entirely\n");
 
-        if (m_srcUseLclFld)
+        if (m_srcLclNum != BAD_VAR_NUM)
         {
             return m_comp->gtNewNothingNode();
         }
@@ -1316,12 +1313,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 }
                 if (!done)
                 {
-                    if (!m_srcUseLclFld)
-                    {
-                        GenTree* fldAddr = grabAddr(fldOffset);
-                        srcFld           = m_comp->gtNewIndir(destType, fldAddr);
-                    }
-                    else
+                    if (m_srcLclNum != BAD_VAR_NUM)
                     {
                         // If the src was a struct type field "B" in a struct "A" then we add
                         // add offset of ("B" in "A") + current offset in "B".
@@ -1330,6 +1322,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
                         // TODO-1stClassStructs: remove this and implement reading a field from a struct in a reg.
                         m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    }
+                    else
+                    {
+                        GenTree* fldAddr = grabAddr(fldOffset);
+                        srcFld           = m_comp->gtNewIndir(destType, fldAddr);
                     }
                 }
             }
@@ -1364,12 +1361,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 unsigned   srcFieldOffset = srcFieldVarDsc->lvFldOffset;
                 var_types  srcType        = srcFieldVarDsc->TypeGet();
 
-                if (!m_dstUseLclFld)
-                {
-                    GenTree* fldAddr = grabAddr(srcFieldOffset);
-                    dstFldStore      = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
-                }
-                else
+                if (m_dstLclNum != BAD_VAR_NUM)
                 {
                     // If the dst was a struct type field "B" in a struct "A" then we add
                     // add offset of ("B" in "A") + current offset in "B".
@@ -1378,6 +1370,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                     m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
+                else
+                {
+                    GenTree* fldAddr = grabAddr(srcFieldOffset);
+                    dstFldStore      = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
                 }
             }
         }
@@ -1511,71 +1508,4 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 {
     return MorphInitBlockHelper::MorphInitBlock(this, tree);
-}
-
-//------------------------------------------------------------------------
-// fgMorphStoreDynBlock: Morph a dynamic block store (GT_STORE_DYN_BLK).
-//
-// Performs full (pre-order and post-order) morphing for a STORE_DYN_BLK.
-//
-// Arguments:
-//    tree - The GT_STORE_DYN_BLK tree to morph.
-//
-// Return Value:
-//    In case the size turns into a constant - the store, transformed
-//    into an "ordinary" STORE_BLK<size> one, and further morphed by
-//    "fgMorphInitBlock"/"fgMorphCopyBlock". Otherwise, the original
-//    tree (fully morphed).
-//
-GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
-{
-    if (!tree->Data()->OperIs(GT_CNS_INT, GT_INIT_VAL))
-    {
-        // Data is a location and required to have GTF_DONT_CSE.
-        tree->Data()->gtFlags |= GTF_DONT_CSE;
-    }
-
-    tree->Addr()        = fgMorphTree(tree->Addr());
-    tree->Data()        = fgMorphTree(tree->Data());
-    tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
-
-    if (tree->gtDynamicSize->IsIntegralConst())
-    {
-        int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
-
-        if ((size != 0) && FitsIn<int32_t>(size))
-        {
-            ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     src    = tree->Data();
-            if (src->OperIs(GT_IND))
-            {
-                assert(src->TypeIs(TYP_STRUCT));
-                src->SetOper(GT_BLK);
-                src->AsBlk()->Initialize(layout);
-            }
-
-            GenTree* store = gtNewStoreValueNode(layout, tree->Addr(), src, tree->gtFlags & GTF_IND_FLAGS);
-            store->AddAllEffectsFlags(tree);
-            INDEBUG(store->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into STORE_BLK\n");
-
-            return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(store) : fgMorphInitBlock(store);
-        }
-    }
-
-    tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
-
-    if (tree->OperMayThrow(this))
-    {
-        tree->gtFlags |= GTF_EXCEPT;
-    }
-    else
-    {
-        tree->gtFlags |= GTF_IND_NONFAULTING;
-    }
-
-    tree->gtFlags |= GTF_ASG;
-
-    return tree;
 }

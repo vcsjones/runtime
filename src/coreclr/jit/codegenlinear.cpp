@@ -157,7 +157,8 @@ void CodeGen::genCodeForBBlist()
     genMarkLabelsForCodegen();
 
     assert(!compiler->fgFirstBBScratch ||
-           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch has to be first.
+           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
+                                                               // has to be first.
 
     /* Initialize structures used in the block list iteration */
     genInitialize();
@@ -622,7 +623,7 @@ void CodeGen::genCodeForBBlist()
                     case BBJ_THROW:
                     case BBJ_CALLFINALLY:
                     case BBJ_EHCATCHRET:
-                    // We're going to generate more code below anyway, so no need for the NOP.
+                        // We're going to generate more code below anyway, so no need for the NOP.
 
                     case BBJ_RETURN:
                     case BBJ_EHFINALLYRET:
@@ -633,7 +634,7 @@ void CodeGen::genCodeForBBlist()
 
                     case BBJ_COND:
                     case BBJ_SWITCH:
-                    // These can't have a call as the last instruction!
+                        // These can't have a call as the last instruction!
 
                     default:
                         noway_assert(!"Unexpected bbKind");
@@ -712,7 +713,9 @@ void CodeGen::genCodeForBBlist()
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                            ((call->AsCall()->gtCallType == CT_HELPER) &&
+                             Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
@@ -756,6 +759,20 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
             {
+                GenTree* call = block->lastNode();
+                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                {
+                    if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                        ((call->AsCall()->gtCallType == CT_HELPER) &&
+                         Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum())))
+                    {
+                        // NOTE: We should probably never see a BBJ_ALWAYS block ending with a throw in a first place.
+                        //       If that is fixed, this condition can be just an assert.
+                        //       For the reasons why we insert a BP, see the similar code in "case BBJ_THROW:" above.
+                        instGen(INS_BREAKPOINT); // This should never get executed
+                    }
+                }
+
                 // If this block jumps to the next one, we might be able to skip emitting the jump
                 if (block->CanRemoveJumpToNext(compiler))
                 {
@@ -1010,45 +1027,6 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
     // This should not be called for multireg lclVars.
     assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->gtOper == GT_COPY));
     varDsc->SetRegNum(tree->GetRegNum());
-}
-
-//------------------------------------------------------------------------
-// sameRegAsDst: Return the child that has the same reg as the dst (if any)
-//
-// Arguments:
-//    tree  - the node of interest
-//    other - an out parameter to return the other child
-//
-// Notes:
-//    If 'tree' has a child with the same assigned register as its target reg,
-//    that child will be returned, and 'other' will contain the non-matching child.
-//    Otherwise, both other and the return value will be nullptr.
-//
-GenTree* sameRegAsDst(GenTree* tree, GenTree*& other /*out*/)
-{
-    if (tree->GetRegNum() == REG_NA)
-    {
-        other = nullptr;
-        return nullptr;
-    }
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->AsOp()->gtOp2;
-    if (op1->GetRegNum() == tree->GetRegNum())
-    {
-        other = op2;
-        return op1;
-    }
-    if (op2->GetRegNum() == tree->GetRegNum())
-    {
-        other = op1;
-        return op2;
-    }
-    else
-    {
-        other = nullptr;
-        return nullptr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1891,8 +1869,8 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         var_types type            = use.GetType();
         unsigned  thisFieldOffset = argOffset + use.GetOffset();
 
-// Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-// argument area.
+        // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+        // argument area.
 
 #if defined(FEATURE_SIMD)
         if (type == TYP_SIMD12)
@@ -1935,18 +1913,9 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
 {
     if (sizeReg != REG_NA)
     {
-        unsigned blockSize = blkNode->Size();
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK))
-        {
-            assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            // This can go via helper which takes the size as a native uint.
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
-        }
-        else
-        {
-            GenTree* sizeNode = blkNode->AsStoreDynBlk()->gtDynamicSize;
-            inst_Mov(sizeNode->TypeGet(), sizeReg, sizeNode->GetRegNum(), /* canSkip */ true);
-        }
+        assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
+        // This can go via helper which takes the size as a native uint.
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blkNode->Size());
     }
 }
 
@@ -2052,12 +2021,6 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     genConsumeReg(dstAddr);
     // The source may be a local or in a register; 'genConsumeBlockSrc' will check that.
     genConsumeBlockSrc(blkNode);
-    // 'genSetBlockSize' (called below) will ensure that a register has been reserved as needed
-    // in the case where the size is a constant (i.e. it is not GT_STORE_DYN_BLK).
-    if (blkNode->OperGet() == GT_STORE_DYN_BLK)
-    {
-        genConsumeReg(blkNode->AsStoreDynBlk()->gtDynamicSize);
-    }
 
     // Next, perform any necessary moves.
     genCopyRegIfNeeded(dstAddr, dstReg);

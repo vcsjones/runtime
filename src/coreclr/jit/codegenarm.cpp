@@ -173,9 +173,9 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 //------------------------------------------------------------------------
 // instGen_Set_Reg_To_Imm: Move an immediate value into an integer register.
 //
-void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
-                                     regNumber reg,
-                                     ssize_t   imm,
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,
+                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
@@ -647,29 +647,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
-    assert(treeNode->OperGet() == GT_JMPTABLE);
-
-    unsigned     jumpCount = compiler->compCurBB->GetSwitchTargets()->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->GetSwitchTargets()->bbsDstTab;
-    unsigned     jmpTabBase;
-
-    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, false);
-
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
-
-    for (unsigned i = 0; i < jumpCount; i++)
-    {
-        BasicBlock* target = *jumpTable++;
-        noway_assert(target->HasFlag(BBF_HAS_LABEL));
-
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
-
-        GetEmitter()->emitDataGenData(i, target);
-    }
-
-    GetEmitter()->emitDataGenEnd();
-
+    unsigned jmpTabBase = genEmitJumpTable(treeNode, false);
     genMov32RelocatableDataLabel(jmpTabBase, treeNode->GetRegNum());
 
     genProduceReg(treeNode);
@@ -1673,7 +1651,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    callTargetReg, // ireg
                                    REG_NA, 0, 0,  // xreg, xmul, disp
                                    false          // isJump
-                                   );
+        );
     }
     else
     {
@@ -1682,7 +1660,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
                                    0,    /* ilOffset, ireg, xreg, xmul, disp */
                                    false /* isJump */
-                                   );
+        );
     }
 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);

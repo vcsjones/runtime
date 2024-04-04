@@ -233,7 +233,9 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
 /*****************************************************************************/
 
-RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
+RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
+    : m_rsCompiler(compiler)
+    , m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
 
@@ -425,9 +427,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
 #if defined(TARGET_X86)
 /*****************************************************************************
-*
-*  Spill the top of the FP x87 stack.
-*/
+ *
+ *  Spill the top of the FP x87 stack.
+ */
 void RegSet::rsSpillFPStack(GenTreeCall* call)
 {
     SpillDsc* spill;
@@ -895,7 +897,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 regNumber genRegArgNext(regNumber argReg)
 {
-    assert(isValidIntArgReg(argReg) || isValidFloatArgReg(argReg));
+    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
 
     switch (argReg)
     {
