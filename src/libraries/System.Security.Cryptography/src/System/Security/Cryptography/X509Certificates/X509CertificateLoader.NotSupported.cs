@@ -15,11 +15,18 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
         }
 
-        public static partial X509Certificate2Collection LoadPkcs12Collection(
-            ReadOnlySpan<byte> data,
+        private static partial X509Certificate2 LoadPkcs12(
+            ref BagState bagState,
             ReadOnlySpan<char> password,
-            X509KeyStorageFlags keyStorageFlags,
-            Pkcs12LoaderLimits? loaderLimits)
+            X509KeyStorageFlags keyStorageFlags)
+        {
+            throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
+        }
+
+        private static partial X509Certificate2Collection LoadPkcs12Collection(
+            ref BagState bagState,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported);
         }

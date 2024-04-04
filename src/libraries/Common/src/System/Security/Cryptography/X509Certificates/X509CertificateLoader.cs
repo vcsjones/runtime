@@ -9,7 +9,6 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates

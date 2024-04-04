@@ -1058,6 +1058,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
   </ItemGroup>
@@ -1301,6 +1302,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.AppleKeychainStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.iOS.cs" />
   </ItemGroup>
 

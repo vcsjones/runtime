@@ -26,9 +26,14 @@ namespace System.Security.Cryptography.X509Certificates
         {
             AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-            if (certAndKey.Key != null)
+            return ImportPkcs12(pal, certAndKey.Key);
+        }
+
+        internal static AppleCertificatePal ImportPkcs12(AppleCertificatePal pal, AsymmetricAlgorithm? key)
+        {
+            if (key is not null)
             {
-                AppleCertificateExporter exporter = new AppleCertificateExporter(new TempExportPal(pal), certAndKey.Key);
+                AppleCertificateExporter exporter = new AppleCertificateExporter(new TempExportPal(pal), key);
                 byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, s_passwordExportHandle)!;
 
                 SafeSecIdentityHandle identityHandle;
