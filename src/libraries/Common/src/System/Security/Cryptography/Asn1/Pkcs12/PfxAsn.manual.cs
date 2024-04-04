@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     internal partial struct PfxAsn
     {
         private const int MaxIterationWork = 300_000;
-        private static ReadOnlySpan<char> EmptyPassword => ""; // don't use ReadOnlySpan<byte>.Empty because it will get confused with default.
+        private static ReadOnlySpan<char> EmptyPassword => "".AsSpan(); // don't use ReadOnlySpan<byte>.Empty because it will get confused with default.
         private static ReadOnlySpan<char> NullPassword => default;
 
         internal bool VerifyMac(

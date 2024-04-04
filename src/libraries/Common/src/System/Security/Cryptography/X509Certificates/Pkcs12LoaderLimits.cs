@@ -95,7 +95,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public Pkcs12LoaderLimits(Pkcs12LoaderLimits copyFrom)
         {
-            ArgumentNullException.ThrowIfNull(copyFrom);
+#pragma warning disable CA1510
+            if (copyFrom is null)
+                throw new ArgumentNullException(nameof(copyFrom));
+#pragma warning restore CA1510
 
             // Do not copy _isReadOnly.
 

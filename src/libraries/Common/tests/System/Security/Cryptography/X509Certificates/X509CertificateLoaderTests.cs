@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = LoadCertificate(TestData.MsCertificate, TestFiles.MsCertificateDerFile))
             {
                 Assert.NotNull(cert);
-                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+                AssertRawDataEquals(TestData.MsCertificate, cert);
             }
         }
 
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = LoadCertificate(TestData.MsCertificatePemBytes, TestFiles.MsCertificatePemFile))
             {
                 Assert.NotNull(cert);
-                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+                AssertRawDataEquals(TestData.MsCertificate, cert);
             }
         }
 
@@ -237,6 +237,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public void LoadSignedFile_Fails()
         {
             LoadKnownFormat_Fails(null, TestFiles.SignedMsuFile, X509ContentType.Authenticode);
+        }
+
+        [Fact]
+        public void LoadSerializedCert_Fails()
+        {
+            LoadKnownFormat_Fails(TestData.StoreSavedAsSerializedCerData, null, X509ContentType.SerializedCert);
+        }
+
+        [Fact]
+        public void LoadSerializedStore_Fails()
+        {
+            LoadKnownFormat_Fails(TestData.StoreSavedAsSerializedStoreData, null, X509ContentType.SerializedStore);
         }
 
         [Fact]
@@ -281,8 +293,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             using (X509Certificate2 cert = LoadCertificateNoFile(data))
             {
-                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+                AssertRawDataEquals(TestData.MsCertificate, cert);
             }
+        }
+
+        internal static void AssertRawDataEquals(byte[] expected, X509Certificate2 cert)
+        {
+#if NETCOREAPP
+                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+#else
+                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);
+#endif
         }
     }
 }

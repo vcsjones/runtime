@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -69,7 +70,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             return X509CertificateLoader.LoadPkcs12(
                 new ReadOnlySpan<byte>(bytes),
-                password,
+                password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }
@@ -83,7 +84,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             return X509CertificateLoader.LoadPkcs12(
                 bytes.AsSpan(offset),
-                password,
+                password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             {
                                 return X509CertificateLoader.LoadPkcs12(
                                     manager.Memory.Span,
-                                    password,
+                                    password.AsSpan(),
                                     keyStorageFlags,
                                     loaderLimits);
                             }
@@ -207,9 +208,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         private const int ERROR_INVALID_PASSWORD = -2147024810;
 
         protected static readonly X509KeyStorageFlags EphemeralIfPossible =
-            PlatformDetection.UsesAppleCrypto ? 
+#if NETFRAMEWORK
+            X509KeyStorageFlags.DefaultKeySet;
+#else
+           PlatformDetection.UsesAppleCrypto ? 
                 X509KeyStorageFlags.DefaultKeySet :
                 X509KeyStorageFlags.EphemeralKeySet;
+#endif
 
         protected abstract void NullInputAssert(Action action);
         protected abstract void EmptyInputAssert(Action action);
@@ -367,7 +372,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             LoadKnownFormat_Fails(TestData.Pkcs7ChainPemBytes, TestFiles.Pkcs7ChainPemFile, X509ContentType.Pkcs7);
         }
-        
+
+        [Fact]
+        public void LoadSerializedCert_Fails()
+        {
+            LoadKnownFormat_Fails(TestData.StoreSavedAsSerializedCerData, null, X509ContentType.SerializedCert);
+        }
+
+        [Fact]
+        public void LoadSerializedStore_Fails()
+        {
+            LoadKnownFormat_Fails(TestData.StoreSavedAsSerializedStoreData, null, X509ContentType.SerializedStore);
+        }
+
         [Fact]
         public void LoadSignedFile_Fails()
         {
@@ -425,6 +442,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void LoadPfx_Single_NoPassword_AmbiguousDecrypt(bool ignorePrivateKeys, bool useNull)
+        {
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                IgnorePrivateKeys = ignorePrivateKeys,
+            };
+
+            string password = useNull ? null : "";
+
+            X509Certificate2 cert = LoadPfxNoFile(
+                TestData.MsCertificateExportedToPfx_NullPassword,
+                password,
+                EphemeralIfPossible,
+                loaderLimits);
+
+            using (cert)
+            {
+                X509CertificateLoaderTests.AssertRawDataEquals(TestData.MsCertificate, cert);
+                Assert.False(cert.HasPrivateKey, "cert.HasPrivateKey");
+            }
+        }
+
         [Fact]
         public void LoadPfx_Single_WrongPassword()
         {
@@ -443,6 +487,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             Assert.Contains("password", ex.Message);
             Assert.Equal(ERROR_INVALID_PASSWORD, ex.HResult);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadPfx_Single_EmptyPassword_NoMac(bool useEmpty)
+        {
+            string password = useEmpty ? "" : null;
+
+            X509Certificate2 cert = LoadPfxNoFile(
+                TestData.Pkcs12OpenSslOneCertDefaultNoMac,
+                password,
+                EphemeralIfPossible);
+
+            using (cert)
+            {
+                Assert.Equal("CN=test", cert.Subject);
+            }
         }
 
         [Fact]

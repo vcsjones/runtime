@@ -16,7 +16,10 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private const int CRYPT_E_BAD_DECODE = unchecked((int)0x80092002);
         private const int ERROR_INVALID_PASSWORD = unchecked((int)0x80070056);
+
+#if NETCOREAPP
         private const int NTE_FAIL = unchecked((int)0x80090020);
+#endif
 
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
@@ -156,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         if (!pfxAsn.VerifyMac(password, authSafeContents))
                         {
-                            password = password.ContainsNull() ? "" : default;
+                            password = password.ContainsNull() ? "".AsSpan() : default;
                         }
                         else
                         {
@@ -166,10 +169,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (!verified && !pfxAsn.VerifyMac(password, authSafeContents))
                     {
-                        throw new CryptographicException(SR.Cryptography_Pfx_BadPassword)
-                        {
-                            HResult = ERROR_INVALID_PASSWORD,
-                        };
+                        ThrowWithHResult(SR.Cryptography_Pfx_BadPassword, ERROR_INVALID_PASSWORD);
                     }
 
                     bagState.ConfirmPassword();
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.X509Certificates
                             }
                             catch (CryptographicException)
                             {
-                                password = password.ContainsNull() ? "" : default;
+                                password = password.ContainsNull() ? "".AsSpan() : default;
                                 workRemaining = workRemainingSave;
 
                                 contentData = DecryptSafeContents(
@@ -256,10 +256,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch (AsnContentException e)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e)
-                {
-                    HResult = CRYPT_E_BAD_DECODE,
-                };
+                ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE, e);
             }
         }
 
@@ -642,10 +639,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     catch (AsnContentException)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
-                        {
-                            HResult = CRYPT_E_BAD_DECODE,
-                        };
+                        ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
                     }
 
                     ConfirmPassword();
@@ -662,10 +656,14 @@ namespace System.Security.Cryptography.X509Certificates
 
                     _decryptBufferOffset = saveOffset;
 
+#if NETCOREAPP
                     if (e.HResult != CRYPT_E_BAD_DECODE)
                     {
                         e.HResult = ConfirmedPassword ? NTE_FAIL : ERROR_INVALID_PASSWORD;
                     }
+#else
+                    Debug.Assert(e.HResult != 0);
+#endif
 
                     throw;
                 }
@@ -751,7 +749,7 @@ namespace System.Security.Cryptography.X509Certificates
                             }
                             catch (CryptographicException)
                             {
-                                password = password.ContainsNull() ? "" : default;
+                                password = password.ContainsNull() ? "".AsSpan() : default;
                             }
                         }
 
@@ -854,12 +852,7 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[] macKey = new byte[20];
                 Span<byte> salt = stackalloc byte[macKey.Length];
 
-#if NETCOREAPP3_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-                RandomNumberGenerator.Fill(salt);
-#else
-                // "Randomly" produce the all zero salt.
-                salt.Clear();
-#endif
+                Helpers.RngFill(salt);
 
                 Pkcs12Kdf.DeriveMacKey(
                     password,

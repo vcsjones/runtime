@@ -12,6 +12,10 @@ namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+#if NETFRAMEWORK || (NETSTANDARD && !NETSTANDARD2_1_OR_GREATER)
+        private static RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+#endif
+
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool HasSymmetricEncryption { get; } =
 #if NETCOREAPP
@@ -58,6 +62,25 @@ namespace Internal.Cryptography
         internal static bool ContainsNull<T>(this ReadOnlySpan<T> span)
         {
             return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span));
+        }
+
+#if NETFRAMEWORK || (NETSTANDARD && !NETSTANDARD2_1_OR_GREATER)
+        internal static void RngFill(byte[] destination)
+        {
+            s_rng.GetBytes(destination);
+        }
+#endif
+
+        internal static void RngFill(Span<byte> destination)
+        {
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
+            RandomNumberGenerator.Fill(destination);
+#else
+            byte[] temp = CryptoPool.Rent(destination.Length);
+            s_rng.GetBytes(temp, 0, destination.Length);
+            temp.AsSpan(0, destination.Length).CopyTo(destination);
+            CryptoPool.Return(temp, destination.Length);
+#endif
         }
 
         internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

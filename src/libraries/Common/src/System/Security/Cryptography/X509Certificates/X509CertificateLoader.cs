@@ -3,10 +3,13 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -55,10 +58,20 @@ namespace System.Security.Cryptography.X509Certificates
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
         public static X509Certificate2 LoadCertificate(byte[] data)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            ThrowIfNull(data);
+
+            X509Certificate2? earlyReturn = null;
+            LoadCertificateCore(data, ref earlyReturn);
+
+            if (earlyReturn != null)
+            {
+                return earlyReturn;
+            }
 
             return LoadCertificate(new ReadOnlySpan<byte>(data));
         }
+
+        static partial void LoadCertificateCore(byte[] data, ref X509Certificate2? earlyReturn);
 
         /// <summary>
         ///   Loads a single X.509 certificate (in either the PEM or DER encoding)
@@ -125,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            ThrowIfNull(data);
 
             return LoadPkcs12(
                 new ReadOnlyMemory<byte>(data),
@@ -292,7 +305,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ArgumentException.ThrowIfNullOrEmpty(path);
+            ThrowIfNullOrEmpty(path);
 
             return LoadFromFile(
                 path,
@@ -332,11 +345,11 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ArgumentNullException.ThrowIfNull(data);
+            ThrowIfNull(data);
 
             return LoadPkcs12Collection(
                 new ReadOnlyMemory<byte>(data),
-                password,
+                password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits ?? Pkcs12LoaderLimits.Defaults);
         }
@@ -468,7 +481,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ArgumentNullException.ThrowIfNull(path);
+            ThrowIfNull(path);
 
             return LoadFromFile(
                 path,
@@ -572,10 +585,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (earlyBuf[0] != 0x30 || earlyBuf[1] is 0 or 1)
                     {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
-                        {
-                            HResult = CRYPT_E_BAD_DECODE,
-                        };
+                        ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
                     }
 
                     int totalLength;
@@ -614,10 +624,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (!s_tryReadLength(lengthPart, AsnEncodingRules.BER, out int? decoded, out int decodedLength))
                         {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding)
-                            {
-                                HResult = CRYPT_E_BAD_DECODE,
-                            };
+                            ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
                         }
 
                         Debug.Assert(decoded.HasValue);
@@ -644,7 +651,7 @@ namespace System.Security.Cryptography.X509Certificates
                         HandleInheritability.None,
                         leaveOpen: false);
 
-                    return (null, (int)long.Min(int.MaxValue, stream.Length), mapped);
+                    return (null, (int)Math.Min(int.MaxValue, stream.Length), mapped);
                 }
             }
             catch (IOException e)
@@ -655,6 +662,78 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 throw new CryptographicException(SR.Arg_CryptographyException, e);
             }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowWithHResult(string message, int hResult)
+        {
+#if NETCOREAPP
+            throw new CryptographicException(message)
+            {
+                HResult = hResult,
+            };
+#else
+#if NETSTANDARD
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new CryptographicException(message);
+            }
+#endif
+            throw new CryptographicException(hResult);
+#endif
+        }
+
+        [DoesNotReturn]
+        private static void ThrowWithHResult(string message, int hResult, Exception innerException)
+        {
+#if NETCOREAPP
+            throw new CryptographicException(message, innerException)
+            {
+                HResult = hResult,
+            };
+#else
+#if NETSTANDARD
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new CryptographicException(message, innerException);
+            }
+#endif
+
+            throw new CryptographicException(hResult);
+#endif
+        }
+
+        private static void ThrowIfNull(
+            [NotNull] object? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (argument is null)
+            {
+                ThrowNull(paramName);
+            }
+        }
+
+        private static void ThrowIfNullOrEmpty(
+            [NotNull] string? argument,
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (string.IsNullOrEmpty(argument))
+            {
+                ThrowNullOrEmpty(argument, paramName);
+            }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNull(string? paramName)
+        {
+            throw new ArgumentNullException(paramName);
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullOrEmpty(string? argument, string? paramName)
+        {
+            ThrowIfNull(argument, paramName);
+            throw new ArgumentException(SR.Argument_EmptyString, paramName);
         }
     }
 }
