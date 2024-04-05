@@ -47,6 +47,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        {
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+            {
+                throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+            }
+        }
+
         private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState)
         {
             AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;

@@ -87,6 +87,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        {
+            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+            {
+                throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+            }
+        }
+
         static partial void InitializeImportState(ref ImportState importState, X509KeyStorageFlags keyStorageFlags)
         {
             bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;

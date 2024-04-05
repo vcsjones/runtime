@@ -16,7 +16,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
+    public partial class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
     {
         private volatile byte[]? _lazyCertHash;
         private volatile string? _lazyIssuer;

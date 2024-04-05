@@ -10,41 +10,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class CertificatePal
     {
-        private static readonly Pkcs12LoaderLimits s_legacyLimits = MakeLegacyLimits();
-
-        private static Pkcs12LoaderLimits MakeLegacyLimits()
-        {
-            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
-            {
-                MacIterationLimit = 600_000,
-                IndividualKdfIterationLimit = 600_000,
-                MaxCertificates = null,
-                MaxKeys = null,
-                PreserveCertificateAlias = true,
-                PreserveKeyName = true,
-                PreserveStorageProvider = true,
-                PreserveUnknownAttributes = true,
-            };
-
-            long totalKdfLimit = LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit;
-
-            if (totalKdfLimit == -1)
-            {
-                limits.TotalKdfIterationLimit = null;
-            }
-            else if (totalKdfLimit < 0)
-            {
-                limits.TotalKdfIterationLimit = LocalAppContextSwitches.DefaultPkcs12UnspecifiedPasswordIterationLimit;
-            }
-            else
-            {
-                limits.TotalKdfIterationLimit = (int)long.Min(int.MaxValue, totalKdfLimit);
-            }
-
-            limits.MakeReadOnly();
-            return limits;
-        }
-
         internal static partial ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
@@ -61,13 +26,9 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(password != null);
 
             bool loadFromFile = (fileName != null);
-
-            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
             bool deleteKeyContainer = false;
 
-            Interop.Crypt32.CertEncodingType msgAndCertEncodingType;
             Interop.Crypt32.ContentType contentType;
-            Interop.Crypt32.FormatType formatType;
             SafeCertStoreHandle? hCertStore = null;
             SafeCryptMsgHandle? hCryptMsg = null;
             SafeCertContextHandle? pCertContext = null;
@@ -91,13 +52,13 @@ namespace System.Security.Cryptography.X509Certificates
                                 X509ExpectedContentTypeFlags,
                                 X509ExpectedFormatTypeFlags,
                                 0,
-                                out msgAndCertEncodingType,
+                                out _,
                                 out contentType,
-                                out formatType,
+                                out _,
                                 out hCertStore,
                                 out hCryptMsg,
-                                out pCertContext
-                                    );
+                                out pCertContext);
+
                             if (!success)
                             {
                                 int hr = Marshal.GetHRForLastWin32Error();
@@ -115,6 +76,8 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         try
                         {
+                            Pkcs12LoaderLimits limits = X509Certificate.GetPkcs12Limits(loadFromFile, password);
+
                             if (loadFromFile)
                             {
                                 Debug.Assert(fileName is not null);
@@ -123,14 +86,10 @@ namespace System.Security.Cryptography.X509Certificates
                                     fileName,
                                     password.DangerousGetSpan(),
                                     keyStorageFlags,
-                                    Pkcs12LoaderLimits.DangerousNoLimits);
+                                    limits);
                             }
                             else
                             {
-                                Pkcs12LoaderLimits limits = password.PasswordProvided ?
-                                    Pkcs12LoaderLimits.DangerousNoLimits :
-                                    s_legacyLimits;
-
                                 return (CertificatePal)X509CertificateLoader.LoadPkcs12Pal(
                                     rawData,
                                     password.DangerousGetSpan(),
@@ -197,37 +156,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                 return pCertContext;
             }
-        }
-
-        private static Interop.Crypt32.PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
-        {
-            if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
-
-            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = 0;
-            if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_KEYSET;
-            else if ((keyStorageFlags & X509KeyStorageFlags.MachineKeySet) == X509KeyStorageFlags.MachineKeySet)
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_MACHINE_KEYSET;
-
-            if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_EXPORTABLE;
-            if ((keyStorageFlags & X509KeyStorageFlags.UserProtected) == X509KeyStorageFlags.UserProtected)
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_PROTECTED;
-
-            // If a user is asking for an Ephemeral key they should be willing to test their code to find out
-            // that it will no longer import into CAPI. This solves problems of legacy CSPs being
-            // difficult to do SHA-2 RSA signatures with, simplifies the story for UWP, and reduces the
-            // complexity of pointer interpretation.
-            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
-                pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
-
-            // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
-            // enable a native application compiled against CAPI to find that private key and interoperate with it.
-            //
-            // For .NET Core this behavior is being retained.
-
-            return pfxCertStoreFlags;
         }
 
         private const Interop.Crypt32.ExpectedContentTypeFlags X509ExpectedContentTypeFlags =

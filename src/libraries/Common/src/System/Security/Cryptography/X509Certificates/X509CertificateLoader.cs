@@ -81,6 +81,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
         public static partial X509Certificate2 LoadCertificateFromFile(string path);
 
+        static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags);
+
         /// <summary>
         ///   Loads the provided data as a PKCS#12 PFX and extracts a certificate.
         /// </summary>
@@ -123,6 +125,8 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits? loaderLimits = null)
         {
             ThrowIfNull(data);
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
 
             return LoadPkcs12(
                 new ReadOnlyMemory<byte>(data),
@@ -290,6 +294,8 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits? loaderLimits = null)
         {
             ThrowIfNullOrEmpty(path);
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
 
             return LoadFromFile(
                 path,
@@ -330,6 +336,8 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits? loaderLimits = null)
         {
             ThrowIfNull(data);
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
 
             return LoadPkcs12Collection(
                 new ReadOnlyMemory<byte>(data),
@@ -368,6 +376,9 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
+
             unsafe
             {
                 fixed (byte* pinned = data)
@@ -466,6 +477,8 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits? loaderLimits = null)
         {
             ThrowIfNull(path);
+            X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
 
             return LoadFromFile(
                 path,
