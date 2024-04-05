@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
+        private static partial ICertificatePal LoadCertificatePal(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
             {
@@ -23,10 +23,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            return new X509Certificate2(LoadX509(data));
+            return LoadX509(data);
         }
 
-        public static partial X509Certificate2 LoadCertificateFromFile(string path)
+        private static partial ICertificatePal LoadCertificatePalFromFile(string path)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
                 try
                 {
                     stream.ReadAtLeast(buf, length);
-                    return LoadCertificate(buf.AsSpan(0, length));
+                    return LoadCertificatePal(buf.AsSpan(0, length));
                 }
                 finally
                 {
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey, ImportState importState)
+        private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState)
         {
             AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
                 pal = newPal;
             }
 
-            return new X509Certificate2(pal);
+            return new Pkcs12Return(pal);
         }
 
         private static partial AsymmetricAlgorithm? CreateKey(string algorithm)

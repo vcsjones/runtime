@@ -1,30 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
+        private static partial ICertificatePal LoadCertificatePal(ReadOnlySpan<byte> data)
         {
             ICertificatePal? pal;
 
             if (OpenSslX509CertificateReader.TryReadX509Der(data, out pal) ||
                 OpenSslX509CertificateReader.TryReadX509Pem(data, out pal))
             {
-                return new X509Certificate2(pal);
+                return pal;
             }
 
             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
         }
 
-        public static partial X509Certificate2 LoadCertificateFromFile(string path)
+        private static partial ICertificatePal LoadCertificatePalFromFile(string path)
         {
-            ArgumentException.ThrowIfNullOrEmpty(path);
-
             ICertificatePal? pal;
 
             using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(path, "rb"))
@@ -44,11 +41,10 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            Debug.Assert(pal is not null);
-            return new X509Certificate2(pal);
+            return pal;
         }
 
-        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey, ImportState importState)
+        private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState)
         {
             OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)certAndKey.Cert!;
 
@@ -58,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
                 certAndKey.Key.Dispose();
             }
 
-            return new X509Certificate2(pal);
+            return new Pkcs12Return(pal);
         }
 
         private static partial AsymmetricAlgorithm? CreateKey(string algorithm)

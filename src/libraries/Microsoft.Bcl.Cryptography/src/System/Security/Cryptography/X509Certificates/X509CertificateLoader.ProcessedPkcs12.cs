@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
-            ref X509Certificate2? earlyReturn)
+            ref Pkcs12Return earlyReturn)
         {
             string hydrated = password.ToString();
 
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
             earlyReturn = coll;
         }
 
-        private static partial X509Certificate2 LoadPkcs12(
+        private static partial Pkcs12Return LoadPkcs12(
             ref BagState bagState,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags)
@@ -108,6 +108,24 @@ namespace System.Security.Cryptography.X509Certificates
             finally
             {
                 CryptoPool.Return(reassembled);
+            }
+        }
+
+        private readonly partial struct Pkcs12Return
+        {
+            private readonly X509Certificate2 _cert;
+
+            internal Pkcs12Return(X509Certificate2 cert)
+            {
+                _cert = cert;
+            }
+
+            internal partial bool HasValue() => _cert is not null;
+            internal partial X509Certificate2 ToCertificate() => _cert;
+
+            public static implicit operator Pkcs12Return(X509Certificate2 cert)
+            {
+                return new Pkcs12Return(cert);
             }
         }
     }

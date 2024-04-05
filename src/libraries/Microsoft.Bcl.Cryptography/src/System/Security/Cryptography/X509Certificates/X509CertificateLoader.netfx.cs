@@ -9,6 +9,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
+        public static partial X509Certificate2 LoadCertificate(byte[] data)
+        {
+            ThrowIfNull(data);
+
+            return LoadCertificate(new ReadOnlySpan<byte>(data));
+        }
+
         public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
         {
             unsafe

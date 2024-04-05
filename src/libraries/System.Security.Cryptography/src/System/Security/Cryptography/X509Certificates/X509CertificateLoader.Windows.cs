@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
+        private static partial ICertificatePal LoadCertificatePal(ReadOnlySpan<byte> data)
         {
             unsafe
             {
@@ -27,10 +27,8 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public static partial X509Certificate2 LoadCertificateFromFile(string path)
+        private static partial ICertificatePal LoadCertificatePalFromFile(string path)
         {
-            ArgumentException.ThrowIfNullOrEmpty(path);
-
             unsafe
             {
                 fixed (char* pathPtr = path)
@@ -46,13 +44,14 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
-            ref X509Certificate2? earlyReturn)
+            ref Pkcs12Return earlyReturn)
         {
             bool deleteKeyContainer = ShouldDeleteKeyContainer(keyStorageFlags);
 
             using (SafeCertStoreHandle storeHandle = ImportPfx(data.Span, password, keyStorageFlags))
             {
-                earlyReturn = LoadPkcs12(storeHandle, deleteKeyContainer);
+                CertificatePal pal = LoadPkcs12(storeHandle, deleteKeyContainer);
+                earlyReturn = new Pkcs12Return(pal);
             }
         }
 
@@ -70,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static partial X509Certificate2 LoadPkcs12(
+        private static partial Pkcs12Return LoadPkcs12(
             ref BagState bagState,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags)
@@ -79,11 +78,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (SafeCertStoreHandle storeHandle = ImportPfx(ref bagState, password, keyStorageFlags))
             {
-                return LoadPkcs12(storeHandle, deleteKeyContainer);
+                CertificatePal pal = LoadPkcs12(storeHandle, deleteKeyContainer);
+                return new Pkcs12Return(pal);
             }
         }
 
-        private static X509Certificate2 LoadPkcs12(
+        private static CertificatePal LoadPkcs12(
             SafeCertStoreHandle storeHandle,
             bool deleteKeyContainer)
         {
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             bool deleteThisKeyContainer = havePrivKey && deleteKeyContainer;
             CertificatePal pal = new CertificatePal(bestCert, deleteThisKeyContainer);
-            return new X509Certificate2(pal);
+            return pal;
         }
 
         private static partial X509Certificate2Collection LoadPkcs12Collection(
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.X509Certificates
             return coll;
         }
 
-        private static unsafe X509Certificate2 LoadCertificate(
+        private static unsafe CertificatePal LoadCertificate(
             Interop.Crypt32.CertQueryObjectType objectType,
             void* pvObject)
         {
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             CertificatePal pal = new CertificatePal(singleContext, deleteKeyContainer: false);
-            return new X509Certificate2(pal);
+            return pal;
         }
 
         private static SafeCertStoreHandle ImportPfx(
@@ -238,18 +238,26 @@ namespace System.Security.Cryptography.X509Certificates
             const int MaxStackPasswordLength = 64;
             void* alloc = default;
             Span<char> szPassword = stackalloc char[MaxStackPasswordLength + 1];
+            ReadOnlySpan<char> effectivePassword = szPassword;
             Interop.Crypt32.PfxCertStoreFlags flags = MapKeyStorageFlags(keyStorageFlags);
 
             try
             {
-                if (password.Length >= MaxStackPasswordLength)
+                if (password.Contains('\0'))
                 {
-                    alloc = NativeMemory.Alloc((uint)password.Length + 1, sizeof(char));
-                    szPassword = new Span<char>(alloc, password.Length + 1);
+                    effectivePassword = password;
                 }
+                else
+                {
+                    if (password.Length >= MaxStackPasswordLength)
+                    {
+                        alloc = NativeMemory.Alloc((uint)password.Length + 1, sizeof(char));
+                        szPassword = new Span<char>(alloc, password.Length + 1);
+                    }
 
-                password.CopyTo(szPassword);
-                szPassword[password.Length] = '\0';
+                    password.CopyTo(szPassword);
+                    szPassword[password.Length] = '\0';
+                }
 
                 SafeCertStoreHandle storeHandle;
 

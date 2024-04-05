@@ -55,22 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(byte[])"/>
         /// </remarks>
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
-        public static X509Certificate2 LoadCertificate(byte[] data)
-        {
-            ThrowIfNull(data);
-
-            X509Certificate2? earlyReturn = null;
-            LoadCertificateCore(data, ref earlyReturn);
-
-            if (earlyReturn != null)
-            {
-                return earlyReturn;
-            }
-
-            return LoadCertificate(new ReadOnlySpan<byte>(data));
-        }
-
-        static partial void LoadCertificateCore(byte[] data, ref X509Certificate2? earlyReturn);
+        public static partial X509Certificate2 LoadCertificate(byte[] data);
 
         /// <summary>
         ///   Loads a single X.509 certificate (in either the PEM or DER encoding)
@@ -143,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates
                 new ReadOnlyMemory<byte>(data),
                 password.AsSpan(),
                 keyStorageFlags,
-                loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults).ToCertificate();
         }
 
         /// <summary>
@@ -197,7 +182,7 @@ namespace System.Security.Cryptography.X509Certificates
                             manager.Memory,
                             password,
                             keyStorageFlags,
-                            loaderLimits ?? Pkcs12LoaderLimits.Defaults);
+                            loaderLimits ?? Pkcs12LoaderLimits.Defaults).ToCertificate();
                     }
                 }
             }
@@ -311,7 +296,7 @@ namespace System.Security.Cryptography.X509Certificates
                 password,
                 keyStorageFlags,
                 loaderLimits ?? Pkcs12LoaderLimits.Defaults,
-                LoadPkcs12);
+                LoadPkcs12).ToCertificate();
         }
 
         /// <summary>
@@ -673,7 +658,7 @@ namespace System.Security.Cryptography.X509Certificates
             };
 #else
 #if NETSTANDARD
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Runtime.InteropServices.RuntimeInformation.IsOSPlatform(Runtime.InteropServices.OSPlatform.Windows))
             {
                 throw new CryptographicException(message);
             }
@@ -692,7 +677,7 @@ namespace System.Security.Cryptography.X509Certificates
             };
 #else
 #if NETSTANDARD
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Runtime.InteropServices.RuntimeInformation.IsOSPlatform(Runtime.InteropServices.OSPlatform.Windows))
             {
                 throw new CryptographicException(message, innerException);
             }

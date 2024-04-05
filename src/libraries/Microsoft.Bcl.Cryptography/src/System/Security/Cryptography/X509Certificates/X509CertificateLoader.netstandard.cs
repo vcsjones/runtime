@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        static partial void LoadCertificateCore(byte[] data, ref X509Certificate2? earlyReturn)
+        public static partial X509Certificate2 LoadCertificate(byte[] data)
         {
             X509ContentType contentType = X509Certificate2.GetCertContentType(data);
 
@@ -16,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates
                 ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
             }
 
-            earlyReturn = new X509Certificate2(data);
+            return new X509Certificate2(data);
         }
 
         public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data)
@@ -32,11 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 data.CopyTo(rented);
 
-                X509Certificate2? ret = null;
-                LoadCertificateCore(rented, ref ret);
-                Debug.Assert(ret is not null);
-
-                return ret;
+                return LoadCertificate(rented);
             }
             finally
             {

@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
-            ref X509Certificate2? earlyReturn);
+            ref Pkcs12Return earlyReturn);
 
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags,
             ref X509Certificate2Collection? earlyReturn);
 
-        private static partial X509Certificate2 LoadPkcs12(
+        private static partial Pkcs12Return LoadPkcs12(
             ref BagState bagState,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags);
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags);
 
-        private static X509Certificate2 LoadPkcs12(
+        private static Pkcs12Return LoadPkcs12(
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
@@ -51,10 +51,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (ReferenceEquals(loaderLimits, Pkcs12LoaderLimits.DangerousNoLimits))
             {
-                X509Certificate2? earlyReturn = null;
+                Pkcs12Return earlyReturn = default;
                 LoadPkcs12NoLimits(data, password, keyStorageFlags, ref earlyReturn);
 
-                if (earlyReturn is not null)
+                if (earlyReturn.HasValue())
                 {
                     return earlyReturn;
                 }
@@ -526,6 +526,12 @@ namespace System.Security.Cryptography.X509Certificates
                                 algorithmIdentifier.Algorithm));
                 }
             }
+        }
+
+        private readonly partial struct Pkcs12Return
+        {
+            internal partial bool HasValue();
+            internal partial X509Certificate2 ToCertificate();
         }
 
         private partial struct BagState

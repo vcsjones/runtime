@@ -11,6 +11,41 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class CertificatePal
     {
+        private static readonly Pkcs12LoaderLimits s_legacyLimits = MakeLegacyLimits();
+
+        private static Pkcs12LoaderLimits MakeLegacyLimits()
+        {
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            {
+                MacIterationLimit = 600_000,
+                IndividualKdfIterationLimit = 600_000,
+                MaxCertificates = null,
+                MaxKeys = null,
+                PreserveCertificateAlias = true,
+                PreserveKeyName = true,
+                PreserveStorageProvider = true,
+                PreserveUnknownAttributes = true,
+            };
+
+            long totalKdfLimit = LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit;
+
+            if (totalKdfLimit == -1)
+            {
+                limits.TotalKdfIterationLimit = null;
+            }
+            else if (totalKdfLimit < 0)
+            {
+                limits.TotalKdfIterationLimit = LocalAppContextSwitches.DefaultPkcs12UnspecifiedPasswordIterationLimit;
+            }
+            else
+            {
+                limits.TotalKdfIterationLimit = (int)long.Min(int.MaxValue, totalKdfLimit);
+            }
+
+            limits.MakeReadOnly();
+            return limits;
+        }
+
         internal static partial ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
@@ -79,9 +114,30 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
                     {
-                        if (loadFromFile)
+                        Pkcs12LoaderLimits limits = password.PasswordProvided ?
+                            Pkcs12LoaderLimits.DangerousNoLimits :
+                            s_legacyLimits;
+
+                        try
                         {
-                            rawData = File.ReadAllBytes(fileName!);
+                            if (loadFromFile)
+                            {
+                                rawData = File.ReadAllBytes(fileName!);
+                            }
+                            else
+                            {
+                                return (CertificatePal)X509CertificateLoader.LoadPkcs12Pal(
+                                    rawData,
+                                    password.DangerousGetSpan(),
+                                    keyStorageFlags,
+                                    limits);
+                            }
+                        }
+                        catch (Pkcs12LoadLimitExceededException e)
+                        {
+                            throw new CryptographicException(
+                                SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                                e);
                         }
 
                         pCertContext?.Dispose();

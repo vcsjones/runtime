@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public static partial class X509CertificateLoader
     {
-        private static partial X509Certificate2 FromCertAndKey(CertAndKey certAndKey, ImportState importState);
+        private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState);
 
         private static partial AsymmetricAlgorithm? CreateKey(string algorithm);
 
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         static partial void InitializeImportState(ref ImportState importState, X509KeyStorageFlags keyStorageFlags);
 
-        private static partial X509Certificate2 LoadPkcs12(
+        private static partial Pkcs12Return LoadPkcs12(
             ref BagState bagState,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags)
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Debug.Assert(matchIndex >= 0);
 
                 InitializeImportState(ref importState, keyStorageFlags);
-                X509Certificate2 ret = FromCertAndKey(certsAndKeys[matchIndex], importState);
+                Pkcs12Return ret = FromCertAndKey(certsAndKeys[matchIndex], importState);
                 certsAndKeys[matchIndex] = default;
 
                 return ret;
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 for (int i = bagState.CertCount - 1; i >= 0; i--)
                 {
-                    coll.Add(FromCertAndKey(certsAndKeys[i], importState));
+                    coll.Add(FromCertAndKey(certsAndKeys[i], importState).ToCertificate());
                     certsAndKeys[i] = default;
                 }
 
