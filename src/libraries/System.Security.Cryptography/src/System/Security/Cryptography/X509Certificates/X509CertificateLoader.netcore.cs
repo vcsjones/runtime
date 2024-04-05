@@ -63,6 +63,22 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        internal static ICertificatePal LoadPkcs12PalFromFile(
+            string path,
+            ReadOnlySpan<char> password,
+            X509KeyStorageFlags keyStorageFlags,
+            Pkcs12LoaderLimits? loaderLimits)
+        {
+            ThrowIfNullOrEmpty(path);
+
+            return LoadFromFile(
+                path,
+                password,
+                keyStorageFlags,
+                loaderLimits ?? Pkcs12LoaderLimits.Defaults,
+                LoadPkcs12).GetPal();
+        }
+
         private readonly partial struct Pkcs12Return
         {
             private readonly ICertificatePal? _pal;

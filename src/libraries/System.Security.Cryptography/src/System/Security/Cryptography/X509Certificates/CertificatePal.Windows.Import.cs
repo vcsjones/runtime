@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -114,18 +113,24 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
                     {
-                        Pkcs12LoaderLimits limits = password.PasswordProvided ?
-                            Pkcs12LoaderLimits.DangerousNoLimits :
-                            s_legacyLimits;
-
                         try
                         {
                             if (loadFromFile)
                             {
-                                rawData = File.ReadAllBytes(fileName!);
+                                Debug.Assert(fileName is not null);
+
+                                return (CertificatePal)X509CertificateLoader.LoadPkcs12PalFromFile(
+                                    fileName,
+                                    password.DangerousGetSpan(),
+                                    keyStorageFlags,
+                                    Pkcs12LoaderLimits.DangerousNoLimits);
                             }
                             else
                             {
+                                Pkcs12LoaderLimits limits = password.PasswordProvided ?
+                                    Pkcs12LoaderLimits.DangerousNoLimits :
+                                    s_legacyLimits;
+
                                 return (CertificatePal)X509CertificateLoader.LoadPkcs12Pal(
                                     rawData,
                                     password.DangerousGetSpan(),
@@ -139,17 +144,6 @@ namespace System.Security.Cryptography.X509Certificates
                                 SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
                                 e);
                         }
-
-                        pCertContext?.Dispose();
-                        X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile: loadFromFile, password.PasswordProvided);
-                        pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
-
-                        // If PersistKeySet is set we don't delete the key, so that it persists.
-                        // If EphemeralKeySet is set we don't delete the key, because there's no file, so it's a wasteful call.
-                        const X509KeyStorageFlags DeleteUnless =
-                            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.EphemeralKeySet;
-
-                        deleteKeyContainer = ((keyStorageFlags & DeleteUnless) == 0);
                     }
 
                     CertificatePal pal = new CertificatePal(pCertContext, deleteKeyContainer);
@@ -202,81 +196,6 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 return pCertContext;
-            }
-        }
-
-        private static SafeCertContextHandle FilterPFXStore(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags)
-        {
-            SafeCertStoreHandle hStore;
-            unsafe
-            {
-                fixed (byte* pbRawData = rawData)
-                {
-                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pbRawData), (uint)rawData.Length);
-                    hStore = Interop.Crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
-                    if (hStore.IsInvalid)
-                    {
-                        Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                        hStore.Dispose();
-                        throw e;
-                    }
-                }
-            }
-
-            try
-            {
-                // Find the first cert with private key. If none, then simply take the very first cert. Along the way, delete the keycontainers
-                // of any cert we don't accept.
-                SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
-                SafeCertContextHandle? pEnumContext = null;
-                while (Interop.crypt32.CertEnumCertificatesInStore(hStore, ref pEnumContext))
-                {
-                    if (pEnumContext.ContainsPrivateKey)
-                    {
-                        if ((!pCertContext.IsInvalid) && pCertContext.ContainsPrivateKey)
-                        {
-                            // We already found our chosen one. Free up this one's key and move on.
-
-                            // If this one has a persisted private key, clean up the key file.
-                            // If it was an ephemeral private key no action is required.
-                            if (pEnumContext.HasPersistedPrivateKey)
-                            {
-                                SafeCertContextHandleWithKeyContainerDeletion.DeleteKeyContainer(pEnumContext);
-                            }
-                        }
-                        else
-                        {
-                            // Found our first cert that has a private key. Set it up as our chosen one but keep iterating
-                            // as we need to free up the keys of any remaining certs.
-                            pCertContext.Dispose();
-                            pCertContext = pEnumContext.Duplicate();
-                        }
-                    }
-                    else
-                    {
-                        if (pCertContext.IsInvalid)
-                        {
-                            // Doesn't have a private key but hang on to it anyway in case we don't find any certs with a private key.
-                            pCertContext.Dispose();
-                            pCertContext = pEnumContext.Duplicate();
-                        }
-                    }
-                }
-
-                if (pCertContext.IsInvalid)
-                {
-                    pCertContext.Dispose();
-                    throw new CryptographicException(SR.Cryptography_Pfx_NoCertificates);
-                }
-
-                return pCertContext;
-            }
-            finally
-            {
-                hStore.Dispose();
             }
         }
 
