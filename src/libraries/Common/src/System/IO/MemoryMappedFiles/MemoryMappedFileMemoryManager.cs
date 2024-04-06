@@ -94,7 +94,7 @@ namespace System.IO.MemoryMappedFiles
 
         public override void Unpin()
         {
-
+            ThrowIfDisposed();
             // nop
         }
 
