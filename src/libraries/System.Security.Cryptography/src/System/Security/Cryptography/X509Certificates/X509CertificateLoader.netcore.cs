@@ -79,6 +79,43 @@ namespace System.Security.Cryptography.X509Certificates
                 LoadPkcs12).GetPal();
         }
 
+        private const X509KeyStorageFlags KeyStorageFlagsAll =
+            X509KeyStorageFlags.UserKeySet |
+            X509KeyStorageFlags.MachineKeySet |
+            X509KeyStorageFlags.Exportable |
+            X509KeyStorageFlags.UserProtected |
+            X509KeyStorageFlags.PersistKeySet |
+            X509KeyStorageFlags.EphemeralKeySet;
+
+        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        {
+            ValidateKeyStorageFlagsCore(keyStorageFlags);
+        }
+
+        static partial void ValidateKeyStorageFlagsCore(X509KeyStorageFlags keyStorageFlags)
+        {
+            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
+            }
+
+            const X509KeyStorageFlags EphemeralPersist =
+                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
+
+            X509KeyStorageFlags persistenceFlags = keyStorageFlags & EphemeralPersist;
+
+            if (persistenceFlags == EphemeralPersist)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Cryptography_X509_InvalidFlagCombination, persistenceFlags),
+                    nameof(keyStorageFlags));
+            }
+
+            ValidatePlatformKeyStorageFlags(keyStorageFlags);
+        }
+
+        static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags);
+
         private readonly partial struct Pkcs12Return
         {
             private readonly ICertificatePal? _pal;

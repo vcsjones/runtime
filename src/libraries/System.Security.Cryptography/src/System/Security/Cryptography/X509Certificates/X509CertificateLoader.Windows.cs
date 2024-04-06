@@ -294,8 +294,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static Interop.Crypt32.PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
-            if ((keyStorageFlags & X509Certificate.KeyStorageFlagsAll) != keyStorageFlags)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
+            Debug.Assert((keyStorageFlags & KeyStorageFlagsAll) == keyStorageFlags);
 
             Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = 0;
             if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)

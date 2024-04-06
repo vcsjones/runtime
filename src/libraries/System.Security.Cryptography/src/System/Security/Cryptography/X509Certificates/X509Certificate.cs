@@ -662,23 +662,10 @@ namespace System.Security.Cryptography.X509Certificates
             return date.ToString(culture);
         }
 
-        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
-        {
-            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
-
-            const X509KeyStorageFlags EphemeralPersist =
-                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
-
-            X509KeyStorageFlags persistenceFlags = keyStorageFlags & EphemeralPersist;
-
-            if (persistenceFlags == EphemeralPersist)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Cryptography_X509_InvalidFlagCombination, persistenceFlags),
-                    nameof(keyStorageFlags));
-            }
-        }
+#pragma warning disable CA1416 // Not callable on browser.
+        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags) =>
+            X509CertificateLoader.ValidateKeyStorageFlags(keyStorageFlags);
+#pragma warning restore CA1416
 
         private static void VerifyContentType(X509ContentType contentType)
         {
@@ -774,13 +761,5 @@ namespace System.Security.Cryptography.X509Certificates
 
             return iterations;
         }
-
-        internal const X509KeyStorageFlags KeyStorageFlagsAll =
-            X509KeyStorageFlags.UserKeySet |
-            X509KeyStorageFlags.MachineKeySet |
-            X509KeyStorageFlags.Exportable |
-            X509KeyStorageFlags.UserProtected |
-            X509KeyStorageFlags.PersistKeySet |
-            X509KeyStorageFlags.EphemeralKeySet;
     }
 }
