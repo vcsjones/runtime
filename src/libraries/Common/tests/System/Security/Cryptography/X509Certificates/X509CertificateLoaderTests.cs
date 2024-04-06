@@ -51,41 +51,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override X509Certificate2 LoadCertificateFileOnly(string path)
         {
-            // Use a fancy strategy other than File.ReadAllBytes.
-
+            // Use a strategy other than File.ReadAllBytes.
             using (FileStream stream = File.OpenRead(path))
-            using (MemoryMappedFile mapped = MemoryMappedFile.CreateFromFile(
-                stream,
-                null,
-                stream.Length,
-                MemoryMappedFileAccess.Read,
-                HandleInheritability.None,
-                false))
+            using (MemoryManager<byte> manager = MemoryMappedFileMemoryManager.CreateFromFileClamped(stream))
             {
-                using (MemoryMappedViewAccessor view = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-                {
-                    unsafe
-                    {
-                        byte* pointer = null;
-
-                        try
-                        {
-                            view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-
-                            using (var manager = new PointerMemoryManager<byte>(pointer, checked((int)stream.Length)))
-                            {
-                                return X509CertificateLoader.LoadCertificate(manager.Memory.Span);
-                            }
-                        }
-                        finally
-                        {
-                            if (pointer != null)
-                            {
-                                view.SafeMemoryMappedViewHandle.ReleasePointer();
-                            }
-                        }
-                    }
-                }
+                return X509CertificateLoader.LoadCertificate(manager.Memory.Span);
             }
         }
 

@@ -494,57 +494,22 @@ namespace System.Security.Cryptography.X509Certificates
             Pkcs12LoaderLimits loaderLimits,
             LoadFromFileFunc<T> loader)
         {
-            (byte[]? rented, int length, MemoryMappedFile? mapped) = ReadAllBytesIfBerSequence(path);
+            (byte[]? rented, int length, MemoryManager<byte>? mapped) = ReadAllBytesIfBerSequence(path);
 
-            if (rented is not null)
+            try
             {
-                Debug.Assert(mapped is null);
+                Debug.Assert(rented is null != mapped is null);
+                ReadOnlyMemory<byte> memory = mapped?.Memory ?? new ReadOnlyMemory<byte>(rented, 0, length);
 
-                try
-                {
-                    return loader(
-                        new ReadOnlyMemory<byte>(rented, 0, length),
-                        password,
-                        keyStorageFlags,
-                        loaderLimits);
-                }
-                finally
+                return loader(memory, password, keyStorageFlags, loaderLimits);
+            }
+            finally
+            {
+                (mapped as IDisposable)?.Dispose();
+
+                if (rented is not null)
                 {
                     CryptoPool.Return(rented, length);
-                }
-            }
-            else
-            {
-                Debug.Assert(mapped is not null);
-
-                using (mapped)
-                using (MemoryMappedViewAccessor accessor = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-                {
-                    unsafe
-                    {
-                        byte* pointer = null;
-
-                        try
-                        {
-                            accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-
-                            using (PointerMemoryManager<byte> manager = new(pointer, length))
-                            {
-                                return loader(
-                                    manager.Memory,
-                                    password,
-                                    keyStorageFlags,
-                                    loaderLimits);
-                            }
-                        }
-                        finally
-                        {
-                            if (pointer != null)
-                            {
-                                accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -559,7 +524,7 @@ namespace System.Security.Cryptography.X509Certificates
             out int? length,
             out int bytesRead);
 
-        private static (byte[]?, int, MemoryMappedFile?) ReadAllBytesIfBerSequence(string path)
+        private static (byte[]?, int, MemoryManager<byte>?) ReadAllBytesIfBerSequence(string path)
         {
             // The expected header in a PFX is 30 82 XX XX, but since it's BER-encoded
             // it could be up to 30 FE 00 00 00 .. XX YY ZZ AA and still be within the
@@ -633,15 +598,7 @@ namespace System.Security.Cryptography.X509Certificates
                         return (rented, totalLength, null);
                     }
 
-                    MemoryMappedFile mapped = MemoryMappedFile.CreateFromFile(
-                        stream,
-                        mapName: null,
-                        capacity: stream.Length,
-                        MemoryMappedFileAccess.Read,
-                        HandleInheritability.None,
-                        leaveOpen: false);
-
-                    return (null, (int)Math.Min(int.MaxValue, stream.Length), mapped);
+                    return (null, 0, MemoryMappedFileMemoryManager.CreateFromFileClamped(stream));
                 }
             }
             catch (IOException e)

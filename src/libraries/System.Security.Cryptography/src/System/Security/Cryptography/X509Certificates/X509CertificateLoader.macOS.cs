@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
@@ -35,53 +36,34 @@ namespace System.Security.Cryptography.X509Certificates
             using (FileStream stream = File.OpenRead(path))
             {
                 int length = (int)long.Min(int.MaxValue, stream.Length);
+                byte[]? rented = null;
+                MemoryManager<byte>? manager = null;
 
-                if (length > MemoryMappedFileCutoff)
+                try
                 {
-                    MemoryMappedFile mapped = MemoryMappedFile.CreateFromFile(
-                        stream,
-                        mapName: null,
-                        capacity: stream.Length,
-                        MemoryMappedFileAccess.Read,
-                        HandleInheritability.None,
-                        leaveOpen: false);
+                    ReadOnlySpan<byte> span;
 
-                    using (mapped)
-                    using (MemoryMappedViewAccessor accessor = mapped.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                    if (length > MemoryMappedFileCutoff)
                     {
-                        unsafe
-                        {
-                            byte* pointer = null;
-
-                            try
-                            {
-                                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-
-                                ReadOnlySpan<byte> data = new(pointer, length);
-                                return LoadCertificatePal(data);
-                            }
-                            finally
-                            {
-                                if (pointer != null)
-                                {
-                                    accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                                }
-                            }
-                        }
+                        manager = MemoryMappedFileMemoryManager.CreateFromFileClamped(stream);
+                        span = manager.Memory.Span;
                     }
+                    else
+                    {
+                        rented = CryptoPool.Rent(length);
+                        stream.ReadAtLeast(rented, length);
+                        span = rented.AsSpan(0, length);
+                    }
+
+                    return LoadCertificatePal(span);
                 }
-                else
+                finally
                 {
-                    byte[] buf = CryptoPool.Rent(length);
+                    (manager as IDisposable)?.Dispose();
 
-                    try
+                    if (rented is not null)
                     {
-                        stream.ReadAtLeast(buf, length);
-                        return LoadCertificatePal(buf.AsSpan(0, length));
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(buf, length);
+                        CryptoPool.Return(rented, length);
                     }
                 }
             }
