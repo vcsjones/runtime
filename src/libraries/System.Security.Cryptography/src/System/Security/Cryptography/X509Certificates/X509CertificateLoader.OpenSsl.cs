@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (certAndKey.Key is not null)
             {
-                pal.SetPrivateKey(OpenSslPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                pal.SetPrivateKey(GetPrivateKey(certAndKey.Key));
                 certAndKey.Key.Dispose();
             }
 
@@ -66,6 +66,21 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.Dsa => new DSAOpenSsl(),
                 _ => null,
             };
+        }
+
+        internal static SafeEvpPKeyHandle GetPrivateKey(AsymmetricAlgorithm key)
+        {
+            if (key is RSAOpenSsl rsa)
+            {
+                return rsa.DuplicateKeyHandle();
+            }
+
+            if (key is DSAOpenSsl dsa)
+            {
+                return dsa.DuplicateKeyHandle();
+            }
+
+            return ((ECDiffieHellmanOpenSsl)key).DuplicateKeyHandle();
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
