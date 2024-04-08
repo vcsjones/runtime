@@ -117,6 +117,69 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        internal static unsafe bool IsPkcs12(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return false;
+            }
+
+            fixed (byte* ptr = data)
+            {
+                using (PointerMemoryManager<byte> manager = new(ptr, data.Length))
+                {
+                    try
+                    {
+                        ReadOnlyMemory<byte> memory = manager.Memory;
+                        AsnValueReader reader = new AsnValueReader(memory.Span, AsnEncodingRules.BER);
+                        PfxAsn.Decode(ref reader, memory, out _);
+                        return true;
+                    }
+                    catch (AsnContentException)
+                    {
+                    }
+                    catch (CryptographicException)
+                    {
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        internal static bool IsPkcs12(string path)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+
+            (byte[]? rented, int length, MemoryManager<byte>? manager) = ReadAllBytesIfBerSequence(path);
+
+            try
+            {
+                ReadOnlyMemory<byte> memory = manager?.Memory ?? new ReadOnlyMemory<byte>(rented, 0, length);
+
+                AsnValueReader reader = new AsnValueReader(memory.Span, AsnEncodingRules.BER);
+                PfxAsn.Decode(ref reader, memory, out _);
+                return true;
+            }
+            catch (AsnContentException)
+            {
+            }
+            catch (CryptographicException)
+            {
+            }
+            finally
+            {
+                (manager as IDisposable)?.Dispose();
+
+                if (rented is not null)
+                {
+                    CryptoPool.Return(rented, length);
+                }
+            }
+
+            return false;
+        }
+
         private partial struct BagState
         {
             internal ReadOnlySpan<SafeBagAsn> GetCertsSpan()
