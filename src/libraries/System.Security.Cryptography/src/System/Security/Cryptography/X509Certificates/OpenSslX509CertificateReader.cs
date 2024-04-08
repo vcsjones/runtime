@@ -54,11 +54,20 @@ namespace System.Security.Cryptography.X509Certificates
                 return cert;
             }
 
-            return X509CertificateLoader.LoadPkcs12Pal(
-                rawData,
-                password.DangerousGetSpan(),
-                keyStorageFlags,
-                X509Certificate.GetPkcs12Limits(fromFile: false, password));
+            try
+            {
+                return X509CertificateLoader.LoadPkcs12Pal(
+                    rawData,
+                    password.DangerousGetSpan(),
+                    keyStorageFlags,
+                    X509Certificate.GetPkcs12Limits(fromFile: false, password));
+            }
+            catch (Pkcs12LoadLimitExceededException e)
+            {
+                throw new CryptographicException(
+                    SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                    e);
+            }
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -75,13 +84,20 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (pal == null)
             {
-                Debug.Assert(!string.IsNullOrEmpty(fileName));
-
-                pal = X509CertificateLoader.LoadPkcs12PalFromFile(
-                    fileName,
-                    password.DangerousGetSpan(),
-                    keyStorageFlags,
-                    X509Certificate.GetPkcs12Limits(fromFile: true, password));
+                try
+                {
+                    pal = X509CertificateLoader.LoadPkcs12PalFromFile(
+                        fileName,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(fromFile: true, password));
+                }
+                catch (Pkcs12LoadLimitExceededException e)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
+                }
             }
 
             return pal;

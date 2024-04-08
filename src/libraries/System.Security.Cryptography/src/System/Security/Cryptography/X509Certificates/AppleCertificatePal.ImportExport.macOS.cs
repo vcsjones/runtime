@@ -43,11 +43,20 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                return (AppleCertificatePal)X509CertificateLoader.LoadPkcs12Pal(
-                    rawData,
-                    password.DangerousGetSpan(),
-                    keyStorageFlags,
-                    X509Certificate.GetPkcs12Limits(readingFromFile, password));
+                try
+                {
+                    return (AppleCertificatePal)X509CertificateLoader.LoadPkcs12Pal(
+                        rawData,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(readingFromFile, password));
+                }
+                catch (Pkcs12LoadLimitExceededException e)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
+                }
             }
 
             SafeSecIdentityHandle identityHandle;
