@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (contentType != X509ContentType.Authenticode || PlatformDetection.IsWindows)
+            if (PlatformDetection.IsWindows || !X509CertificateLoaderTests.IsWindowsOnlyContentType(contentType))
             {
                 if (TryGetContentType(data, path, out X509ContentType actualType))
                 {

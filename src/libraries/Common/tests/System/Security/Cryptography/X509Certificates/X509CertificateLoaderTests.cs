@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private void LoadKnownFormat_Fails(byte[] data, string path, X509ContentType contentType)
         {
-            if (contentType != X509ContentType.Authenticode || PlatformDetection.IsWindows)
+            if (PlatformDetection.IsWindows || !IsWindowsOnlyContentType(contentType))
             {
                 if (TryGetContentType(data, path, out X509ContentType actualType))
                 {
@@ -274,6 +274,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #else
                 AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);
 #endif
+        }
+
+        internal static bool IsWindowsOnlyContentType(X509ContentType contentType)
+        {
+            return contentType is X509ContentType.Authenticode or X509ContentType.SerializedStore or X509ContentType.SerializedCert;
         }
     }
 }

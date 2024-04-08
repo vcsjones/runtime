@@ -697,7 +697,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (array.Length <= index)
                 {
-                    SafeBagAsn[] next = ArrayPool<SafeBagAsn>.Shared.Rent(index);
+                    SafeBagAsn[] next = ArrayPool<SafeBagAsn>.Shared.Rent(checked(index + 1));
                     array.AsSpan().CopyTo(next);
                     ArrayPool<SafeBagAsn>.Shared.Return(array, clearArray: true);
                     array = next;
