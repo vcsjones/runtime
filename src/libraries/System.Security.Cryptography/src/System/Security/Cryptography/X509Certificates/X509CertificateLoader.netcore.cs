@@ -67,15 +67,17 @@ namespace System.Security.Cryptography.X509Certificates
             string path,
             ReadOnlySpan<char> password,
             X509KeyStorageFlags keyStorageFlags,
-            Pkcs12LoaderLimits? loaderLimits)
+            Pkcs12LoaderLimits loaderLimits)
         {
+            Debug.Assert(loaderLimits is not null);
+
             ThrowIfNullOrEmpty(path);
 
             return LoadFromFile(
                 path,
                 password,
                 keyStorageFlags,
-                loaderLimits ?? Pkcs12LoaderLimits.Defaults,
+                loaderLimits,
                 LoadPkcs12).GetPal();
         }
 
