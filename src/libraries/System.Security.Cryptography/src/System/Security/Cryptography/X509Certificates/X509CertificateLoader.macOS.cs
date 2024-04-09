@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (certAndKey.Key is not null)
             {
-                key = ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
+                key = GetPrivateKey(certAndKey.Key);
                 certAndKey.Key.Dispose();
             }
 
@@ -141,6 +141,43 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.Dsa => new DSAImplementation.DSASecurityTransforms(),
                 _ => null,
             };
+        }
+
+        internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
+        {
+            if (key == null)
+            {
+                return null;
+            }
+
+            if (key is RSAImplementation.RSASecurityTransforms rsa)
+            {
+                // Convert data key to legacy CSSM key that can be imported into keychain
+                byte[] rsaPrivateKey = rsa.ExportRSAPrivateKey();
+                using (PinAndClear.Track(rsaPrivateKey))
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(rsaPrivateKey, true);
+                }
+            }
+
+            if (key is DSAImplementation.DSASecurityTransforms dsa)
+            {
+                // DSA always uses legacy CSSM keys do no need to convert
+                return dsa.GetKeys().PrivateKey;
+            }
+
+            if (key is ECDsaImplementation.ECDsaSecurityTransforms ecdsa)
+            {
+                // Convert data key to legacy CSSM key that can be imported into keychain
+                byte[] ecdsaPrivateKey = ecdsa.ExportECPrivateKey();
+                using (PinAndClear.Track(ecdsaPrivateKey))
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(ecdsaPrivateKey, true);
+                }
+            }
+
+            Debug.Fail("Invalid key implementation");
+            return null;
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)

@@ -1270,7 +1270,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.macOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12Reader.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleKeychainStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleTrustStore.cs" />
