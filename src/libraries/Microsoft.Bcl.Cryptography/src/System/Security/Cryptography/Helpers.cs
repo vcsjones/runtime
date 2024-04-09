@@ -6,25 +6,6 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
 
-// TODO: This should be able to be deleted when the old counting code is removed.
-namespace System.Security.Cryptography
-{
-    namespace X509Certificates
-    {
-        internal sealed class X509IterationCountExceededException : Exception
-        {
-        }
-    }
-
-    internal static class KdfWorkLimiter
-    {
-        internal static void RecordIterations(long workCount)
-        {
-            Debug.Assert(workCount >= 0);
-        }
-    }
-}
-
 namespace Internal.Cryptography
 {
     internal static partial class Helpers

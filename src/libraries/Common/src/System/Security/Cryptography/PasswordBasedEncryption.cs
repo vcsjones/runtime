@@ -393,7 +393,6 @@ namespace System.Security.Cryptography
                         Debug.Assert(pwdTmpBytes!.Length == 0);
                     }
 
-                    KdfWorkLimiter.RecordIterations(iterationCount);
                     derivedKey = DeriveKey(pwdTmpBytes, salt, iterationCount, prf, keySizeBytes);
                     iv.CopyTo(ivDest);
                 }
