@@ -40,13 +40,21 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
+        {
+            if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+            {
+                throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+            }
+        }
+
         private static partial Pkcs12Return FromCertAndKey(CertAndKey certAndKey, ImportState importState)
         {
             AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
 
             if (certAndKey.Key != null)
             {
-                pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                pal.SetPrivateKey(GetPrivateKey(certAndKey.Key));
                 certAndKey.Key.Dispose();
             }
 
@@ -62,6 +70,26 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.Dsa => new DSAImplementation.DSAAndroid(),
                 _ => null,
             };
+        }
+
+        internal static SafeKeyHandle GetPrivateKey(AsymmetricAlgorithm key)
+        {
+            if (key is ECDsaImplementation.ECDsaAndroid ecdsa)
+            {
+                return ecdsa.DuplicateKeyHandle();
+            }
+
+            if (key is RSAImplementation.RSAAndroid rsa)
+            {
+                return rsa.DuplicateKeyHandle();
+            }
+
+            if (key is DSAImplementation.DSAAndroid dsa)
+            {
+                return dsa.DuplicateKeyHandle();
+            }
+
+            throw new NotImplementedException($"{nameof(GetPrivateKey)} ({key.GetType()})");
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)

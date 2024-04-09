@@ -1041,7 +1041,6 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AndroidCertificatePal.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\AndroidPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateData.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePolicy.cs" />
