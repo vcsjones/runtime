@@ -49,9 +49,16 @@ namespace System.Security.Cryptography.X509Certificates
 
         static partial void ValidatePlatformKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
         {
-            if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+            // Unlike macOS, iOS does support EphemeralKeySet.
+
+            if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
             {
-                throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
+            }
+
+            if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+            {
+                throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
             }
         }
 

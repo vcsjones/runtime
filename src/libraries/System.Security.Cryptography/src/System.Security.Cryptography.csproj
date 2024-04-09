@@ -1299,8 +1299,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pem.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.iOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12CertLoader.iOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12Reader.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertCollectionLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.AppleKeychainStore.cs" />

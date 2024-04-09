@@ -7,27 +7,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private static SafePasswordHandle s_passwordExportHandle = new SafePasswordHandle("DotnetExportPassphrase", passwordProvided: true);
-
-        private static AppleCertificatePal ImportPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool ephemeralSpecified)
-        {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
-            {
-                reader.ParsePkcs12(rawData);
-                reader.Decrypt(password, ephemeralSpecified);
-                return ImportPkcs12(reader.GetSingleCert());
-            }
-        }
-
-        internal static AppleCertificatePal ImportPkcs12(UnixPkcs12Reader.CertAndKey certAndKey)
-        {
-            AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
-
-            return ImportPkcs12(pal, certAndKey.Key);
-        }
+        private static readonly SafePasswordHandle s_passwordExportHandle = new SafePasswordHandle("DotnetExportPassphrase", passwordProvided: true);
 
         internal static AppleCertificatePal ImportPkcs12(AppleCertificatePal pal, AsymmetricAlgorithm? key)
         {
