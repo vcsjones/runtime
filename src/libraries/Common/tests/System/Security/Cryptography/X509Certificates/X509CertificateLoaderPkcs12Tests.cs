@@ -559,20 +559,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false)]
         public void LoadPfx_VerifyKdfIterationLimit(bool failLimit)
         {
-            // TODO: Replace the test input for this test with content that uses a lower limit
-            // for the certificates authsafe than for the key(s), then show that the low limit
-            // passes with IgnorePrivateKeys.
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
                 IndividualKdfIterationLimit = failLimit ? 1999 : 2000,
             };
 
+            // Both 1999 and 2000 will fail, because the key uses 2001.
+            LoadPfx_VerifyLimit(
+                nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit),
+                fail: true,
+                TestData.MixedIterationsPfx,
+                null,
+                TestData.PlaceholderPw,
+                loaderLimits);
+
+            loaderLimits.IgnorePrivateKeys = true;
+
+            // Now that we're ignoring the key, 1999 will fail, 2000 will pass.
             LoadPfx_VerifyLimit(
                 nameof(Pkcs12LoaderLimits.IndividualKdfIterationLimit),
                 failLimit,
-                TestData.PfxData,
-                TestFiles.PfxFile,
-                TestData.PfxDataPassword,
+                TestData.MixedIterationsPfx,
+                null,
+                TestData.PlaceholderPw,
                 loaderLimits);
         }
 

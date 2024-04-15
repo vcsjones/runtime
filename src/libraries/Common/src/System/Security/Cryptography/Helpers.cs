@@ -13,7 +13,7 @@ namespace Internal.Cryptography
     internal static partial class Helpers
     {
 #if NETFRAMEWORK || (NETSTANDARD && !NETSTANDARD2_1_OR_GREATER)
-        private static RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+        private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]

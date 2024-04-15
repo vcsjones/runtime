@@ -98,6 +98,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
+        /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
         /// </exception>
@@ -148,6 +156,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>The loaded certificate.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
         /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
@@ -209,6 +225,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="path"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
+        /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
         /// </exception>
@@ -262,6 +286,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>The loaded certificate.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="path"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
         /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
@@ -319,6 +351,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
+        /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
         /// </exception>
@@ -358,6 +398,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>A collection of the certificates loaded from the input.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
         /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
@@ -411,6 +459,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="path"/> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
+        /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
         /// </exception>
@@ -454,6 +510,14 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>The loaded certificate.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="path"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyStorageFlags"/> contains a value, or combination of values,
+        ///   that is not valid.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="keyStorageFlags"/> contains a value that is not valid for the
+        ///   current platform.
         /// </exception>
         /// <exception cref="Pkcs12LoadLimitExceededException">
         ///   The PKCS#12/PFX violated one or more constraints of <paramref name="loaderLimits"/>.
