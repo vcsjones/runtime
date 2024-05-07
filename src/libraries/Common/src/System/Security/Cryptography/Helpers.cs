@@ -18,13 +18,13 @@ namespace Internal.Cryptography
 
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool HasSymmetricEncryption { get; } =
-#if NETCOREAPP
+#if NET
             !OperatingSystem.IsBrowser();
 #else
             true;
 #endif
 
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
         public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
@@ -32,7 +32,7 @@ namespace Internal.Cryptography
         public static bool IsDSASupported => true;
 #endif
 
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
         public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
@@ -42,7 +42,7 @@ namespace Internal.Cryptography
 
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool HasMD5 { get; } =
-#if NETCOREAPP
+#if NET
             !OperatingSystem.IsBrowser();
 #else
             true;
