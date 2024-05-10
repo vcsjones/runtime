@@ -277,8 +277,9 @@ System.Security.Cryptography.SP800108HmacCounterKdf</PackageDescription>
              Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs"
+             Link="Common\System\Security\Cryptography\IncrementalHash.netfx.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
-    <Compile Include="System\Security\Cryptography\IncrementalHash.netfx.cs" />
     <Compile Include="System\Security\Cryptography\PbeEncryptionAlgorithm.netstandard.cs" />
     <Compile Include="System\Security\Cryptography\PbeParameters.netstandard.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.netfx.cs" />
