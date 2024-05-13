@@ -578,16 +578,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        // TODO: Get this made into a public method.
-        private static readonly TryReadLength s_tryReadLength = (TryReadLength)typeof(AsnDecoder).GetMethod(
-            nameof(TryReadLength), BindingFlags.Static | BindingFlags.NonPublic)!.CreateDelegate(typeof(TryReadLength));
-
-        private delegate bool TryReadLength(
-            ReadOnlySpan<byte> source,
-            AsnEncodingRules ruleSet,
-            out int? length,
-            out int bytesRead);
-
         private static (byte[]?, int, MemoryManager<byte>?) ReadAllBytesIfBerSequence(string path)
         {
             // The expected header in a PFX is 30 82 XX XX, but since it's BER-encoded
@@ -641,7 +631,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         ReadOnlySpan<byte> lengthPart = earlyBuf.Slice(1, read - 1);
 
-                        if (!s_tryReadLength(lengthPart, AsnEncodingRules.BER, out int? decoded, out int decodedLength))
+                        if (!AsnDecoder.TryDecodeLength(lengthPart, AsnEncodingRules.BER, out int? decoded, out int decodedLength))
                         {
                             ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
                         }
