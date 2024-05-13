@@ -655,9 +655,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(true)]
         public void LoadPfx_VerifyIgnoreEncryptedSafes(bool ignoreEncrypted)
         {
-            // TODO: Replace the data in this test with a PFX that has certificates
-            // in two authsafes, with the encrypted one first, so we see that it does
-            // load certificates still, just not the ones from the encrypted set.
+            Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
+            {
+                IgnoreEncryptedAuthSafes = ignoreEncrypted,
+            };
+
+            string expectedSubject = ignoreEncrypted ?
+                "CN=Plaintext Test Certificate, OU=.NET Libraries, O=Microsoft Corporation" :
+                "CN=Encrypted Test Certificate, OU=.NET Libraries, O=Microsoft Corporation";
+
+            X509Certificate2 cert = LoadPfxNoFile(
+                TestData.TwoCertsPfx_OneEncrypted,
+                TestData.PlaceholderPw,
+                default,
+                loaderLimits);
+
+            using (cert)
+            {
+                Assert.Equal(expectedSubject, cert.Subject);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadPfx_VerifyIgnoreEncryptedSafes_EmptyIfIgnored(bool ignoreEncrypted)
+        {
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
                 IgnoreEncryptedAuthSafes = ignoreEncrypted,
