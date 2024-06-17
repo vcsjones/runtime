@@ -266,6 +266,7 @@ internal static partial class Interop
             RSA = 6,
             DSA = 116,
             ECC = 408,
+            Ed25519 = 1087,
         }
     }
 }
