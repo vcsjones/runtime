@@ -19,6 +19,15 @@ namespace System.Security.Cryptography.Tests
         {
             public static Ed25519 Create() => Ed25519.Create();
         }
+
+        [Fact]
+        public static void Factory_NonPublicType()
+        {
+            using (Ed25519 ed25519 = Ed25519.Create())
+            {
+                Assert.False(ed25519.GetType().IsPublic);
+            }
+        }
     }
 
     public class Ed25519OpenSslTests : Ed25519Tests<Ed25519OpenSslTests.IEd25519Factory>
