@@ -23,6 +23,11 @@ namespace System.Security.Cryptography.X509Certificates
         FindByExtension = 12,
         FindByKeyUsage = 13,
         FindBySubjectKeyIdentifier = 14,
+
+        /// <summary>
+        /// The <c>findValue</c> parameter for the <see cref="X509Certificate2Collection.Find(X509FindType,System.Object,System.Boolean)" />
+        /// method must be a string representing the SHA-2-256 thumbprint of the certificate.
+        /// </summary>
         FindByThumbprintSha256 = 15,
     }
 }
