@@ -49,6 +49,30 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public unsafe void FindByThumbprintSha256(byte[] thumbPrint)
+        {
+            // CertFindType.CERT_FIND_SHA256_HASH is only supported on Windows 10 22H2. Search the store ourselves.
+            FindCore(
+                thumbPrint,
+                static (thumbprint, pCertContext) =>
+                {
+                    // FindCore owns the lifetime of the CERT_CONTEXT and doesn't escape, so it can't be disposed of
+                    // by another thread.
+                    ReadOnlySpan<byte> cert = new ReadOnlySpan<byte>(
+                        pCertContext.DangerousCertContext->pbCertEncoded,
+                        pCertContext.DangerousCertContext->cbCertEncoded);
+
+                    Span<byte> hashBuffer = stackalloc byte[SHA256.HashSizeInBytes];
+                    int written = SHA256.HashData(cert, hashBuffer);
+                    Debug.Assert(written == SHA256.HashSizeInBytes);
+
+                    // Keep the CERT_CONTEXT alive until the data has been hashed.
+                    GC.KeepAlive(pCertContext);
+
+                    return hashBuffer.SequenceEqual(thumbprint);
+                });
+        }
+
         public unsafe void FindBySubjectName(string subjectName)
         {
             fixed (char* pSubjectName = subjectName)

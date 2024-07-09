@@ -41,12 +41,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        private static void RunZeroMatchTest(X509FindType findType, object findValue)
+        private static void RunZeroMatchTest(X509FindType findType, object findValue) =>
+            RunZeroMatchTest(findType, (msCer, pfxCer) => findValue);
+
+        private static void RunZeroMatchTest(X509FindType findType, Func<X509Certificate2, X509Certificate2, object> findValueFactory)
         {
             RunTest(
                 (msCer, pfxCer, col1) =>
                 {
-                    X509Certificate2Collection col2 = col1.Find(findType, findValue, validOnly: false);
+                    X509Certificate2Collection col2 = col1.Find(findType, findValueFactory(msCer, pfxCer), validOnly: false);
 
                     using (new ImportedCollection(col2))
                     {
@@ -159,9 +162,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void FindByInvalidThumbprintSha256()
+        {
+            RunZeroMatchTest(X509FindType.FindByThumbprintSha256, "Nothing");
+        }
+
+        [Fact]
         public static void FindByInvalidThumbprint_RightLength()
         {
             RunZeroMatchTest(X509FindType.FindByThumbprint, "ffffffffffffffffffffffffffffffffffffffff");
+        }
+
+        [Fact]
+        public static void FindByInvalidThumbprintSha256_RightLength()
+        {
+            RunZeroMatchTest(X509FindType.FindByThumbprint, new string('f', SHA256.HashSizeInBytes * 2));
         }
 
         [Fact]
@@ -179,6 +194,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void FindByValidThumbprintSha256()
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateSingleMatch(
+                        pfxCer,
+                        col1,
+                        X509FindType.FindByThumbprintSha256,
+                        pfxCer.GetCertHashString(HashAlgorithmName.SHA256));
+                });
+        }
+
+        [Fact]
+        public static void FindByWrongThumbprintFailsSha1LookingForSha256()
+        {
+            RunZeroMatchTest(
+                X509FindType.FindByThumbprint,
+                static (msCer, pfxCer) => msCer.GetCertHashString(HashAlgorithmName.SHA256));
+        }
+
+        [Fact]
+        public static void FindByWrongThumbprintFailsSha1LookingForMd5()
+        {
+            RunZeroMatchTest(
+                X509FindType.FindByThumbprint,
+                static (msCer, pfxCer) => msCer.GetCertHashString(HashAlgorithmName.MD5));
+        }
+
+        [Fact]
+        public static void FindByWrongThumbprintFailsSha256LookingForSha1()
+        {
+            RunZeroMatchTest(X509FindType.FindByThumbprintSha256, static (msCer, pfxCer) => msCer.Thumbprint);
+        }
+
+        [Fact]
         public static void FindByThumbprint_WithLrm()
         {
             RunTest(
@@ -192,16 +243,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
+        [Fact]
+        public static void FindByThumbprintSha256_WithLrm()
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateSingleMatch(
+                        pfxCer,
+                        col1,
+                        X509FindType.FindByThumbprintSha256,
+                        LeftToRightMark + pfxCer.GetCertHashString(HashAlgorithmName.SHA256));
+                });
+        }
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void FindByValidThumbprint_ValidOnly(bool validOnly)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public static void FindByValidThumbprint_ValidOnly(bool validOnly, bool sha256)
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))
             {
                 var col1 = new X509Certificate2Collection(msCer);
 
-                X509Certificate2Collection col2 =
+                X509Certificate2Collection col2 = sha256 ?
+                    col1.Find(X509FindType.FindByThumbprintSha256, msCer.GetCertHashString(HashAlgorithmName.SHA256), validOnly) :
                     col1.Find(X509FindType.FindByThumbprint, msCer.Thumbprint, validOnly);
 
                 using (new ImportedCollection(col2))
@@ -231,9 +299,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
-        public static void FindByValidThumbprint_RootCert()
+        public static void FindByValidThumbprint_RootCert(bool sha256)
         {
             using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
             {
@@ -304,7 +374,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Just in case someone has a system with no valid trusted root certs whatsoever.
                     if (rootCert != null)
                     {
-                        X509Certificate2Collection matches =
+                        X509Certificate2Collection matches = sha256 ?
+                            storeCerts.Find(X509FindType.FindByThumbprintSha256, rootCert.GetCertHashString(HashAlgorithmName.SHA256), true) :
                             storeCerts.Find(X509FindType.FindByThumbprint, rootCert.Thumbprint, true);
 
                         using (new ImportedCollection(matches))
@@ -1127,6 +1198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // KeyUsage supports int/uint/KeyUsage/string, but only one of those is in allTypes.
                     Tuple.Create(X509FindType.FindByKeyUsage, typeof(string)),
                     Tuple.Create(X509FindType.FindBySubjectKeyIdentifier, typeof(string)),
+                    Tuple.Create(X509FindType.FindByThumbprintSha256, typeof(string)),
                 };
 
                 List<object[]> invalidCombinations = new List<object[]>();

@@ -3560,6 +3560,7 @@ namespace System.Security.Cryptography.X509Certificates
         FindByExtension = 12,
         FindByKeyUsage = 13,
         FindBySubjectKeyIdentifier = 14,
+        FindByThumbprintSha256 = 15,
     }
     public enum X509IncludeOption
     {

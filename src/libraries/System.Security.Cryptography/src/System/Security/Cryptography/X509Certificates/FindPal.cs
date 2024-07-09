@@ -151,6 +151,12 @@ namespace System.Security.Cryptography.X509Certificates
                             findPal.FindBySubjectKeyIdentifier(keyIdentifier);
                             break;
                         }
+                    case X509FindType.FindByThumbprintSha256:
+                        {
+                            byte[] thumbPrint = ConfirmedCast<string>(findValue).LaxDecodeHexString();
+                            findPal.FindByThumbprintSha256(thumbPrint);
+                            break;
+                        }
                     default:
                         throw new CryptographicException(SR.Cryptography_X509_InvalidFindType);
                 }
