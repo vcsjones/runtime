@@ -38,6 +38,23 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate2Collection copyTo,
             bool validOnly);
 
+        public static X509Certificate2Collection FindByThumbprintAlgorithm(
+            X509Certificate2Collection coll,
+            HashAlgorithmName hashAlgorithm,
+            string thumbprint,
+            bool validOnly)
+        {
+            X509Certificate2Collection results = new X509Certificate2Collection();
+
+            using (IFindPal findPal = OpenPal(coll, results, validOnly))
+            {
+                byte[] thumbprintBytes = thumbprint.LaxDecodeHexString();
+                findPal.FindByThumbprintAlgorithm(hashAlgorithm, thumbprintBytes);
+            }
+
+            return results;
+        }
+
         public static X509Certificate2Collection FindFromCollection(
             X509Certificate2Collection coll,
             X509FindType findType,

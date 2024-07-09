@@ -41,12 +41,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
-        private static void RunZeroMatchTest(X509FindType findType, object findValue)
+        private static void RunZeroMatchTest(X509FindType findType, object findValue) =>
+            RunZeroMatchTest(findType, (msCer, pfxCer) => findValue);
+
+        private static void RunZeroMatchTest(X509FindType findType, Func<X509Certificate2, X509Certificate2, object> findValueFactory)
         {
             RunTest(
                 (msCer, pfxCer, col1) =>
                 {
-                    X509Certificate2Collection col2 = col1.Find(findType, findValue, validOnly: false);
+                    X509Certificate2Collection col2 = col1.Find(findType, findValueFactory(msCer, pfxCer), validOnly: false);
 
                     using (new ImportedCollection(col2))
                     {
@@ -71,6 +74,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     EvaluateSingleMatch(pfxCer, col1, findType, findValue);
                 });
+        }
+
+        private static void EvaluateSingleThumbprintMatch(
+            X509Certificate2 expected,
+            X509Certificate2Collection col1,
+            HashAlgorithmName hashAlgorithmName,
+            string thumbprint)
+        {
+            X509Certificate2Collection col2 =
+                col1.FindByThumbprint(hashAlgorithmName, thumbprint, validOnly: false);
+
+            using (new ImportedCollection(col2))
+            {
+                Assert.Equal(1, col2.Count);
+
+                byte[] serialNumber;
+
+                using (X509Certificate2 match = col2[0])
+                {
+                    AssertExtensions.SequenceEqual(expected.RawDataMemory.Span, match.RawDataMemory.Span);
+                    Assert.NotSame(expected, match);
+
+                    serialNumber = match.GetSerialNumber();
+                }
+
+                // Check that disposing match didn't dispose expected
+                Assert.Equal(serialNumber, expected.GetSerialNumber());
+            }
+        }
+
+        private static void EvaluateNoThumbprintMatch(
+            X509Certificate2 expected,
+            X509Certificate2Collection col1,
+            HashAlgorithmName hashAlgorithmName,
+            string thumbprint)
+        {
+            X509Certificate2Collection col2 =
+                col1.FindByThumbprint(hashAlgorithmName, thumbprint, validOnly: false);
+
+            using (new ImportedCollection(col2))
+            {
+                Assert.Equal(0, col2.Count);
+            }
         }
 
         private static void EvaluateSingleMatch(
@@ -958,6 +1004,141 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestFindByKeyUsage(false, matchCriteria);
         }
 
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_Success(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateSingleThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        pfxCer.GetCertHashString(hashAlgorithmName));
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_WrongHashSize(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateNoThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        "FFFFFFFF");
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_TooBigHash(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateNoThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        new string('F', 256));
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_WrongHashValue(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    string wrongThumbprint = new string('F', pfxCer.GetCertHashString(hashAlgorithmName).Length);
+                    EvaluateNoThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        wrongThumbprint);
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_MixedHash(HashAlgorithmName hashAlgorithmName)
+        {
+            HashAlgorithmName wrongHashAlgorithm =
+                hashAlgorithmName == HashAlgorithmName.SHA256 ? HashAlgorithmName.SHA384 : HashAlgorithmName.SHA256;
+
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    EvaluateNoThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        wrongHashAlgorithm,
+                        pfxCer.GetCertHashString(hashAlgorithmName));
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_ThumbprintLax(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    string thumbprint = pfxCer.GetCertHashString(hashAlgorithmName);
+                    string thumbprintWithWhitespace = InjectWhitespaceInString(thumbprint);
+
+                    Assert.NotEqual(thumbprint, thumbprintWithWhitespace);
+
+                    EvaluateSingleThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        thumbprintWithWhitespace);
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByThumbprintAlgorithm_WithLtr(HashAlgorithmName hashAlgorithmName)
+        {
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    string thumbprint = pfxCer.GetCertHashString(hashAlgorithmName);
+
+                    EvaluateSingleThumbprintMatch(
+                        pfxCer,
+                        col1,
+                        hashAlgorithmName,
+                        LeftToRightMark + thumbprint);
+                });
+        }
+
+        [Fact]
+        public static void FindByThumbprintAlgorithm_BadHashAlgorithm()
+        {
+            HashAlgorithmName badHashAlgorithm = new("POTATO123");
+            RunTest(
+                (msCer, pfxCer, col1) =>
+                {
+                    string thumbprint = pfxCer.GetCertHashString(HashAlgorithmName.SHA256);
+
+                    Assert.Throws<CryptographicException>(() => {
+                        EvaluateNoThumbprintMatch(
+                            pfxCer,
+                            col1,
+                            badHashAlgorithm,
+                            thumbprint);
+                    });
+                });
+        }
+
         private static void TestFindByKeyUsage(bool shouldMatch, object matchCriteria)
         {
             using (var noKeyUsages = new X509Certificate2(TestData.MsCertificate))
@@ -998,6 +1179,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
             }
+        }
+
+        private static string InjectWhitespaceInString(string str)
+        {
+            StringBuilder s = new();
+
+            foreach (char c in str)
+            {
+                s.Append(new string(' ', Random.Shared.Next(0, 2)));
+                s.Append(c);
+                s.Append(new string(' ', Random.Shared.Next(1, 3)));
+            }
+
+            return s.ToString();
         }
 
         public static IEnumerable<object[]> GenerateWorkingFauxSerialNumbers
@@ -1094,6 +1289,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
 
                 return combinations;
+            }
+        }
+
+        public static IEnumerable<object[]> HashAlgorithms
+        {
+            get
+            {
+                yield return [HashAlgorithmName.SHA1];
+                yield return [HashAlgorithmName.SHA256];
+                yield return [HashAlgorithmName.SHA384];
+                yield return [HashAlgorithmName.SHA512];
+
+                if (PlatformDetection.SupportsSha3)
+                {
+                    yield return [HashAlgorithmName.SHA3_256];
+                    yield return [HashAlgorithmName.SHA3_384];
+                    yield return [HashAlgorithmName.SHA3_512];
+                }
             }
         }
 

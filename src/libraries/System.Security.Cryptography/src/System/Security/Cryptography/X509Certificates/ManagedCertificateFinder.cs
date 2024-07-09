@@ -62,6 +62,26 @@ namespace System.Security.Cryptography.X509Certificates
             FindCore(thumbprint, FindPredicate);
         }
 
+        public void FindByThumbprintAlgorithm(HashAlgorithmName hashAlgorithm, byte[] thumbprint)
+        {
+            static bool FindPredicate((HashAlgorithmName hashAlgorithm, byte[] thumbprint) state, X509Certificate2 certificate)
+            {
+                Span<byte> hashBuffer = stackalloc byte[64]; // SHA-2-512 is the largest known hash.
+                int hashBytesWritten;
+
+                if (!certificate.TryGetCertHash(state.hashAlgorithm, hashBuffer, out hashBytesWritten))
+                {
+                    Debug.Fail("Preallocated buffer failed. Consider raising the stack limit.");
+                    hashBuffer = certificate.GetCertHash(state.hashAlgorithm);
+                    hashBytesWritten = hashBuffer.Length;
+                }
+
+                return hashBuffer.Slice(0, hashBytesWritten).SequenceEqual(state.thumbprint);
+            }
+
+            FindCore((hashAlgorithm, thumbprint), FindPredicate);
+        }
+
         public void FindBySubjectName(string subjectName)
         {
             FindCore(

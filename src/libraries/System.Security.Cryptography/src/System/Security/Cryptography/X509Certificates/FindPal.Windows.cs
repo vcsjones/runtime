@@ -49,6 +49,41 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public unsafe void FindByThumbprintAlgorithm(HashAlgorithmName hashAlgorithm, byte[] thumbPrint)
+        {
+            if (hashAlgorithm == HashAlgorithmName.SHA1)
+            {
+                FindByThumbprint(thumbPrint);
+                return;
+            }
+
+            FindCore(
+                (hashAlgorithm, thumbPrint),
+                static ((HashAlgorithmName hashAlgorithm, byte[] thumbprint) state, SafeCertContextHandle pCertContext) =>
+                {
+                    // FindCore owns the lifetime of the CERT_CONTEXT and doesn't escape, so it can't be disposed of
+                    // by another thread.
+                    ReadOnlySpan<byte> cert = new ReadOnlySpan<byte>(
+                        pCertContext.DangerousCertContext->pbCertEncoded,
+                        pCertContext.DangerousCertContext->cbCertEncoded);
+
+                    Span<byte> hashBuffer = stackalloc byte[64]; // SHA-2-512 is the biggest known hash.
+                    int written;
+
+                    if (!CryptographicOperations.TryHashData(state.hashAlgorithm, cert, hashBuffer, out written))
+                    {
+                        Debug.Fail("Preallocated buffer failed. Consider raising the stack limit.");
+                        hashBuffer = CryptographicOperations.HashData(state.hashAlgorithm, cert);
+                        written = hashBuffer.Length;
+                    }
+
+                    // Keep the CERT_CONTEXT alive until the data has been hashed.
+                    GC.KeepAlive(pCertContext);
+
+                    return hashBuffer.Slice(0, written).SequenceEqual(state.thumbprint);
+                });
+        }
+
         public unsafe void FindBySubjectName(string subjectName)
         {
             fixed (char* pSubjectName = subjectName)

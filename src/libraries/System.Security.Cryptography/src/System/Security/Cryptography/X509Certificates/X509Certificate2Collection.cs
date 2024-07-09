@@ -129,6 +129,13 @@ namespace System.Security.Cryptography.X509Certificates
             return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
 
+        public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithmName, string thumbprint, bool validOnly)
+        {
+            ArgumentNullException.ThrowIfNull(thumbprint);
+
+            return FindPal.FindByThumbprintAlgorithm(this, hashAlgorithmName, thumbprint, validOnly);
+        }
+
         public new X509Certificate2Enumerator GetEnumerator()
         {
             return new X509Certificate2Enumerator(this);

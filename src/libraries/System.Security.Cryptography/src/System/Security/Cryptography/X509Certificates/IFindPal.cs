@@ -24,5 +24,6 @@ namespace System.Security.Cryptography.X509Certificates
         void FindByExtension(string oidValue);
         void FindByKeyUsage(X509KeyUsageFlags keyUsage);
         void FindBySubjectKeyIdentifier(byte[] keyIdentifier);
+        void FindByThumbprintAlgorithm(HashAlgorithmName hashAlgorithm, byte[] thumbprint);
     }
 }
