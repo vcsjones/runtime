@@ -1139,6 +1139,80 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
+        [Theory]
+        [MemberData(nameof(HashAlgorithms))]
+        public static void FindByValidThumbprintAlgorithm_ValidOnly(HashAlgorithmName hashAlgorithmName)
+        {
+            AssertFindByThumbprintAlgorithmValidity(hashAlgorithmName, true);
+            AssertFindByThumbprintAlgorithmValidity(hashAlgorithmName, false);
+
+            static void AssertFindByThumbprintAlgorithmValidity(HashAlgorithmName hashAlgorithmName, bool validOnly)
+            {
+                using (var msCer = new X509Certificate2(TestData.MsCertificate))
+                {
+                    var col1 = new X509Certificate2Collection(msCer);
+
+                    X509Certificate2Collection col2 =
+                        col1.FindByThumbprint(hashAlgorithmName, msCer.GetCertHashString(hashAlgorithmName), validOnly);
+
+                    using (new ImportedCollection(col2))
+                    {
+                        // The certificate is expired. The validOnly criteria should filter it out.
+                        int expectedMatchCount = validOnly ? 0 : 1;
+
+                        Assert.Equal(expectedMatchCount, col2.Count);
+
+                        if (!validOnly)
+                        {
+                            // validOnly should still make sure certs are cloned.
+                            using (X509Certificate2 match = col2[0])
+                            {
+                                AssertExtensions.SequenceEqual(msCer.RawDataMemory.Span, match.RawDataMemory.Span);
+                                Assert.NotSame(msCer, match);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void FindByValidThumbprintAlgorithm_ArgValidation_ThumbprintNull()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            {
+                var collection = new X509Certificate2Collection(msCer);
+                AssertExtensions.Throws<ArgumentNullException>("thumbprint",
+                    () => collection.FindByThumbprint(HashAlgorithmName.SHA256, null, true));
+            }
+        }
+
+        [Fact]
+        public static void FindByValidThumbprintAlgorithm_ArgValidation_HashAlgorithmNullName()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            {
+                string thumbprint = msCer.GetCertHashString(HashAlgorithmName.SHA256);
+
+                var collection = new X509Certificate2Collection(msCer);
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm",
+                    () => collection.FindByThumbprint(new HashAlgorithmName(null), thumbprint, true));
+            }
+        }
+
+        [Fact]
+        public static void FindByValidThumbprintAlgorithm_ArgValidation_HashAlgorithmEmptyName()
+        {
+            using (var msCer = new X509Certificate2(TestData.MsCertificate))
+            {
+                string thumbprint = msCer.GetCertHashString(HashAlgorithmName.SHA256);
+
+                var collection = new X509Certificate2Collection(msCer);
+                AssertExtensions.Throws<ArgumentException>("hashAlgorithm",
+                    () => collection.FindByThumbprint(new HashAlgorithmName(""), thumbprint, true));
+            }
+        }
+
         private static void TestFindByKeyUsage(bool shouldMatch, object matchCriteria)
         {
             using (var noKeyUsages = new X509Certificate2(TestData.MsCertificate))

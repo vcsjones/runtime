@@ -129,11 +129,34 @@ namespace System.Security.Cryptography.X509Certificates
             return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
 
-        public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithmName, string thumbprint, bool validOnly)
+        /// <summary>
+        /// Searches an <see cref="X509Certificate2Collection" /> object using a for a thumbprint by hash algorithm.
+        /// </summary>
+        /// <param name="hashAlgorithm">The hash algorithm used to create <paramref name="thumbprint"/>.</param>
+        /// <param name="thumbprint">A hex-encoded thumbprint to search for.</param>
+        /// <param name="validOnly">
+        ///   <see langword="true"/> to allow only valid certificates to be returned from
+        ///   the search; otherwise, <see langword="false"/>.</param>
+        /// <returns>An <see cref="X509Certificate2Collection"/> filtered by thumbprint.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm"/> has a <see cref="HashAlgorithmName.Name" /> that is
+        ///   <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see cref="HashAlgorithmName.Name" /> that is empty.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   <paramref name="hashAlgorithm"/> specifies a hash algorithm not supported by the current platform.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm"/> specifies an unknown hash algorithm.
+        /// </exception>
+        public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithm, string thumbprint, bool validOnly)
         {
             ArgumentNullException.ThrowIfNull(thumbprint);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
-            return FindPal.FindByThumbprintAlgorithm(this, hashAlgorithmName, thumbprint, validOnly);
+            return FindPal.FindByThumbprintAlgorithm(this, hashAlgorithm, thumbprint, validOnly);
         }
 
         public new X509Certificate2Enumerator GetEnumerator()
