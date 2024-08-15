@@ -26,6 +26,7 @@ namespace System
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
+        public static bool IsAzureLinux => IsDistroAndVersion("azurelinux", 3);
         public static bool IsLinuxBionic => IsBionic();
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
 
