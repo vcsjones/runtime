@@ -461,6 +461,19 @@ namespace System.Formats.Asn1
             _offset += value.Length;
         }
 
+#if NET9_0_OR_GREATER
+        public TReturn Encode<TReturn>(Func<ReadOnlySpan<byte>, TReturn> encodeCallback)
+        {
+            return encodeCallback(EncodeAsSpan());
+        }
+
+
+        public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback) where TState : allows ref struct
+        {
+            return encodeCallback(state, EncodeAsSpan());
+        }
+#endif
+
         // T-REC-X.690-201508 sec 8.1.5
         private void WriteEndOfContents()
         {
