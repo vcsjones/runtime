@@ -468,6 +468,17 @@ namespace System.Formats.Asn1
         }
 
 
+
+
+
+
+
+
+
+
+
+
+
         public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback) where TState : allows ref struct
         {
             return encodeCallback(state, EncodeAsSpan());
