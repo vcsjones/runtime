@@ -120,30 +120,64 @@ namespace System.Security.Cryptography
         /// values rather than throw exceptions for missing or ill-formatted property values. Only use it for well-known
         /// properties that are unlikely to be ill-formatted.)
         /// </summary>
-        internal static string? GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        internal static unsafe string? GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
-            Debug.Assert(!ncryptHandle.IsInvalid);
-            byte[]? value = GetProperty(ncryptHandle, propertyName, options);
+            ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
+                ncryptHandle,
+                propertyName,
+                null,
+                0,
+                out int numBytesNeeded,
+                options);
 
-            if (value == null)
+            if (errorCode == ErrorCode.NTE_NOT_FOUND)
             {
-                // .NET Framework compat: return null if key not present.
                 return null;
             }
 
-            if (value.Length == 0)
+            if (errorCode != ErrorCode.ERROR_SUCCESS)
             {
-                // .NET Framework compat: return empty if property value is 0-length.
-                return string.Empty;
+                throw errorCode.ToCryptographicException();
             }
 
-            unsafe
+            const int StackAllocMax = 256;
+            scoped Span<byte> propertyValue;
+
+            switch ((uint)numBytesNeeded)
             {
-                fixed (byte* pValue = &value[0])
+                // .NET Framework compat: return empty if property value is 0-length.
+                case 0:
+                    return string.Empty;
+                case <= StackAllocMax:
+                    propertyValue = stackalloc byte[StackAllocMax];
+                    propertyValue.Clear();
+                    break;
+                default:
+                    propertyValue = new byte[numBytesNeeded];
+                    break;
+            }
+
+            fixed (void* pPropertyValue = propertyValue)
+            {
+                errorCode = Interop.NCrypt.NCryptGetProperty(
+                    ncryptHandle,
+                    propertyName,
+                    pPropertyValue,
+                    propertyValue.Length,
+                    out _,
+                    options);
+
+                if (errorCode == ErrorCode.NTE_NOT_FOUND)
                 {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue)!;
-                    return valueAsString;
+                    return null;
                 }
+
+                if (errorCode != ErrorCode.ERROR_SUCCESS)
+                {
+                    throw errorCode.ToCryptographicException();
+                }
+
+                return Marshal.PtrToStringUni((nint)pPropertyValue);
             }
         }
 
