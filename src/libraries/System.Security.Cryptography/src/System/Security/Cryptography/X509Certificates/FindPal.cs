@@ -10,29 +10,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal partial class FindPal
     {
-        private const int NamedKeyUsageFlagsCount = 9;
-
-        private static readonly Dictionary<string, X509KeyUsageFlags> s_keyUsages =
-            new Dictionary<string, X509KeyUsageFlags>(NamedKeyUsageFlagsCount, StringComparer.OrdinalIgnoreCase)
-            {
-                { "DigitalSignature", X509KeyUsageFlags.DigitalSignature },
-                { "NonRepudiation", X509KeyUsageFlags.NonRepudiation },
-                { "KeyEncipherment", X509KeyUsageFlags.KeyEncipherment },
-                { "DataEncipherment", X509KeyUsageFlags.DataEncipherment },
-                { "KeyAgreement", X509KeyUsageFlags.KeyAgreement },
-                { "KeyCertSign", X509KeyUsageFlags.KeyCertSign },
-                { "CrlSign", X509KeyUsageFlags.CrlSign },
-                { "EncipherOnly", X509KeyUsageFlags.EncipherOnly },
-                { "DecipherOnly", X509KeyUsageFlags.DecipherOnly },
-            };
-
-#if DEBUG
-        static FindPal()
-        {
-            Debug.Assert(s_keyUsages.Count == NamedKeyUsageFlagsCount);
-        }
-#endif
-
         private static partial IFindPal OpenPal(
             X509Certificate2Collection findFrom,
             X509Certificate2Collection copyTo,
@@ -192,11 +169,9 @@ namespace System.Security.Cryptography.X509Certificates
             if (findValue is uint)
                 return (X509KeyUsageFlags)(uint)findValue;
 
-            if (findValue is string findValueString)
+            if (findValue is string findValueString and not [])
             {
-                X509KeyUsageFlags usageFlags;
-
-                if (s_keyUsages.TryGetValue(findValueString, out usageFlags))
+                if (MapNameToKeyUsage(findValueString, out X509KeyUsageFlags usageFlags))
                 {
                     return usageFlags;
                 }
@@ -255,6 +230,58 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return accum;
+        }
+
+        private static bool MapNameToKeyUsage(string input, out X509KeyUsageFlags keyUsageFlags)
+        {
+            if (input.Equals("DigitalSignature", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.DigitalSignature;
+                return true;
+            }
+            else if (input.Equals("NonRepudiation", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.NonRepudiation;
+                return true;
+            }
+            else if (input.Equals("KeyEncipherment", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.KeyEncipherment;
+                return true;
+            }
+            else if (input.Equals("DataEncipherment", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.DataEncipherment;
+                return true;
+            }
+            else if (input.Equals("KeyAgreement", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.KeyAgreement;
+                return true;
+            }
+            else if (input.Equals("KeyCertSign", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.KeyCertSign;
+                return true;
+            }
+            else if (input.Equals("CrlSign", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.CrlSign;
+                return true;
+            }
+            else if (input.Equals("EncipherOnly", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.EncipherOnly;
+                return true;
+            }
+            else if (input.Equals("DecipherOnly", StringComparison.OrdinalIgnoreCase))
+            {
+                keyUsageFlags = X509KeyUsageFlags.DecipherOnly;
+                return true;
+            }
+
+            keyUsageFlags = default;
+            return false;
         }
     }
 }
