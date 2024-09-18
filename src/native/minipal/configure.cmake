@@ -7,6 +7,7 @@ check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 
 check_symbol_exists(arc4random_buf "stdlib.h" HAVE_ARC4RANDOM_BUF)
 check_symbol_exists(O_CLOEXEC fcntl.h HAVE_O_CLOEXEC)
+check_symbol_exists(getrandom sys/random.h HAVE_GETRANDOM)
 
 check_symbol_exists(
     clock_gettime_nsec_np

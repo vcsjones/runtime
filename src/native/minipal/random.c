@@ -15,6 +15,11 @@
 #endif
 
 #include "minipalconfig.h"
+
+#if HAVE_GETRANDOM
+#include <sys/random.h>
+#endif
+
 #include "random.h"
 
 /*
@@ -90,6 +95,46 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
 
     static volatile int rand_des = -1;
     static bool sMissingDevURandom;
+
+#if HAVE_GETRANDOM
+    static bool sMissingGetRandomSysCall = false;
+
+    if (!sMissingGetRandomSysCall)
+    {
+        ssize_t written = 0;
+
+        do
+        {
+            ssize_t getrandomret = getrandom(buffer, (size_t)bufferLength, 0);
+
+            if (getrandomret == -1)
+            {
+                switch (errno)
+                {
+                    case EINTR:
+                        continue;
+                    case ENOSYS:
+                        sMissingGetRandomSysCall = true;
+                        assert(written == 0); // The syscall shouldn't magically disappear.
+                        goto devicerandom;
+                    default:
+                        return -1;
+                }
+            }
+            else
+            {
+                written += getrandomret;
+            }
+        }
+        while (written < bufferLength);
+
+        assert(written == bufferLength);
+        return 0;
+    }
+
+#endif
+
+devicerandom:
 
     if (!sMissingDevURandom)
     {
