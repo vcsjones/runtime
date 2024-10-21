@@ -47,6 +47,17 @@ namespace System.Security.Cryptography
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)
         {
+            if (includePrivateParameters &&
+                (Key.ExportPolicy & CngExportPolicies.AllowPlaintextExport) == 0 &&
+                (Key.ExportPolicy & CngExportPolicies.AllowExport) == CngExportPolicies.AllowExport)
+            {
+                const string TemporaryValue = "DotnetExportPhrase";
+                byte[] exported = ExportEncryptedPkcs8(TemporaryValue, 1);
+                RSAKeyFormatHelper.ReadEncryptedPkcs8(exported, TemporaryValue, out _, out RSAParameters blob);
+                CryptographicOperations.ZeroMemory(exported);
+                return blob.ToKeyBlob();
+            }
+
             return Key.Export(includePrivateParameters ? s_rsaFullPrivateBlob : s_rsaPublicBlob);
         }
 
