@@ -180,9 +180,11 @@ namespace System.Security.Cryptography
         /// </summary>
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
+            CngExportPolicies policy = Key.ExportPolicy;
+
             if (includePrivateParameters &&
-                (Key.ExportPolicy & CngExportPolicies.AllowPlaintextExport) == 0 &&
-                (Key.ExportPolicy & CngExportPolicies.AllowExport) == CngExportPolicies.AllowExport)
+                (policy & CngExportPolicies.AllowPlaintextExport) == 0 &&
+                (policy & CngExportPolicies.AllowExport) == CngExportPolicies.AllowExport)
             {
                 const string TemporaryValue = "DotnetExportPhrase";
                 byte[] exported = ExportEncryptedPkcs8(TemporaryValue, 1);
