@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Formats.Asn1;
 using Test.Cryptography;
 using Xunit;
@@ -100,21 +101,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [InlineData("G=DotNet", UniversalTagNumber.UTF8String)]
-        [InlineData("L=Alexandria", UniversalTagNumber.UTF8String)]
-        [InlineData("O=GitHub", UniversalTagNumber.UTF8String)]
-        [InlineData("OU=ProdSec", UniversalTagNumber.UTF8String)]
-        [InlineData("S=Virginia", UniversalTagNumber.UTF8String)]
-        [InlineData("SN=Doe", UniversalTagNumber.UTF8String)]
-        [InlineData("ST=Main", UniversalTagNumber.UTF8String)]
-        [InlineData("T=Pancake", UniversalTagNumber.UTF8String)]
-        [InlineData("CN=Foo", UniversalTagNumber.UTF8String)]
-        [InlineData("I=DD", UniversalTagNumber.UTF8String)]
-        [InlineData("E=noone@example.com", UniversalTagNumber.IA5String)]
-        [InlineData("OID.2.5.4.11=ProdSec", UniversalTagNumber.UTF8String)]
-        [InlineData("OID.2.5.4.43=DD", UniversalTagNumber.UTF8String)]
-        [InlineData("OID.1.2.3.4=sample", UniversalTagNumber.PrintableString)]
-        [InlineData("C=US", UniversalTagNumber.PrintableString)]
+        [MemberData(nameof(ForceUtf8EncodingForEligibleComponentsData))]
         public static void ForceUtf8EncodingForEligibleComponents(string distinguishedName, UniversalTagNumber tagNumber)
         {
             X500DistinguishedName name = new(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding);
@@ -130,6 +117,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             value.ReadObjectIdentifier();
             Assert.Equal(new Asn1Tag(tagNumber), value.PeekTag());
+        }
+
+        public static IEnumerable<object[]> ForceUtf8EncodingForEligibleComponentsData
+        {
+            get
+            {
+                yield return new object[] { "G=DotNet", UniversalTagNumber.UTF8String };
+                yield return new object[] { "O=GitHub", UniversalTagNumber.UTF8String };
+                yield return new object[] { "L=Alexandria", UniversalTagNumber.UTF8String };
+                yield return new object[] { "S=Virginia", UniversalTagNumber.UTF8String };
+                yield return new object[] { "OU=ProdSec", UniversalTagNumber.UTF8String };
+                yield return new object[] { "ST=Main", UniversalTagNumber.UTF8String };
+                yield return new object[] { "SN=Doe", UniversalTagNumber.UTF8String };
+                yield return new object[] { "CN=Foo", UniversalTagNumber.UTF8String };
+                yield return new object[] { "T=Pancake", UniversalTagNumber.UTF8String };
+                yield return new object[] { "E=noone@example.com", UniversalTagNumber.IA5String };
+                yield return new object[] { "I=DD", UniversalTagNumber.UTF8String };
+                yield return new object[] { "OID.2.5.4.43=DD", UniversalTagNumber.UTF8String };
+                yield return new object[] { "OID.2.5.4.11=ProdSec", UniversalTagNumber.UTF8String };
+                yield return new object[] { "C=US", UniversalTagNumber.PrintableString };
+
+                // Older versions of Windows encoded unknown OIDs as UTF-8
+                if (PlatformDetection.IsWindows10Version22000OrGreater || !PlatformDetection.IsWindows)
+                {
+                    yield return new object[] { "OID.1.2.3.4=sample", UniversalTagNumber.PrintableString };
+                }
+            }
         }
 
         [Theory]
