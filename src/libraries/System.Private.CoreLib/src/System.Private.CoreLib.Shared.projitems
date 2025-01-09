@@ -2502,7 +2502,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.LoadICU.Unix.cs" Condition="'$(IsiOSLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GlobalizationMode.LoadICU.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Apple.cs" Condition="'$(IsApplePlatform)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Guid.Unix.cs" Condition="'$(IsApplePlatform)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Directory.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.Unix.cs" />
