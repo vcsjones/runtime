@@ -12,15 +12,12 @@
     <IncludePlatformAttributes Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">true</IncludePlatformAttributes>
     <!-- X509CertificateLoader is new in .NET 9, so build it for .NET 8, .NET Standard, and .NET Framework -->
     <BuildX509Loader Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">true</BuildX509Loader>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(BuildX509Loader)' != 'true'">true</OmitResources>
   </PropertyGroup>
- 
+
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true'" />
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs"
@@ -142,7 +139,7 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</DependentUpon>
-    </Compile> 
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Rc2CbcParameters.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.xml</Link>
     </AsnXml>
@@ -255,7 +252,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ContentType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ContentType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" /> 
+             Link="Common\Interop\Windows\Crypt32\Interop.CryptQueryObject_IntPtr_out.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs"
