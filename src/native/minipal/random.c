@@ -21,24 +21,43 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
-#if HAVE_GETRANDOM
-#include <sys/random.h>
+#if defined(__linux__)
+#include <sys/syscall.h> // __NR_getrandom
+#define GRND_NONBLOCK	0x0001
+#define HAVE_GETRANDOM
+
+# if !defined(__NR_getrandom)
+#  if defined(__amd64__)
+#   define __NR_getrandom  318
+#  elif defined(__i386__)
+#   define __NR_getrandom  355
+#  elif defined(__arm__)
+#   define __NR_getrandom  384
+#  elif defined(__aarch64__)
+#   define __NR_getrandom  278
+#  elif defined(__loongarch64)
+#   define __NR_getrandom  278
+#  else
+#   undef HAVE_GETRANDOM
+#  endif
+# endif
 #endif
 
 #include "random.h"
 
 static int minipal_getrandom_fill(uint8_t* buffer, int32_t bufferLength)
 {
-#if HAVE_GETRANDOM
+#ifdef HAVE_GETRANDOM
+    static_assert(sizeof(int32_t) <= sizeof(long), "sizeof(int32_t) <= sizeof(long)");
     static bool sMissingGetRandomSysCall = false;
 
     if (!sMissingGetRandomSysCall)
     {
-        ssize_t written = 0;
+        long written = 0;
 
         while (written < bufferLength)
         {
-            ssize_t getrandomret = getrandom(buffer + written, (size_t)bufferLength - written, GRND_NONBLOCK);
+            long getrandomret = syscall(__NR_getrandom, buffer + written, (size_t)bufferLength - written, GRND_NONBLOCK);
 
             if (getrandomret == -1)
             {
