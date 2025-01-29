@@ -3,7 +3,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.Cryptography", "src\Microsoft.Bcl.Cryptography.csproj", "{B0716D7E-B824-4866-A1ED-DF31BA2970B9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.Cryptography.Tests", "tests\Microsoft.Bcl.Cryptography.Tests.csproj", "{E66D17AB-BBAF-4F2B-AC9C-8E89BDCC6191}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.Cryptography.Default.Tests", "tests\Default\Microsoft.Bcl.Cryptography.Default.Tests.csproj", "{E66D17AB-BBAF-4F2B-AC9C-8E89BDCC6191}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "..\System.Collections\ref\System.Collections.csproj", "{3F12ED84-63B7-477A-BD6A-37AC807773D9}"
 EndProject

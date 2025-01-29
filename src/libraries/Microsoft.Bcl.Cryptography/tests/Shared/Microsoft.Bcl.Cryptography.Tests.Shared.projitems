@@ -1,0 +1,42 @@
+<Project>
+  <PropertyGroup>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>1b504b6c-3dd6-4e83-af8c-0c521ae1589e</SharedGUID>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Compile>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemDefinitionGroup>
+    <ItemGroup>
+        <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
+                Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
+        <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
+                Link="Common\System\Memory\PointerMemoryManager.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+                Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+                Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+                Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
+                Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs"
+                Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.Functional.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.Helpers.cs"
+                Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.Helpers.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs"
+                Link="CommonTest\System\Security\Cryptography\SP800108HmacCounterKdfTests.ThreadSafety.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TempFileHolder.cs"
+                Link="CommonTest\System\Security\Cryptography\X509Certificates\TempFileHolder.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TestData.cs"
+                Link="CommonTest\System\Security\Cryptography\X509Certificates\TestData.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs"
+                Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12CollectionTests.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs"
+                Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs" />
+        <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs"
+                Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderTests.cs" />
+        <Compile Include="$(MSBuildThisFileDirectory)\X509Certificates\TestFiles.cs" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <Import Project="..\Shared\Microsoft.Bcl.Cryptography.Tests.Shared.projitems" />
+
+  <ItemGroup>
+
+    <!-- Force using the netstandard2.0 of Microsoft.Bcl.Cryptography so that the netstandard2.0 build has test coverage. -->
+    <ProjectReference Include="..\..\src\Microsoft.Bcl.Cryptography.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
+  </ItemGroup>
+</Project>
