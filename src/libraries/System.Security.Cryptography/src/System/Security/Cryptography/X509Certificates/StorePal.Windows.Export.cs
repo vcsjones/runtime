@@ -71,25 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                 case X509ContentType.Pkcs12:
-                    {
-                        unsafe
-                        {
-                            Interop.Crypt32.DATA_BLOB dataBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
-
-                            if (!Interop.Crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, Interop.Crypt32.PFXExportFlags.EXPORT_PRIVATE_KEYS | Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
-
-                            byte[] pbEncoded = new byte[dataBlob.cbData];
-                            fixed (byte* ppbEncoded = pbEncoded)
-                            {
-                                dataBlob.pbData = new IntPtr(ppbEncoded);
-                                if (!Interop.Crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, Interop.Crypt32.PFXExportFlags.EXPORT_PRIVATE_KEYS | Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-                                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                            }
-
-                            return pbEncoded;
-                        }
-                    }
+                    return ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, password);
 
                 case X509ContentType.SerializedStore:
                     return SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs.CERT_STORE_SAVE_AS_STORE);
@@ -102,10 +84,46 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        public unsafe byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
         {
-            // TODO: do it.
-            throw new NotImplementedException();
+            Interop.Crypt32.DATA_BLOB dataBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
+            Interop.Crypt32.PFXExportFlags flags =
+                Interop.Crypt32.PFXExportFlags.EXPORT_PRIVATE_KEYS |
+                Interop.Crypt32.PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY;
+
+            Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS* exportParams = null;
+
+            if (exportParameters is Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
+            {
+                flags |= Interop.Crypt32.PFXExportFlags.PKCS12_EXPORT_PBES2_PARAMS;
+                char* algStr = stackalloc char[] { 'A', 'E', 'S', '2', '5', '6', '-', 'S', 'H', 'A', '2', '5', '6', '\0' };
+                Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS p = new()
+                {
+                    dwSize = (uint)Marshal.SizeOf<Interop.Crypt32.PKCS12_PBES2_EXPORT_PARAMS>(),
+                    hNcryptDescriptor = 0,
+                    pwszPbes2Alg = algStr,
+                };
+                exportParams = &p;
+            }
+
+            if (!Interop.Crypt32.PFXExportCertStoreEx(_certStore, ref dataBlob, password, exportParams, flags))
+            {
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+            }
+
+            byte[] pbEncoded = new byte[dataBlob.cbData];
+
+            fixed (byte* ppbEncoded = pbEncoded)
+            {
+                dataBlob.pbData = new IntPtr(ppbEncoded);
+
+                if (!Interop.Crypt32.PFXExportCertStoreEx(_certStore, ref dataBlob, password, exportParams, flags))
+                {
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                }
+            }
+
+            return pbEncoded;
         }
 
         private byte[] SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs dwSaveAs)
