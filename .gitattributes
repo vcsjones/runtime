@@ -27,7 +27,7 @@
 *.cmd text eol=crlf
 *.bat text eol=crlf
 
-*.cs text diff=csharp
+*.cs text eol=lf diff=csharp
 *.vb text
 *.resx text
 *.c text
