@@ -18,6 +18,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey { get; }
         private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey { get; }
 
+        public static bool MLKemCertsIsSupported { get; } = MLKem.IsSupported && !PlatformDetection.IsWindows;
+
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void GetSlhDsaPublicKeyTest()
         {
@@ -147,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void GetMLKemPublicKey_WithoutPrivateKey()
         {
             using (X509Certificate2 cert = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
@@ -161,7 +163,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void GetMLKemPublicKey_WithPrivateKey()
         {
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
@@ -178,7 +180,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void GetMLKemPrivateKey_NoPrivateKey()
         {
             using (X509Certificate2 cert = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
@@ -188,7 +190,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void GetMLKemPrivateKey_WithPrivateKey()
         {
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
@@ -201,7 +203,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void CheckCopyWithPrivateKey_MLKem()
         {
             using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
@@ -229,7 +231,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_Seed()
         {
             using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
@@ -258,7 +260,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_DecapsulationKey()
         {
             using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))

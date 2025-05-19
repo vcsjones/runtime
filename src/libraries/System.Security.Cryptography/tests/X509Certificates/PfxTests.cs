@@ -25,7 +25,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // We don't know for sure this is a correct Windows version when this support was added but
         // we know for a fact lower versions don't support it.
         public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
-        public static bool MLKemIsNotSupported => !MLKem.IsSupported;
+
+        public static bool MLKemCertsIsSupported { get; } = MLKem.IsSupported && !PlatformDetection.IsWindows;
+        public static bool MLKemCertsIsNotSupported => !MLKemCertsIsSupported;
 
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
@@ -387,7 +389,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -404,7 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -424,7 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -444,7 +446,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -461,7 +463,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -481,7 +483,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem768PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -501,7 +503,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -518,7 +520,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -538,7 +540,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem1024PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
         {
@@ -558,7 +560,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(nameof(MLKemIsNotSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsNotSupported))]
         [MemberData(nameof(StorageFlags))]
         public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
         {

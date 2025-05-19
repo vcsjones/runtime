@@ -13,6 +13,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class X509Certificate2PemTests
     {
+        public static bool MLKemCertsIsSupported { get; } = MLKem.IsSupported && !PlatformDetection.IsWindows;
+
         [Fact]
         public static void CreateFromPem_CryptographicException_NoCertificate()
         {
@@ -317,7 +319,7 @@ MII
             AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -379,7 +381,7 @@ MII
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =

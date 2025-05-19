@@ -19,6 +19,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class ExportTests
     {
+        public static bool MLKemCertsIsSupported { get; } = MLKem.IsSupported && !PlatformDetection.IsWindows;
+
         [Fact]
         public static void ExportAsCert_CreatesCopy()
         {
@@ -340,7 +342,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(nameof(MLKemCertsIsSupported))]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void ExportPkcs12_MLKem_Roundtrip(MLKemAlgorithm algorithm)
         {

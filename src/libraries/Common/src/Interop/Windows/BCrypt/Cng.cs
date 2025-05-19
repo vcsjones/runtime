@@ -31,6 +31,7 @@ namespace Internal.NativeCrypto
             public const string ECDsaP521 = "ECDSA_P521";       // BCRYPT_ECDSA_P521_ALGORITHM
             public const string RSA = "RSA";                    // BCRYPT_RSA_ALGORITHM
             public const string MD5 = "MD5";                    // BCRYPT_MD5_ALGORITHM
+            public const string MLKEM = "ML-KEM";               // BCRYPT_MLKEM_ALGORITHM
             public const string Sha1 = "SHA1";                  // BCRYPT_SHA1_ALGORITHM
             public const string Sha256 = "SHA256";              // BCRYPT_SHA256_ALGORITHM
             public const string Sha384 = "SHA384";              // BCRYPT_SHA384_ALGORITHM
@@ -70,6 +71,8 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_GCM = "ChainingModeGCM";
         public const string BCRYPT_CHAIN_MODE_CFB = "ChainingModeCFB";
         public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
+
+        public const string BCRYPT_PARAMETER_SET_NAME = "ParameterSetName";
 
         public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(
             string pszAlgId,
@@ -113,6 +116,17 @@ namespace Internal.NativeCrypto
             }
         }
 
+        public static void BCryptSetProperty(SafeBCryptHandle hObject, string pszProperty, string pbInput, int dwFlags)
+        {
+            int length = checked((pbInput.Length + 1) * 2);
+            NTSTATUS ntStatus = Interop.BCryptSetProperty(hObject, pszProperty, pbInput, length, dwFlags);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw CreateCryptographicException(ntStatus);
+            }
+        }
+
         private static CryptographicException CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
@@ -129,7 +143,7 @@ namespace Internal.NativeCrypto
             public static partial NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
             [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
-            public static partial NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
+            public static partial NTSTATUS BCryptSetProperty(SafeBCryptHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
             [LibraryImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", StringMarshalling = StringMarshalling.Utf16)]
             private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);

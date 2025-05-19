@@ -24,6 +24,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private readonly ITestOutputHelper _log;
 
+        public static bool MLKemCertsIsSupported { get; } = MLKem.IsSupported && !PlatformDetection.IsWindows;
+
         public CertTests(ITestOutputHelper output)
         {
             _log = output;
@@ -131,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(nameof(MLKemCertsIsSupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_MLKem()
         {
             using (X509Certificate2 cert = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))

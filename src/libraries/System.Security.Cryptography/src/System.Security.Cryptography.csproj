@@ -1579,6 +1579,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptDecapsulate.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulate.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
@@ -1587,6 +1589,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncapsulate.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptEncapsulate.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.RSA.cs"
@@ -1895,8 +1899,8 @@
              Link="Common\System\Security\Cryptography\MLDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\MLKemImplementation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.NotSupported.cs"
-            Link="Common\System\Security\Cryptography\MLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.Windows.cs"
+            Link="Common\System\Security\Cryptography\MLKemImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.cs"
              Link="Common\System\Security\Cryptography\RSACng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSACng.EncryptDecrypt.cs"
