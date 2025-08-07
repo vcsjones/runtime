@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -50,13 +51,11 @@ namespace System.Security.Cryptography
             return KeyWrap(source, destination, enc: 0);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private int KeyWrap(ReadOnlySpan<byte> source, Span<byte> destination, int enc)
         {
-            Debug.Assert(enc is 0 or 1);
-
-            SafeEvpCipherCtxHandle ctx = GetKey().UseKey(
-                state: enc,
-                static (enc, key) =>
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            static SafeEvpCipherCtxHandle UseKeyCallback(int enc, ReadOnlySpan<byte> key)
                 {
                     int keySizeInBits = key.Length * 8;
 
@@ -76,7 +75,11 @@ namespace System.Security.Cryptography
                     }
 
                     return ctx;
-                });
+            }
+
+            Debug.Assert(enc is 0 or 1);
+
+            SafeEvpCipherCtxHandle ctx = GetKey().UseKey(state: enc, UseKeyCallback);
 
             int written;
 
