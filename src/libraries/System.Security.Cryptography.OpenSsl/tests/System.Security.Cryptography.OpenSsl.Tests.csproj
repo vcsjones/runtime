@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
-    <!-- The library is not supported on Android / Apple (PNSE) -->
-    <IgnoreForCI Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'osx'">true</IgnoreForCI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformIsSupported>true</PlatformIsSupported>
+    <PlatformIsSupported Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'osx'">false</PlatformIsSupported>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(PlatformIsSupported)' == 'true'">
     <Compile Include="EcDsaOpenSslTests.cs" />
     <Compile Include="RSAOpenSslProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -118,7 +118,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(PlatformIsSupported)' == 'true'">
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs"

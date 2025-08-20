@@ -169,8 +169,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting.WindowsServices/tests/Microsoft.Extensions.Hosting.WindowsServices.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android'">
-    <!-- Never going to run on Android -->
+  <ItemGroup Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'osx'">
+    <!-- Never going to run on Android or Apple platforms -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
   </ItemGroup>
 
@@ -301,8 +301,6 @@
   <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RunDisablediOSTests)' != 'true'">
     <!-- PNSE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic/tests/FunctionalTests/System.Net.Quic.Functional.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/51414 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/74245 -->
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlSerializer_Deserialize/iOS.Simulator.XmlSerializer_Deserialize.Test.csproj" />
     <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
