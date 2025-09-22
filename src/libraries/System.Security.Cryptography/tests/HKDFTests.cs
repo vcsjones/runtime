@@ -206,6 +206,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [MemberData(nameof(GetPrkTooShortTestCases))]
+        public void DeriveKeyPrkTooShort(HashAlgorithmName hash, int prkSize)
+        {
+            byte[] prk = new byte[prkSize];
+            AssertExtensions.Throws<ArgumentException>(
+                "prk",
+                () => DeriveKey(hash, [], 17, Array.Empty<byte>(), Array.Empty<byte>()));
+        }
+
+        [Theory]
         [MemberData(nameof(Sha3TestCases))]
         public void Sha3Tests(HkdfTestCase test)
         {
