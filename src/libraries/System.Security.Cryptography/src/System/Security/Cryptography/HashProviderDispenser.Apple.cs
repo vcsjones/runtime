@@ -30,13 +30,27 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
                     return true;
                 default:
                     return false;
             }
         }
 
-        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+        internal static bool MacSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return false;
+                default:
+                    return HashSupported(hashAlgorithmId);
+            }
+        }
 
         internal static bool KmacSupported(string algorithmId)
         {
@@ -115,14 +129,32 @@ namespace System.Security.Cryptography
                 fixed (byte* pSource = source)
                 fixed (byte* pDestination = destination)
                 {
+                    int ret;
                     int digestSize;
-                    int ret = Interop.AppleCrypto.DigestOneShot(
-                        algorithm,
-                        pSource,
-                        source.Length,
-                        pDestination,
-                        destination.Length,
-                        &digestSize);
+
+                    switch (algorithm)
+                    {
+                        case Interop.AppleCrypto.PAL_HashAlgorithm.Sha3_256:
+                        case Interop.AppleCrypto.PAL_HashAlgorithm.Sha3_384:
+                        case Interop.AppleCrypto.PAL_HashAlgorithm.Sha3_512:
+                            ret = Interop.AppleCrypto.Sha3DigestOneShot(
+                                algorithm,
+                                pSource,
+                                source.Length,
+                                pDestination,
+                                destination.Length,
+                                &digestSize);
+                            break;
+                        default:
+                            ret = Interop.AppleCrypto.DigestOneShot(
+                                algorithm,
+                                pSource,
+                                source.Length,
+                                pDestination,
+                                destination.Length,
+                                &digestSize);
+                            break;
+                    }
 
                     if (ret != 1)
                     {

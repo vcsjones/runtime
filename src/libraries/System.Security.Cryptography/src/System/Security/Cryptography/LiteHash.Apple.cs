@@ -161,6 +161,47 @@ namespace System.Security.Cryptography
         }
     }
 
+    internal readonly struct LiteCryptoKitHash : ILiteHash
+    {
+        private readonly int _hashSizeInBytes;
+        private const int Success = 1;
+
+        public int HashSizeInBytes => _hashSizeInBytes;
+
+        internal LiteCryptoKitHash(PAL_HashAlgorithm algorithm)
+        {
+        }
+
+        public void Append(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public LiteHash Clone() => throw new PlatformNotSupportedException();
+
+        public int Current(Span<byte> destination) => throw new PlatformNotSupportedException();
+
+        public int Finalize(Span<byte> destination)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Reset()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     internal readonly struct LiteHmac : ILiteHash
     {
         private readonly SafeHmacHandle _ctx;

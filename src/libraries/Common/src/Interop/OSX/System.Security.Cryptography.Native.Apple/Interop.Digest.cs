@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
+
+#pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 
 internal static partial class Interop
 {
@@ -41,6 +44,18 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestClone")]
         internal static partial SafeDigestCtxHandle DigestClone(SafeDigestCtxHandle ctx);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Sha3DigestCreate")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static partial SafeSwiftDigestHandle Sha3DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Sha3DigestFree")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static partial void Sha3DigestCreate(SafeSwiftDigestHandle ptr);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Sha3DigestOneShot")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static unsafe partial int Sha3DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, int* cbDigest);
     }
 }
 

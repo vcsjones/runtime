@@ -4,6 +4,15 @@
 import CryptoKit
 import Foundation
 
+final class HashBox {
+    var value: any HashFunction
+    var algorithm : PAL_HashAlgorithm
+    init(_ value: any HashFunction, algorithm: PAL_HashAlgorithm) {
+        self.value = value
+        self.algorithm = algorithm
+    }
+}
+
 protocol NonceProtocol {
     init<D>(data: D) throws where D : DataProtocol
 }
@@ -202,10 +211,14 @@ enum PAL_HashAlgorithm: Int32 {
     case sha256 = 3
     case sha384 = 4
     case sha512 = 5
+    case sha3_256 = 6
+    case sha3_384 = 7
+    case sha3_512 = 8
 }
 
-enum HKDFError: Error {
+enum DigestError: Error {
     case unknownHashAlgorithm
+    case unsupportedHashAlgorithm
 }
 
 @_silgen_name("AppleCryptoNative_HKDFExpand")
@@ -230,7 +243,7 @@ public func AppleCryptoNative_HKDFExpand(
     let keyFactory : () throws -> ContiguousBytes = {
         switch algorithm {
             case .unknown:
-                throw HKDFError.unknownHashAlgorithm
+                throw DigestError.unknownHashAlgorithm
             case .md5:
                 return HKDF<Insecure.MD5>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
             case .sha1:
@@ -241,6 +254,27 @@ public func AppleCryptoNative_HKDFExpand(
                 return HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha3_256:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_384:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_512:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
         }
     }
 
@@ -277,7 +311,7 @@ public func AppleCryptoNative_HKDFExtract(
     let prkFactory : () throws -> ContiguousBytes  = {
         switch algorithm {
             case .unknown:
-                throw HKDFError.unknownHashAlgorithm
+                throw DigestError.unknownHashAlgorithm
             case .md5:
                 return HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
             case .sha1:
@@ -288,6 +322,27 @@ public func AppleCryptoNative_HKDFExtract(
                 return HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
             case .sha512:
                 return HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha3_256:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_256>.extract(inputKeyMaterial: key, salt: salt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_384:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_384>.extract(inputKeyMaterial: key, salt: salt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_512:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_512>.extract(inputKeyMaterial: key, salt: salt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
         }
     }
 
@@ -327,7 +382,7 @@ public func AppleCryptoNative_HKDFDeriveKey(
     let derivedKeyFactory : () throws -> ContiguousBytes = {
         switch algorithm {
             case .unknown:
-                throw HKDFError.unknownHashAlgorithm
+                throw DigestError.unknownHashAlgorithm
             case .md5:
                 return HKDF<Insecure.MD5>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
             case .sha1:
@@ -338,6 +393,27 @@ public func AppleCryptoNative_HKDFDeriveKey(
                 return HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha3_256:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_384:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
+            case .sha3_512:
+                if #available(iOS 26, tvOS 26, macOS 26, *) {
+                    return HKDF<SHA3_512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                }
+                else {
+                    throw DigestError.unsupportedHashAlgorithm
+                }
         }
     }
 
@@ -349,4 +425,92 @@ public func AppleCryptoNative_HKDFDeriveKey(
         let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
         return Int32(keyBytes.copyBytes(to: destination))
     }
+}
+
+@_silgen_name("AppleCryptoNative_Sha3DigestOneShot")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestOneShot(
+    hashAlgorithm: Int32,
+    sourcePtr: UnsafeMutableRawPointer,
+    sourceLength: Int32,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32,
+    digestSizePointer: UnsafeMutablePointer<Int32>?) -> Int32 {
+
+    let source = Data(bytesNoCopy: sourcePtr, count: Int(sourceLength), deallocator: Data.Deallocator.none)
+    let destinationLengthInt = Int(destinationLength)
+
+    guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
+        return -2
+    }
+
+    guard let digestSizePointer else {
+        return -3
+    }
+
+    digestSizePointer.pointee = 0
+
+    let digestFactory : () throws -> (ContiguousBytes, Int) = {
+        switch algorithm {
+            case .sha3_256:
+                return (SHA3_256.hash(data: source), SHA3_256Digest.byteCount)
+            case .sha3_384:
+                return (SHA3_384.hash(data: source), SHA3_384Digest.byteCount)
+            case .sha3_512:
+                return (SHA3_512.hash(data: source), SHA3_512Digest.byteCount)
+            default:
+                throw DigestError.unknownHashAlgorithm
+        }
+    }
+
+    guard let digest = try? digestFactory() else {
+        return -1
+    }
+
+    digestSizePointer.pointee = Int32(digest.1)
+    _ = digest.0.withUnsafeBytes { digestBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        digestBytes.copyBytes(to: destination)
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_Sha3DigestCreate")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestCreate(
+    hashAlgorithm: Int32,
+    digestSizePointer: UnsafeMutablePointer<Int32>?) -> UnsafeMutableRawPointer? {
+
+    guard let digestSizePointer else {
+        return nil
+    }
+
+    guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
+        return nil
+    }
+
+    switch algorithm {
+        case .sha3_256:
+            digestSizePointer.pointee = Int32(SHA3_256Digest.byteCount)
+            let box = HashBox(SHA3_256(), algorithm: .sha3_256)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha3_384:
+            digestSizePointer.pointee = Int32(SHA3_384Digest.byteCount)
+            let box = HashBox(SHA3_384(), algorithm: .sha3_384)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha3_512:
+            digestSizePointer.pointee = Int32(SHA3_512Digest.byteCount)
+            let box = HashBox(SHA3_512(), algorithm: .sha3_512)
+            return Unmanaged.passRetained(box).toOpaque()
+        default:
+            digestSizePointer.pointee = 0
+            return nil
+    }
+}
+
+@_silgen_name("AppleCryptoNative_Sha3DigestFree")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestFree(ptr: UnsafeMutableRawPointer)  {
+    Unmanaged<HashBox>.fromOpaque(ptr).release()
 }
