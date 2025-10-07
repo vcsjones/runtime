@@ -509,8 +509,136 @@ public func AppleCryptoNative_Sha3DigestCreate(
     }
 }
 
+@_silgen_name("AppleCryptoNative_Sha3DigestUpdate")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestUpdate(
+    hash: UnsafeMutableRawPointer,
+    sourcePtr: UnsafeMutableRawPointer,
+    sourceLength: Int32) -> Int32 {
+
+    let box = Unmanaged<HashBox>.fromOpaque(hash).takeUnretainedValue()
+    let source = Data(bytesNoCopy: sourcePtr, count: Int(sourceLength), deallocator: Data.Deallocator.none)
+
+    switch box.algorithm {
+        case .sha3_256:
+            var hash = box.value as! SHA3_256
+            hash.update(data: source)
+            box.value = hash
+            return 1
+        case .sha3_384:
+            var hash = box.value as! SHA3_384
+            hash.update(data: source)
+            box.value = hash
+            return 1
+        case .sha3_512:
+            var hash = box.value as! SHA3_512
+            hash.update(data: source)
+            box.value = hash
+            return 1
+        default:
+            return -1
+    }
+}
+
+@_silgen_name("AppleCryptoNative_Sha3DigestFinal")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestFinal(
+    hash: UnsafeMutableRawPointer,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32) -> Int32 {
+
+    let box = Unmanaged<HashBox>.fromOpaque(hash).takeUnretainedValue()
+    let destinationLengthInt = Int(destinationLength)
+
+    let digestFactory : () throws -> ContiguousBytes = {
+        switch box.algorithm {
+            case .sha3_256:
+                return (box.value as! SHA3_256).finalize()
+            case .sha3_384:
+                return (box.value as! SHA3_384).finalize()
+            case .sha3_512:
+                return (box.value as! SHA3_512).finalize()
+            default:
+                throw DigestError.unknownHashAlgorithm
+        }
+    }
+
+    guard let digest = try? digestFactory() else {
+        return -1
+    }
+
+    _ = digest.withUnsafeBytes { digestBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        digestBytes.copyBytes(to: destination)
+    }
+
+    return AppleCryptoNative_Sha3DigestReset(hash: hash)
+}
+
+
+
+@_silgen_name("AppleCryptoNative_Sha3DigestCurrent")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestCurrent(
+    hash: UnsafeMutableRawPointer,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32) -> Int32 {
+
+    let box = Unmanaged<HashBox>.fromOpaque(hash).takeUnretainedValue()
+    let destinationLengthInt = Int(destinationLength)
+
+    let digestFactory : () throws -> ContiguousBytes = {
+        switch box.algorithm {
+            case .sha3_256:
+                let hash = box.value as! SHA3_256
+                let copy = hash
+                return copy.finalize()
+            case .sha3_384:
+                let hash = box.value as! SHA3_384
+                let copy = hash
+                return copy.finalize()
+            case .sha3_512:
+                let hash = box.value as! SHA3_512
+                let copy = hash
+                return copy.finalize()
+            default:
+                throw DigestError.unknownHashAlgorithm
+        }
+    }
+
+    guard let digest = try? digestFactory() else {
+        return -1
+    }
+
+    _ = digest.withUnsafeBytes { digestBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        digestBytes.copyBytes(to: destination)
+    }
+
+    return 1
+}
+
 @_silgen_name("AppleCryptoNative_Sha3DigestFree")
 @available(iOS 26, tvOS 26, macOS 26, *)
-public func AppleCryptoNative_Sha3DigestFree(ptr: UnsafeMutableRawPointer)  {
+public func AppleCryptoNative_Sha3DigestFree(ptr: UnsafeMutableRawPointer) {
     Unmanaged<HashBox>.fromOpaque(ptr).release()
+}
+
+@_silgen_name("AppleCryptoNative_Sha3DigestReset")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestReset(hash: UnsafeMutableRawPointer) -> Int32 {
+    let box = Unmanaged<HashBox>.fromOpaque(hash).takeUnretainedValue()
+
+    switch box.algorithm {
+        case .sha3_256:
+            box.value = SHA3_256()
+        case .sha3_384:
+            box.value = SHA3_384()
+        case .sha3_512:
+            box.value = SHA3_512()
+        default:
+            return 0
+    }
+
+    return 1
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 
 using PAL_HashAlgorithm = Interop.AppleCrypto.PAL_HashAlgorithm;
@@ -49,7 +50,7 @@ namespace System.Security.Cryptography
 
     internal readonly struct LiteHash : ILiteHash
     {
-        private readonly SafeDigestCtxHandle _ctx;
+        private readonly SafeHandle _ctx;
         private readonly int _hashSizeInBytes;
 
         private const int Success = 1;
@@ -59,7 +60,16 @@ namespace System.Security.Cryptography
         internal LiteHash(PAL_HashAlgorithm algorithm)
         {
             int hashSizeInBytes;
-            _ctx = Interop.AppleCrypto.DigestCreate(algorithm, out hashSizeInBytes);
+
+            if (algorithm.IsSha3)
+            {
+                _ctx = Interop.AppleCrypto.Sha3DigestCreate(algorithm, out hashSizeInBytes);
+            }
+            else
+            {
+                _ctx = Interop.AppleCrypto.DigestCreate(algorithm, out hashSizeInBytes);
+            }
+
 
             if (hashSizeInBytes < 0)
             {
@@ -92,7 +102,21 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            int ret = Interop.AppleCrypto.DigestUpdate(_ctx, data);
+            int ret;
+
+            if (_ctx is SafeDigestCtxHandle ctx)
+            {
+                ret = Interop.AppleCrypto.DigestUpdate(ctx, data);
+            }
+            else if (_ctx is SafeSha3DigestHandle sha3ctx)
+            {
+                ret = Interop.AppleCrypto.Sha3DigestUpdate(sha3ctx, data);
+            }
+            else
+            {
+                Debug.Fail("Unknown handle type.");
+                throw new CryptographicException();
+            }
 
             if (ret != Success)
             {
@@ -103,7 +127,17 @@ namespace System.Security.Cryptography
 
         public LiteHash Clone()
         {
-            SafeDigestCtxHandle cloneCtx = Interop.AppleCrypto.DigestClone(_ctx);
+            SafeDigestCtxHandle cloneCtx;
+
+            if (_ctx is SafeDigestCtxHandle ctx)
+            {
+                cloneCtx = Interop.AppleCrypto.DigestClone(ctx);
+            }
+            else
+            {
+                Debug.Assert(_ctx is SafeSha3DigestHandle);
+                throw new PlatformNotSupportedException();
+            }
 
             if (cloneCtx.IsInvalid)
             {
@@ -118,7 +152,21 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
-            int ret = Interop.AppleCrypto.DigestCurrent(_ctx, destination);
+            int ret;
+
+            if (_ctx is SafeDigestCtxHandle ctx)
+            {
+                ret = Interop.AppleCrypto.DigestCurrent(ctx, destination);
+            }
+            else if (_ctx is SafeSha3DigestHandle sha3ctx)
+            {
+                ret = Interop.AppleCrypto.Sha3DigestCurrent(sha3ctx, destination);
+            }
+            else
+            {
+                Debug.Fail("Unknown handle type.");
+                throw new CryptographicException();
+            }
 
             if (ret != Success)
             {
@@ -133,7 +181,21 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
-            int ret = Interop.AppleCrypto.DigestFinal(_ctx, destination);
+            int ret;
+
+            if (_ctx is SafeDigestCtxHandle ctx)
+            {
+                ret = Interop.AppleCrypto.DigestFinal(ctx, destination);
+            }
+            else if (_ctx is SafeSha3DigestHandle sha3ctx)
+            {
+                ret = Interop.AppleCrypto.Sha3DigestFinal(sha3ctx, destination);
+            }
+            else
+            {
+                Debug.Fail("Unknown handle type.");
+                throw new CryptographicException();
+            }
 
             if (ret != Success)
             {
@@ -146,7 +208,21 @@ namespace System.Security.Cryptography
 
         public void Reset()
         {
-            int ret = Interop.AppleCrypto.DigestReset(_ctx);
+            int ret;
+
+            if (_ctx is SafeDigestCtxHandle ctx)
+            {
+                ret = Interop.AppleCrypto.DigestReset(ctx);
+            }
+            else if (_ctx is SafeSha3DigestHandle sha3ctx)
+            {
+                ret = Interop.AppleCrypto.Sha3DigestReset(sha3ctx);
+            }
+            else
+            {
+                Debug.Fail("Unknown handle type.");
+                throw new CryptographicException();
+            }
 
             if (ret != Success)
             {
@@ -158,47 +234,6 @@ namespace System.Security.Cryptography
         public void Dispose()
         {
             _ctx.Dispose();
-        }
-    }
-
-    internal readonly struct LiteCryptoKitHash : ILiteHash
-    {
-        private readonly int _hashSizeInBytes;
-        private const int Success = 1;
-
-        public int HashSizeInBytes => _hashSizeInBytes;
-
-        internal LiteCryptoKitHash(PAL_HashAlgorithm algorithm)
-        {
-        }
-
-        public void Append(ReadOnlySpan<byte> data)
-        {
-            if (data.IsEmpty)
-            {
-                return;
-            }
-
-            throw new NotImplementedException();
-        }
-
-        public LiteHash Clone() => throw new PlatformNotSupportedException();
-
-        public int Current(Span<byte> destination) => throw new PlatformNotSupportedException();
-
-        public int Finalize(Span<byte> destination)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Reset()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
         }
     }
 

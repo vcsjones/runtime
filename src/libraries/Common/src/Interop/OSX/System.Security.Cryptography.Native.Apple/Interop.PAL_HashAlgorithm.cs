@@ -6,6 +6,14 @@ using System.Security.Cryptography;
 
 internal static partial class Interop
 {
+    extension(AppleCrypto.PAL_HashAlgorithm target)
+    {
+        internal bool IsSha3 => target is
+            AppleCrypto.PAL_HashAlgorithm.Sha3_256 or
+            AppleCrypto.PAL_HashAlgorithm.Sha3_384 or
+            AppleCrypto.PAL_HashAlgorithm.Sha3_512;
+    }
+
     internal static partial class AppleCrypto
     {
         internal enum PAL_HashAlgorithm
