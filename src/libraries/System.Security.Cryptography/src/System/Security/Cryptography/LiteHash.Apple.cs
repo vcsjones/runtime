@@ -89,8 +89,9 @@ namespace System.Security.Cryptography
             _hashSizeInBytes = hashSizeInBytes;
         }
 
-        private LiteHash(SafeDigestCtxHandle ctx, int hashSizeInBytes)
+        private LiteHash(SafeHandle ctx, int hashSizeInBytes)
         {
+            Debug.Assert(ctx is SafeDigestCtxHandle or SafeSha3DigestHandle);
             _ctx = ctx;
             _hashSizeInBytes = hashSizeInBytes;
         }
@@ -127,16 +128,20 @@ namespace System.Security.Cryptography
 
         public LiteHash Clone()
         {
-            SafeDigestCtxHandle cloneCtx;
+            SafeHandle cloneCtx;
 
             if (_ctx is SafeDigestCtxHandle ctx)
             {
                 cloneCtx = Interop.AppleCrypto.DigestClone(ctx);
             }
+            else if (_ctx is SafeSha3DigestHandle sha3ctx)
+            {
+                cloneCtx = Interop.AppleCrypto.Sha3DigestClone(sha3ctx);
+            }
             else
             {
-                Debug.Assert(_ctx is SafeSha3DigestHandle);
-                throw new PlatformNotSupportedException();
+                Debug.Fail("Unknown handle type.");
+                throw new CryptographicException();
             }
 
             if (cloneCtx.IsInvalid)

@@ -80,6 +80,10 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Sha3DigestCurrent")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int Sha3DigestCurrent(SafeSha3DigestHandle ctx, ref byte pbOutput, int cbOutput);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Sha3DigestClone")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static partial SafeSha3DigestHandle Sha3DigestClone(SafeSha3DigestHandle ctx);
     }
 }
 

@@ -91,6 +91,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SecKeyCreateWithData)
     DllImportEntry(AppleCryptoNative_SecKeyCopyExternalRepresentation)
     DllImportEntry(AppleCryptoNative_SecKeyCopyPublicKey)
+    DllImportEntry(AppleCryptoNative_Sha3DigestClone)
     DllImportEntry(AppleCryptoNative_Sha3DigestCreate)
     DllImportEntry(AppleCryptoNative_Sha3DigestCurrent)
     DllImportEntry(AppleCryptoNative_Sha3DigestFinal)

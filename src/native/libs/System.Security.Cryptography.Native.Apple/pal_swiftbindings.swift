@@ -642,3 +642,29 @@ public func AppleCryptoNative_Sha3DigestReset(hash: UnsafeMutableRawPointer) -> 
 
     return 1
 }
+
+@_silgen_name("AppleCryptoNative_Sha3DigestClone")
+@available(iOS 26, tvOS 26, macOS 26, *)
+public func AppleCryptoNative_Sha3DigestClone(hash: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? {
+    let box = Unmanaged<HashBox>.fromOpaque(hash).takeUnretainedValue()
+
+    switch box.algorithm {
+        case .sha3_256:
+            let hash = box.value as! SHA3_256
+            let copy = hash
+            let cloneBox = HashBox(copy, algorithm: .sha3_256)
+            return Unmanaged.passRetained(cloneBox).toOpaque()
+        case .sha3_384:
+            let hash = box.value as! SHA3_384
+            let copy = hash
+            let cloneBox = HashBox(copy, algorithm: .sha3_384)
+            return Unmanaged.passRetained(cloneBox).toOpaque()
+        case .sha3_512:
+            let hash = box.value as! SHA3_512
+            let copy = hash
+            let cloneBox = HashBox(copy, algorithm: .sha3_512)
+            return Unmanaged.passRetained(cloneBox).toOpaque()
+        default:
+            return nil
+    }
+}

@@ -72,14 +72,14 @@ namespace System.Security.Cryptography
 
         private static void ThrowForUnsupportedHashAlgorithm(HashAlgorithmName hashAlgorithmName)
         {
-            if (hashAlgorithmName == HashAlgorithmName.SHA3_256 || hashAlgorithmName == HashAlgorithmName.SHA3_384 ||
-                hashAlgorithmName == HashAlgorithmName.SHA3_512)
+            if ((hashAlgorithmName == HashAlgorithmName.SHA3_256 && !SHA3_256.IsSupported) ||
+                (hashAlgorithmName == HashAlgorithmName.SHA3_384 && !SHA3_384.IsSupported) ||
+                (hashAlgorithmName == HashAlgorithmName.SHA3_512 && !SHA3_512.IsSupported))
             {
                 throw new PlatformNotSupportedException();
             }
 
-            // Unknown algorithms are handled outside of this as a CryptographicException. SHA-3 is known, it's just
-            // not supported.
+            // Unknown algorithms are handled outside of this as a CryptographicException.
         }
     }
 }
