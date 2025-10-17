@@ -267,6 +267,13 @@ int32_t CryptoNative_HmacUpdate(DN_MAC_CTX* ctx, const uint8_t* data, int32_t le
         return 0;
     }
 
+    uint8_t _ = 0;
+
+    if (len == 0)
+    {
+        data = &_;
+    }
+
 #ifdef NEED_OPENSSL_3_0
     if (ctx->mac)
     {
