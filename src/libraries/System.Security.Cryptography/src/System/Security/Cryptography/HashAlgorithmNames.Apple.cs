@@ -13,6 +13,9 @@ namespace System.Security.Cryptography
             HashAlgorithmNames.SHA256 => PAL_HashAlgorithm.Sha256,
             HashAlgorithmNames.SHA384 => PAL_HashAlgorithm.Sha384,
             HashAlgorithmNames.SHA512 => PAL_HashAlgorithm.Sha512,
+            HashAlgorithmNames.SHA3_256 => PAL_HashAlgorithm.Sha3_256,
+            HashAlgorithmNames.SHA3_384 => PAL_HashAlgorithm.Sha3_384,
+            HashAlgorithmNames.SHA3_512 => PAL_HashAlgorithm.Sha3_512,
             _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
         };
     }

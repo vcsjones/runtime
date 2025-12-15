@@ -799,6 +799,12 @@ namespace System
                 return true;
             }
 
+            if (OperatingSystem.IsMacOSVersionAtLeast(26) || OperatingSystem.IsMacCatalystVersionAtLeast(26) ||
+                OperatingSystem.IsIOSVersionAtLeast(26) || OperatingSystem.IsTvOSVersionAtLeast(26))
+            {
+                return true;
+            }
+
             return false;
         }
 

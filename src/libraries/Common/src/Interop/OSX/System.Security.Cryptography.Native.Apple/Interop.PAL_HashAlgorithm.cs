@@ -16,6 +16,9 @@ internal static partial class Interop
             Sha256,
             Sha384,
             Sha512,
+            Sha3_256,
+            Sha3_384,
+            Sha3_512,
         }
 
         private static PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(HashAlgorithmName hashAlgorithmName) =>
@@ -24,6 +27,9 @@ internal static partial class Interop
             hashAlgorithmName == HashAlgorithmName.SHA256 ? PAL_HashAlgorithm.Sha256 :
             hashAlgorithmName == HashAlgorithmName.SHA384 ? PAL_HashAlgorithm.Sha384 :
             hashAlgorithmName == HashAlgorithmName.SHA512 ? PAL_HashAlgorithm.Sha512 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_256 ? PAL_HashAlgorithm.Sha3_256 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_384 ? PAL_HashAlgorithm.Sha3_384 :
+            hashAlgorithmName == HashAlgorithmName.SHA3_512 ? PAL_HashAlgorithm.Sha3_512 :
             throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
     }
 }

@@ -31,12 +31,33 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     return true;
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
+                    return
+                        OperatingSystem.IsMacOSVersionAtLeast(26) ||
+                        OperatingSystem.IsMacCatalystVersionAtLeast(26) ||
+                        OperatingSystem.IsIOSVersionAtLeast(26) ||
+                        OperatingSystem.IsTvOSVersionAtLeast(26);
                 default:
                     return false;
             }
         }
 
-        internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
+        internal static bool MacSupported(string hashAlgorithmId)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.MD5:
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         internal static bool KmacSupported(string algorithmId)
         {

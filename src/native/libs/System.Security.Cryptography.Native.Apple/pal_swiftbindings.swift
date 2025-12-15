@@ -209,10 +209,14 @@ enum PAL_HashAlgorithm: Int32 {
     case sha256 = 3
     case sha384 = 4
     case sha512 = 5
+    case sha3_256 = 6
+    case sha3_384 = 7
+    case sha3_512 = 8
 }
 
 enum HKDFError: Error {
     case unknownHashAlgorithm
+    case unsupportedHashAlgorithm
 }
 
 @_silgen_name("AppleCryptoNative_HKDFExpand")
@@ -248,6 +252,21 @@ public func AppleCryptoNative_HKDFExpand(
                 return HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha3_256, .sha3_384, .sha3_512:
+                if #available(macOS 26, iOS 26, tvOS 26, *) {
+                    switch algorithm {
+                        case .sha3_256:
+                            return HKDF<SHA3_256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                        case .sha3_384:
+                            return HKDF<SHA3_384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                        case .sha3_512:
+                            return HKDF<SHA3_512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+                        default:
+                            throw HKDFError.unknownHashAlgorithm
+                    }
+                }
+
+                throw HKDFError.unsupportedHashAlgorithm
         }
     }
 
@@ -295,6 +314,21 @@ public func AppleCryptoNative_HKDFExtract(
                 return HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
             case .sha512:
                 return HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha3_256, .sha3_384, .sha3_512:
+                if #available(macOS 26, iOS 26, tvOS 26, *) {
+                    switch algorithm {
+                        case .sha3_256:
+                            return HKDF<SHA3_256>.extract(inputKeyMaterial: key, salt: salt)
+                        case .sha3_384:
+                            return HKDF<SHA3_384>.extract(inputKeyMaterial: key, salt: salt)
+                        case .sha3_512:
+                            return HKDF<SHA3_512>.extract(inputKeyMaterial: key, salt: salt)
+                        default:
+                            throw HKDFError.unknownHashAlgorithm
+                    }
+                }
+
+                throw HKDFError.unsupportedHashAlgorithm
         }
     }
 
@@ -345,6 +379,21 @@ public func AppleCryptoNative_HKDFDeriveKey(
                 return HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
             case .sha512:
                 return HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha3_256, .sha3_384, .sha3_512:
+                if #available(macOS 26, iOS 26, tvOS 26, *) {
+                    switch algorithm {
+                        case .sha3_256:
+                            return HKDF<SHA3_256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                        case .sha3_384:
+                            return HKDF<SHA3_384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                        case .sha3_512:
+                            return HKDF<SHA3_512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+                        default:
+                            throw HKDFError.unknownHashAlgorithm
+                    }
+                }
+
+                throw HKDFError.unsupportedHashAlgorithm
         }
     }
 
@@ -402,6 +451,30 @@ public func AppleCryptoNative_DigestOneShot(
             let written = SHA512.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(SHA512.byteCount)
             return written != SHA512.byteCount ? -1 : 1
+        case .sha3_256, .sha3_384, .sha3_512:
+            if #available(macOS 26, iOS 26, tvOS 26, *) {
+                switch hashAlgorithm {
+                    case .sha3_256:
+                        let written = SHA3_256.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+                        cbDigest.pointee = Int32(SHA3_256.byteCount)
+                        return written != SHA3_256.byteCount ? -1 : 1
+                    case .sha3_384:
+                        let written = SHA3_384.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+                        cbDigest.pointee = Int32(SHA3_384.byteCount)
+                        return written != SHA3_384.byteCount ? -1 : 1
+                    case .sha3_512:
+                        let written = SHA3_512.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+                        cbDigest.pointee = Int32(SHA3_512.byteCount)
+                        return written != SHA3_512.byteCount ? -1 : 1
+                    default:
+                    cbDigest.pointee = 0
+                    return -1
+                }
+            }
+
+            cbDigest.pointee = 0
+            return -2
+
         default:
             cbDigest.pointee = 0
             return -1
@@ -435,6 +508,29 @@ public func AppleCryptoNative_DigestCreate(algorithm: Int32, pcbDigest: UnsafeMu
             pcbDigest.pointee = Int32(SHA512.byteCount)
             let box = HashBox(SHA512())
             return Unmanaged.passRetained(box).toOpaque()
+        case .sha3_256, .sha3_384, .sha3_512:
+            if #available(macOS 26, iOS 26, tvOS 26, *) {
+                switch hashAlgorithm {
+                    case .sha3_256:
+                        pcbDigest.pointee = Int32(SHA3_256.byteCount)
+                        let box = HashBox(SHA3_256())
+                        return Unmanaged.passRetained(box).toOpaque()
+                    case .sha3_384:
+                        pcbDigest.pointee = Int32(SHA3_384.byteCount)
+                        let box = HashBox(SHA3_384())
+                        return Unmanaged.passRetained(box).toOpaque()
+                    case .sha3_512:
+                        pcbDigest.pointee = Int32(SHA3_512.byteCount)
+                        let box = HashBox(SHA3_512())
+                        return Unmanaged.passRetained(box).toOpaque()
+                    default:
+                        pcbDigest.pointee = 0
+                        return nil
+                }
+            }
+
+            pcbDigest.pointee = 0
+            return nil
         default:
             pcbDigest.pointee = 0
             return nil
@@ -484,6 +580,22 @@ public func AppleCryptoNative_DigestReset(ctx: UnsafeMutableRawPointer?) -> Int3
             box.value = SHA512()
             return 1
         default:
+            if #available(macOS 26, iOS 26, tvOS 26, *) {
+                switch box.value {
+                    case is SHA3_256:
+                        box.value = SHA3_256()
+                        return 1
+                    case is SHA3_384:
+                        box.value = SHA3_384()
+                        return 1
+                    case is SHA3_512:
+                        box.value = SHA3_512()
+                        return 1
+                    default:
+                        return -2
+                }
+            }
+
             return -2
     }
 }
