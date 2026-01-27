@@ -7,6 +7,8 @@
 
 #include <assert.h>
 
+#define HMAC_MAX_BLOCK_SIZE (136)
+
 HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
 {
     assert(key != NULL || keyLen == 0);
@@ -165,22 +167,49 @@ int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
 
     ERR_clear_error();
 
-    uint8_t empty = 0;
+    // OpenSSL in FIPS mode enforces a minimum key size for HMAC. .NET allows algorithms to be used
+    // for any key size, regardless of FIPS, and does not enforce by policy. We zero-extend the HMAC
+    // key so that OpenSSL believes the key is always of acceptable length.
 
-    if (key == NULL)
+    // If the keySize is greater than or equal to the block size, then we don't need to perform any zero extension.
+    // If for whatever reason the provider does not return a block size, pass it through.
+    // The supported hashes are a closed set, MD5, SHA-1, SHA-2, and SHA-3.
+    // SHA-3-256 has the largest known block size of 136 bytes. If the block size is somehow bigger, we don't zero
+    // extend the key.
+    // We also use the adjusted buffer if our source key is NULL, as OpenSSL does not accept NULL even if the
+    // keySize is zero. This is done implicitly if the keySize is zero.
+
+    int blockSize = EVP_MD_get_block_size(type);
+    uint8_t keyBuffer[HMAC_MAX_BLOCK_SIZE];
+    unsigned int keyBufferClearSize;
+    const uint8_t* usableKey;
+    int32_t usableKeySize;
+
+    if (keySize < blockSize && HMAC_MAX_BLOCK_SIZE >= blockSize && blockSize > 0)
     {
-        if (keySize != 0)
-        {
-            return -1;
-        }
-
-        key = &empty;
+        unsigned int unsignedKeySize = Int32ToUint32(keySize);
+        usableKeySize = blockSize;
+        usableKey = keyBuffer;
+        keyBufferClearSize = unsignedKeySize;
+        memset(keyBuffer + unsignedKeySize, 0, (sizeof(uint8_t) * HMAC_MAX_BLOCK_SIZE) - unsignedKeySize);
+        memcpy(keyBuffer, key, unsignedKeySize);
+    }
+    else
+    {
+        keyBufferClearSize = 0;
+        usableKeySize = keySize;
+        usableKey = key;
     }
 
     unsigned int unsignedSource = Int32ToUint32(sourceSize);
     unsigned int unsignedSize = Int32ToUint32(*mdSize);
-    unsigned char* result = HMAC(type, key, keySize, source, unsignedSource, md, &unsignedSize);
+    unsigned char* result = HMAC(type, usableKey, usableKeySize, source, unsignedSource, md, &unsignedSize);
     *mdSize = Uint32ToInt32(unsignedSize);
+
+    if (keyBufferClearSize > 0)
+    {
+        OPENSSL_cleanse(keyBuffer, keyBufferClearSize);
+    }
 
     return result == NULL ? 0 : 1;
 }

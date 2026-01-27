@@ -468,6 +468,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_MD_CTX_set_flags) \
     LIGHTUP_FUNCTION(EVP_MD_fetch) \
     RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
+    RENAMED_FUNCTION(EVP_MD_get_block_size, EVP_MD_block_size) \
     REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
     REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
@@ -1023,6 +1024,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_MD_CTX_set_flags EVP_MD_CTX_set_flags_ptr
 #define EVP_MD_fetch EVP_MD_fetch_ptr
 #define EVP_MD_get_size EVP_MD_get_size_ptr
+#define EVP_MD_get_block_size EVP_MD_get_block_size_ptr
 #define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
 #define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
@@ -1419,6 +1421,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 
 // Undo renames for renamed-in-3.0
 #define EVP_MD_get_size EVP_MD_size
+#define EVP_MD_get_block_size EVP_MD_block_size
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
 #define EVP_PKEY_get_bits EVP_PKEY_bits
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
