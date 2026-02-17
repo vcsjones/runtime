@@ -282,26 +282,49 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr CryptoNative_LoadKeyFromProvider(
-            string providerName,
+            IntPtr providerNames,
+            int providerCount,
             string keyUri,
+            string? propertyQuery,
             ref IntPtr extraHandle,
             [MarshalAs(UnmanagedType.Bool)] out bool haveProvider);
 
         internal static SafeEvpPKeyHandle LoadKeyFromProvider(
-            string providerName,
-            string keyUri)
+            ReadOnlySpan<string> providerNames,
+            string keyUri,
+            string? propertyQuery)
         {
             IntPtr extraHandle = IntPtr.Zero;
             IntPtr evpPKeyHandle = IntPtr.Zero;
+            IntPtr[]? marshaledNames = null;
 
             try
             {
-                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle, out bool haveProvider);
+                marshaledNames = new IntPtr[providerNames.Length];
 
-                if (!haveProvider)
+                for (int i = 0; i < providerNames.Length; i++)
                 {
-                    Debug.Assert(evpPKeyHandle == IntPtr.Zero && extraHandle == IntPtr.Zero, "both handles should be null if provider is not supported");
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
+                    marshaledNames[i] = Marshal.StringToCoTaskMemUTF8(providerNames[i]);
+                }
+
+                unsafe
+                {
+                    fixed (IntPtr* pNames = marshaledNames)
+                    {
+                        evpPKeyHandle = CryptoNative_LoadKeyFromProvider(
+                            (IntPtr)pNames,
+                            providerNames.Length,
+                            keyUri,
+                            propertyQuery,
+                            ref extraHandle,
+                            out bool haveProvider);
+
+                        if (!haveProvider)
+                        {
+                            Debug.Assert(evpPKeyHandle == IntPtr.Zero && extraHandle == IntPtr.Zero, "both handles should be null if provider is not supported");
+                            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported);
+                        }
+                    }
                 }
 
                 if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
@@ -320,6 +343,16 @@ internal static partial class Interop
                 }
 
                 throw;
+            }
+            finally
+            {
+                if (marshaledNames is not null)
+                {
+                    for (int i = 0; i < marshaledNames.Length; i++)
+                    {
+                        Marshal.FreeCoTaskMem(marshaledNames[i]);
+                    }
+                }
             }
         }
 

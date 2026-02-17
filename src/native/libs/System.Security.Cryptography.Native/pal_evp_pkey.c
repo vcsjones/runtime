@@ -20,10 +20,15 @@ static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
 
     if (count == 0)
     {
-        assert(handle->prov != NULL);
+        assert(handle->providers != NULL);
         assert(handle->libCtx != NULL);
 
-        OSSL_PROVIDER_unload(handle->prov);
+        for (int32_t i = 0; i < handle->providerCount; i++)
+        {
+            OSSL_PROVIDER_unload(handle->providers[i]);
+        }
+
+        free(handle->providers);
         OSSL_LIB_CTX_free(handle->libCtx);
         free(handle);
     }
@@ -662,7 +667,7 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames, int32_t providerCount, const char* keyUri, const char* propertyQuery, void** extraHandle, int32_t* haveProvider)
 {
     ERR_clear_error();
 
@@ -678,7 +683,8 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
     *haveProvider = 1;
     EVP_PKEY* ret = NULL;
     OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
-    OSSL_PROVIDER* prov = NULL;
+    OSSL_PROVIDER** providers = NULL;
+    int32_t loadedCount = 0;
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
 
@@ -687,14 +693,26 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
         goto end;
     }
 
-    prov = OSSL_PROVIDER_load(libCtx, providerName);
+    providers = (OSSL_PROVIDER**)calloc(Int32ToSizeT(providerCount), sizeof(OSSL_PROVIDER*));
 
-    if (prov == NULL)
+    if (providers == NULL)
     {
         goto end;
     }
 
-    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    for (int32_t i = 0; i < providerCount; i++)
+    {
+        providers[i] = OSSL_PROVIDER_load(libCtx, providerNames[i]);
+
+        if (providers[i] == NULL)
+        {
+            goto end;
+        }
+
+        loadedCount++;
+    }
+
+    store = OSSL_STORE_open_ex(keyUri, libCtx, propertyQuery, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL)
     {
         goto end;
@@ -753,11 +771,14 @@ end:
 
     if (ret == NULL)
     {
-        if (prov != NULL)
+        if (providers != NULL)
         {
-            assert(libCtx != NULL);
-            // we still want a separate check for libCtx as only prov could be NULL
-            OSSL_PROVIDER_unload(prov);
+            for (int32_t i = 0; i < loadedCount; i++)
+            {
+                OSSL_PROVIDER_unload(providers[i]);
+            }
+
+            free(providers);
         }
 
         if (libCtx != NULL)
@@ -770,7 +791,8 @@ end:
     else
     {
         EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
-        extra->prov = prov;
+        extra->providers = providers;
+        extra->providerCount = loadedCount;
         extra->libCtx = libCtx;
         atomic_init(&extra->refCount, 1);
         *extraHandle = extra;
@@ -778,8 +800,10 @@ end:
 
     return ret;
 #else
-    (void)providerName;
+    (void)providerNames;
+    (void)providerCount;
     (void)keyUri;
+    (void)propertyQuery;
     ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     *extraHandle = NULL;
     *haveProvider = 0;

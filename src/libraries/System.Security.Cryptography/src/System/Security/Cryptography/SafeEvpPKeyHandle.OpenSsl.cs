@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -195,7 +196,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Open a named public key using a named <c>OSSL_PROVIDER</c>.
+        ///   Open a key using a named <c>OSSL_PROVIDER</c>.
         /// </summary>
         /// <param name="providerName">
         ///   The name of the <c>OSSL_PROVIDER</c> to process the key open request.
@@ -238,12 +239,92 @@ namespace System.Security.Cryptography
             ArgumentException.ThrowIfNullOrEmpty(providerName);
             ArgumentException.ThrowIfNullOrEmpty(keyUri);
 
+            return OpenKeyFromProviderCore([providerName], keyUri, propertyQuery: null);
+        }
+
+        /// <summary>
+        ///   Open a key using the specified <c>OSSL_PROVIDER</c> instances.
+        /// </summary>
+        /// <param name="providerNames">
+        ///   The names of the <c>OSSL_PROVIDER</c> instances to load into the library context.
+        /// </param>
+        /// <param name="keyUri">
+        ///   The URI of the key to open.
+        /// </param>
+        /// <param name="propertyQuery">
+        ///   An optional property query string to use when opening the key store.
+        /// </param>
+        /// <returns>
+        ///   The opened key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="providerNames"/> or <paramref name="keyUri"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="keyUri"/> is the empty string, or <paramref name="providerNames"/> is empty
+        ///   or contains an element that is <see langword="null" /> or empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key could not be opened via the specified providers.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     The values in <paramref name="providerNames" />, <paramref name="keyUri" />,
+        ///     and <paramref name="propertyQuery" /> must be trusted inputs.
+        ///   </para>
+        ///   <para>
+        ///     This operation will fail if OpenSSL cannot successfully load any of the named
+        ///     <c>OSSL_PROVIDER</c> instances, or if the providers cannot load the named key.
+        ///   </para>
+        ///   <para>
+        ///     The syntax for <paramref name="keyUri"/> is determined by the loaded providers.
+        ///   </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenKeyFromProvider(IEnumerable<string> providerNames, string keyUri, string? propertyQuery = null)
+        {
+            ArgumentNullException.ThrowIfNull(providerNames);
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+
+            string[] providerNamesArray = new string[8];
+            int count = 0;
+
+            foreach (string name in providerNames)
+            {
+                if (string.IsNullOrEmpty(name))
+                {
+                    throw new ArgumentException(SR.Arg_NullOrEmptyCollectionElement, nameof(providerNames));
+                }
+
+                if (count == providerNamesArray.Length)
+                {
+                    Array.Resize(ref providerNamesArray, providerNamesArray.Length * 2);
+                }
+
+                providerNamesArray[count] = name;
+                count++;
+            }
+
+            if (count == 0)
+            {
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(providerNames));
+            }
+
+            return OpenKeyFromProviderCore(providerNamesArray.AsSpan(0, count), keyUri, propertyQuery);
+        }
+
+        private static SafeEvpPKeyHandle OpenKeyFromProviderCore(ReadOnlySpan<string> providerNames, string keyUri, string? propertyQuery)
+        {
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
             }
 
-            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
+            return Interop.Crypto.LoadKeyFromProvider(providerNames, keyUri, propertyQuery);
         }
     }
 }

@@ -63,6 +63,9 @@
   <data name="Arg_EmptyOrNullArray" xml:space="preserve">
     <value>Array may not be empty or null.</value>
   </data>
+  <data name="Arg_NullOrEmptyCollectionElement" xml:space="preserve">
+    <value>Collection cannot contain a null or empty value.</value>
+  </data>
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
   </data>
