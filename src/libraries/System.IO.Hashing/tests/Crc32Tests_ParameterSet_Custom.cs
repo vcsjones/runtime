@@ -78,7 +78,19 @@ namespace System.IO.Hashing.Tests
             };
     }
 
+    // Cross-validates CRC-32/C via Create() (table/vectorized path) against
+    // the same expected values that Crc32CDriver validates via hardware intrinsics.
+    public class CustomCrc32CDriver : Crc32CDriver
+    {
+        internal override Crc32ParameterSet ParameterSet => Crc32ParameterSet.Create(
+            polynomial: 0x1EDC6F41,
+            initialValue: 0xFFFFFFFF,
+            finalXorValue: 0xFFFFFFFF,
+            reflectValues: true);
+    }
+
     public class Crc32Tests_ParameterSet_Custom_Cksum : Crc32Tests_Parameterized<Crc32CksumDriver>;
     public class Crc32Tests_ParameterSet_Custom_CDRomEdc : Crc32Tests_Parameterized<Crc32CDRomEdcDriver>;
     public class Crc32Tests_ParameterSet_Custom_Mef : Crc32Tests_Parameterized<Crc32MefDriver>;
+    public class Crc32Tests_ParameterSet_Custom_Crc32C : Crc32Tests_Parameterized<CustomCrc32CDriver>;
 }

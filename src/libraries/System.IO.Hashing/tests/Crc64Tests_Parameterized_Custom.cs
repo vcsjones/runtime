@@ -34,4 +34,17 @@ namespace System.IO.Hashing.Tests
     }
 
     public class Crc64Tests_ParameterSet_Custom_WE : Crc64Tests_Parameterized<Crc64WEDriver>;
+
+    // Cross-validates CRC-64 ECMA-182 via Create() (table path) against
+    // the same expected values that Crc64Driver validates via vectorized PCLMULQDQ/PMULL.
+    public class CustomCrc64Ecma182Driver : Crc64Driver
+    {
+        internal override Crc64ParameterSet ParameterSet => Crc64ParameterSet.Create(
+            polynomial: 0x42F0E1EBA9EA3693,
+            initialValue: 0x0000000000000000,
+            finalXorValue: 0x0000000000000000,
+            reflectValues: false);
+    }
+
+    public class Crc64Tests_ParameterSet_Custom_Ecma182 : Crc64Tests_Parameterized<CustomCrc64Ecma182Driver>;
 }
