@@ -59,7 +59,7 @@ namespace System.IO.Hashing
             return table;
         }
 
-        private sealed class ReflectedTableBasedCrc32 : Crc32ParameterSet
+        private sealed partial class ReflectedTableBasedCrc32 : Crc32ParameterSet
         {
             private readonly uint[] _lookupTable;
 
@@ -67,9 +67,26 @@ namespace System.IO.Hashing
                 : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
+                InitializeVectorizedConstants();
             }
 
+            partial void InitializeVectorizedConstants();
+            partial void UpdateVectorized(ref uint crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
             internal override uint Update(uint value, ReadOnlySpan<byte> source)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
+                {
+                    value = UpdateScalar(value, source.Slice(consumed));
+                }
+
+                return value;
+            }
+
+            private uint UpdateScalar(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;
@@ -86,7 +103,7 @@ namespace System.IO.Hashing
             }
         }
 
-        private sealed class ForwardTableBasedCrc32 : Crc32ParameterSet
+        private sealed partial class ForwardTableBasedCrc32 : Crc32ParameterSet
         {
             private readonly uint[] _lookupTable;
 
@@ -94,9 +111,26 @@ namespace System.IO.Hashing
                 : base(polynomial, initialValue, finalXorValue, reflectValues: false)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
+                InitializeVectorizedConstants();
             }
 
+            partial void InitializeVectorizedConstants();
+            partial void UpdateVectorized(ref uint crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
             internal override uint Update(uint value, ReadOnlySpan<byte> source)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
+                {
+                    value = UpdateScalar(value, source.Slice(consumed));
+                }
+
+                return value;
+            }
+
+            private uint UpdateScalar(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;

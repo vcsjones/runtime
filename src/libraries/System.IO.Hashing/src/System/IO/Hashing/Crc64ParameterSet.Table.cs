@@ -59,7 +59,7 @@ namespace System.IO.Hashing
             return table;
         }
 
-        private sealed class ReflectedTableBasedCrc64 : Crc64ParameterSet
+        private sealed partial class ReflectedTableBasedCrc64 : Crc64ParameterSet
         {
             private readonly ulong[] _lookupTable;
 
@@ -67,9 +67,26 @@ namespace System.IO.Hashing
                 : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
+                InitializeVectorizedConstants();
             }
 
+            partial void InitializeVectorizedConstants();
+            partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, data, ref consumed);
+
+                if (consumed < data.Length)
+                {
+                    value = UpdateScalar(value, data.Slice(consumed));
+                }
+
+                return value;
+            }
+
+            private ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
@@ -86,7 +103,7 @@ namespace System.IO.Hashing
             }
         }
 
-        private sealed class ForwardTableBasedCrc64 : Crc64ParameterSet
+        private sealed partial class ForwardTableBasedCrc64 : Crc64ParameterSet
         {
             private readonly ulong[] _lookupTable;
 
@@ -94,9 +111,26 @@ namespace System.IO.Hashing
                 : base(polynomial, initialValue, finalXorValue, reflectValues: false)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
+                InitializeVectorizedConstants();
             }
 
+            partial void InitializeVectorizedConstants();
+            partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, data, ref consumed);
+
+                if (consumed < data.Length)
+                {
+                    value = UpdateScalar(value, data.Slice(consumed));
+                }
+
+                return value;
+            }
+
+            private ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
