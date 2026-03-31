@@ -3469,6 +3469,14 @@ namespace System.Security.Cryptography
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
+    public abstract partial class X25519DiffieHellman : System.IDisposable
+    {
+        protected X25519DiffieHellman() { }
+        public static bool IsSupported { get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+    }
 }
 namespace System.Security.Cryptography.X509Certificates
 {
