@@ -6,7 +6,7 @@
 #include "openssl.h"
 #include <assert.h>
 
-EVP_PKEY* CryptoNative_X25519GenerateKey()
+EVP_PKEY* CryptoNative_X25519GenerateKey(void)
 {
     ERR_clear_error();
 
