@@ -51,6 +51,28 @@ namespace System.Security.Cryptography
             return X25519DiffieHellmanImplementation.GenerateKeyImpl();
         }
 
+        public byte[] ExportPrivateKey()
+        {
+            ThrowIfDisposed();
+
+            byte[] buffer = new byte[PrivateKeySizeInBytes];
+            ExportPrivateKeyCore(buffer);
+            return buffer;
+        }
+
+        public void ExportPrivateKey(Span<byte> destination)
+        {
+            if (destination.Length != PrivateKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, PrivateKeySizeInBytes),
+                    nameof(destination));
+            }
+
+            ThrowIfDisposed();
+            ExportPrivateKeyCore(destination);
+        }
+
         public byte[] ExportPublicKey()
         {
             ThrowIfDisposed();
@@ -73,6 +95,7 @@ namespace System.Security.Cryptography
             ExportPublicKeyCore(destination);
         }
 
+        protected abstract void ExportPrivateKeyCore(Span<byte> destination);
         protected abstract void ExportPublicKeyCore(Span<byte> destination);
 
         /// <summary>

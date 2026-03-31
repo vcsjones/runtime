@@ -9,6 +9,12 @@ namespace System.Security.Cryptography
     {
         internal static new bool IsSupported => false;
 
+        protected override void ExportPrivateKeyCore(Span<byte> destination)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         protected override void ExportPublicKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");

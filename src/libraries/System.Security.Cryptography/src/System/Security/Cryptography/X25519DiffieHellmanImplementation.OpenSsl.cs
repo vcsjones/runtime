@@ -16,6 +16,12 @@ namespace System.Security.Cryptography
             _key = key;
         }
 
+        protected override void ExportPrivateKeyCore(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == PrivateKeySizeInBytes);
+            Interop.Crypto.X25519ExportPrivateKey(_key, destination);
+        }
+
         protected override void ExportPublicKeyCore(Span<byte> destination)
         {
             Debug.Assert(destination.Length == PublicKeySizeInBytes);

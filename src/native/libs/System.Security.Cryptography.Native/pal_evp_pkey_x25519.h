@@ -5,6 +5,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
+PALEXPORT int32_t CryptoNative_X25519ExportPrivateKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength);
 PALEXPORT int32_t CryptoNative_X25519ExportPublicKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength);
 
 /*

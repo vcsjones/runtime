@@ -11,6 +11,12 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519ExportPrivateKey")]
+        private static partial int X25519ExportPrivateKey(
+            SafeEvpPKeyHandle key,
+            Span<byte> destination,
+            int destinationLength);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519ExportPublicKey")]
         private static partial int X25519ExportPublicKey(
             SafeEvpPKeyHandle key,
@@ -19,6 +25,25 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519GenerateKey")]
         private static partial SafeEvpPKeyHandle CryptoNative_X25519GenerateKey();
+
+        internal static void X25519ExportPrivateKey(SafeEvpPKeyHandle key, Span<byte> destination)
+        {
+            const int Success = 1;
+            const int Fail = 0;
+
+            int ret = X25519ExportPrivateKey(key, destination, destination.Length);
+
+            switch (ret)
+            {
+                case Success:
+                    return;
+                case Fail:
+                    throw CreateOpenSslCryptographicException();
+                default:
+                    Debug.Fail($"{nameof(X25519ExportPrivateKey)} returned '{ret}' unexpectedly.");
+                    throw new CryptographicException();
+            }
+        }
 
         internal static void X25519ExportPublicKey(SafeEvpPKeyHandle key, Span<byte> destination)
         {

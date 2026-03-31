@@ -3478,6 +3478,9 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportPrivateKey() { throw null; }
+        public void ExportPrivateKey(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateKeyCore(System.Span<byte> destination);
         public byte[] ExportPublicKey() { throw null; }
         public void ExportPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
