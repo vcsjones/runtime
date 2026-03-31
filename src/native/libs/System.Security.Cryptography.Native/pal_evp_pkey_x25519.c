@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp_pkey.h"
+#include "pal_evp_pkey_x25519.h"
 #include "pal_utilities.h"
 #include "openssl.h"
 #include <assert.h>
