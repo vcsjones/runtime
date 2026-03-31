@@ -35,3 +35,24 @@ EVP_PKEY* CryptoNative_X25519GenerateKey(void)
     EVP_PKEY_CTX_free(ctx);
     return ret;
 }
+
+int32_t CryptoNative_X25519ExportPublicKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
+{
+    assert(key != NULL && destination != NULL && destinationLength == 32);
+
+    size_t len = Int32ToSizeT(destinationLength);
+    int result = EVP_PKEY_get_raw_public_key(key, destination, &len);
+
+    if (result != 1)
+    {
+        return 0;
+    }
+
+    if (len != Int32ToSizeT(destinationLength))
+    {
+        assert("Exported raw public key was not the correct length." && 0);
+        return -1;
+    }
+
+    return 1;
+}

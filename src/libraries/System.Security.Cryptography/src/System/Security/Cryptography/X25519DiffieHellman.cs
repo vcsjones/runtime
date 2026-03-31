@@ -10,6 +10,21 @@ namespace System.Security.Cryptography
         private bool _disposed;
 
         /// <summary>
+        ///   The size of the secret agreement, in bytes.
+        /// </summary>
+        public const int SecretAgreementSizeInBytes = 32;
+
+        /// <summary>
+        ///   The size of the private key, in bytes.
+        /// </summary>
+        public const int PrivateKeySizeInBytes = 32;
+
+        /// <summary>
+        ///   The size of the public key, in bytes.
+        /// </summary>
+        public const int PublicKeySizeInBytes = 32;
+
+        /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
         /// </summary>
         /// <value>
@@ -36,6 +51,30 @@ namespace System.Security.Cryptography
             return X25519DiffieHellmanImplementation.GenerateKeyImpl();
         }
 
+        public byte[] ExportPublicKey()
+        {
+            ThrowIfDisposed();
+
+            byte[] buffer = new byte[PublicKeySizeInBytes];
+            ExportPublicKeyCore(buffer);
+            return buffer;
+        }
+
+        public void ExportPublicKey(Span<byte> destination)
+        {
+            if (destination.Length != PublicKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, PublicKeySizeInBytes),
+                    nameof(destination));
+            }
+
+            ThrowIfDisposed();
+            ExportPublicKeyCore(destination);
+        }
+
+        protected abstract void ExportPublicKeyCore(Span<byte> destination);
+
         /// <summary>
         ///   Releases all resources used by the <see cref="X25519DiffieHellman"/> class.
         /// </summary>
@@ -59,6 +98,11 @@ namespace System.Security.Cryptography
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
+        }
+
+        private protected void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, typeof(X25519DiffieHellman));
         }
 
         private protected static void ThrowIfNotSupported()

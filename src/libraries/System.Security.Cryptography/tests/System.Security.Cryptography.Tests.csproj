@@ -613,6 +613,7 @@
     <Compile Include="SymmetricAlgorithmTests.cs" />
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
+    <Compile Include="X25519DiffieHellmanKeyTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />

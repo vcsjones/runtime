@@ -3471,10 +3471,16 @@ namespace System.Security.Cryptography
     }
     public abstract partial class X25519DiffieHellman : System.IDisposable
     {
+        public const int PrivateKeySizeInBytes = 32;
+        public const int PublicKeySizeInBytes = 32;
+        public const int SecretAgreementSizeInBytes = 32;
         protected X25519DiffieHellman() { }
         public static bool IsSupported { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportPublicKey() { throw null; }
+        public void ExportPublicKey(System.Span<byte> destination) { }
+        protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
     }
 }
