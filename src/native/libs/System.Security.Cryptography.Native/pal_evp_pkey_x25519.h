@@ -8,4 +8,4 @@
 /*
 Generates a new EVP_PKEY.
 */
-PALEXPORT EVP_PKEY* CryptoNative_X25519GenerateKey();
+PALEXPORT EVP_PKEY* CryptoNative_X25519GenerateKey(void);
