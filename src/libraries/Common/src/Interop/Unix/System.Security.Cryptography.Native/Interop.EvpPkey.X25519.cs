@@ -26,6 +26,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519GenerateKey")]
         private static partial SafeEvpPKeyHandle CryptoNative_X25519GenerateKey();
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519ImportPublicKey")]
+        private static partial SafeEvpPKeyHandle X25519ImportPublicKey(ReadOnlySpan<byte> source, int sourceLength);
+
         internal static void X25519ExportPrivateKey(SafeEvpPKeyHandle key, Span<byte> destination)
         {
             const int Success = 1;
@@ -67,6 +70,20 @@ internal static partial class Interop
         internal static SafeEvpPKeyHandle X25519GenerateKey()
         {
             SafeEvpPKeyHandle key = CryptoNative_X25519GenerateKey();
+
+            if (key.IsInvalid)
+            {
+                Exception ex = CreateOpenSslCryptographicException();
+                key.Dispose();
+                throw ex;
+            }
+
+            return key;
+        }
+
+        internal static SafeEvpPKeyHandle X25519ImportPublicKey(ReadOnlySpan<byte> source)
+        {
+            SafeEvpPKeyHandle key = X25519ImportPublicKey(source, source.Length);
 
             if (key.IsInvalid)
             {

@@ -3485,6 +3485,8 @@ namespace System.Security.Cryptography
         public void ExportPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
     }
 }
 namespace System.Security.Cryptography.X509Certificates

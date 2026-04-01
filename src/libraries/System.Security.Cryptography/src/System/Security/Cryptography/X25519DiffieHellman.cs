@@ -98,6 +98,21 @@ namespace System.Security.Cryptography
         protected abstract void ExportPrivateKeyCore(Span<byte> destination);
         protected abstract void ExportPublicKeyCore(Span<byte> destination);
 
+        public static X25519DiffieHellman ImportPublicKey(byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportPublicKey(new ReadOnlySpan<byte>(source));
+        }
+
+        public static X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source)
+        {
+            if (source.Length != PublicKeySizeInBytes)
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm, nameof(source));
+
+            ThrowIfNotSupported();
+            return X25519DiffieHellmanImplementation.ImportPublicKeyImpl(source);
+        }
+
         /// <summary>
         ///   Releases all resources used by the <see cref="X25519DiffieHellman"/> class.
         /// </summary>

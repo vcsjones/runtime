@@ -26,5 +26,12 @@ namespace System.Security.Cryptography
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
+
+        internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
+        {
+            _ = source;
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
     }
 }

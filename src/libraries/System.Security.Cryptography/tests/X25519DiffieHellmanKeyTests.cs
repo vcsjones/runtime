@@ -22,6 +22,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(X25519DiffieHellman.PublicKeySizeInBytes, publicKey.Length);
             Assert.Equal(X25519DiffieHellman.PrivateKeySizeInBytes, privateKey.Length);
             AssertExtensions.SequenceNotEqual(publicKey, privateKey);
+
+            using X25519DiffieHellman xdh2 = X25519DiffieHellman.ImportPublicKey(publicKey);
+            byte[] publicKey2 = xdh2.ExportPrivateKey();
+            AssertExtensions.SequenceEqual(publicKey, publicKey2);
         }
     }
 }

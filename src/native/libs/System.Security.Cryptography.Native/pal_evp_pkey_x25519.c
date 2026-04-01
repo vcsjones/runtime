@@ -34,6 +34,16 @@ static int32_t ExportRawKeyMaterial(
     return 1;
 }
 
+int32_t CryptoNative_X25519ExportPrivateKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
+{
+    return ExportRawKeyMaterial(key, destination, destinationLength, EVP_PKEY_get_raw_private_key);
+}
+
+int32_t CryptoNative_X25519ExportPublicKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
+{
+    return ExportRawKeyMaterial(key, destination, destinationLength, EVP_PKEY_get_raw_public_key);
+}
+
 EVP_PKEY* CryptoNative_X25519GenerateKey(void)
 {
     ERR_clear_error();
@@ -63,12 +73,14 @@ EVP_PKEY* CryptoNative_X25519GenerateKey(void)
     return ret;
 }
 
-int32_t CryptoNative_X25519ExportPrivateKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
+EVP_PKEY* CryptoNative_X25519ImportPublicKey(const uint8_t* source, int32_t sourceLength)
 {
-    return ExportRawKeyMaterial(key, destination, destinationLength, EVP_PKEY_get_raw_private_key);
-}
+    assert(source && sourceLength > 0);
+    ERR_clear_error();
 
-int32_t CryptoNative_X25519ExportPublicKey(const EVP_PKEY* key, uint8_t* destination, int32_t destinationLength)
-{
-    return ExportRawKeyMaterial(key, destination, destinationLength, EVP_PKEY_get_raw_public_key);
+    return EVP_PKEY_new_raw_public_key(
+        EVP_PKEY_X25519,
+        NULL,
+        source,
+        Int32ToSizeT(sourceLength));
 }
