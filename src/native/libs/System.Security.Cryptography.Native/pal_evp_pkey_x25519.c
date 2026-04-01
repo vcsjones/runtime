@@ -73,6 +73,18 @@ EVP_PKEY* CryptoNative_X25519GenerateKey(void)
     return ret;
 }
 
+EVP_PKEY* CryptoNative_X25519ImportPrivateKey(const uint8_t* source, int32_t sourceLength)
+{
+    assert(source && sourceLength > 0);
+    ERR_clear_error();
+
+    return EVP_PKEY_new_raw_private_key(
+        EVP_PKEY_X25519,
+        NULL,
+        source,
+        Int32ToSizeT(sourceLength));
+}
+
 EVP_PKEY* CryptoNative_X25519ImportPublicKey(const uint8_t* source, int32_t sourceLength)
 {
     assert(source && sourceLength > 0);

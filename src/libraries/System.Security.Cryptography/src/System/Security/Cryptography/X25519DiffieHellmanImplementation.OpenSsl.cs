@@ -10,13 +10,41 @@ namespace System.Security.Cryptography
         private readonly SafeEvpPKeyHandle _key;
         private readonly bool _hasPrivate;
 
-
         internal static new bool IsSupported => true;
 
         private X25519DiffieHellmanImplementation(SafeEvpPKeyHandle key, bool hasPrivate)
         {
             _key = key;
             _hasPrivate = hasPrivate;
+        }
+
+        protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
+
+            int written;
+
+            if (otherParty is X25519DiffieHellmanImplementation x25519Impl)
+            {
+                written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, x25519Impl._key, destination);
+            }
+            else
+            {
+                Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
+                otherParty.ExportPublicKey(publicKey);
+
+                using (SafeEvpPKeyHandle peerKeyHandle = Interop.Crypto.X25519ImportPublicKey(publicKey))
+                {
+                    written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(_key, peerKeyHandle, destination);
+                }
+            }
+
+            if (written != SecretAgreementSizeInBytes)
+            {
+                Debug.Fail($"{nameof(Interop.Crypto.EvpPKeyDeriveSecretAgreement)} wrote an unexpected number of bytes: {written}.");
+                throw new CryptographicException();
+            }
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -50,6 +78,13 @@ namespace System.Security.Cryptography
             return new X25519DiffieHellmanImplementation(key, hasPrivate: true);
         }
 
+        internal static X25519DiffieHellmanImplementation ImportPrivateKeyImpl(ReadOnlySpan<byte> source)
+        {
+            Debug.Assert(IsSupported);
+            SafeEvpPKeyHandle key = Interop.Crypto.X25519ImportPrivateKey(source);
+            Debug.Assert(!key.IsInvalid);
+            return new X25519DiffieHellmanImplementation(key, hasPrivate: true);
+        }
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {

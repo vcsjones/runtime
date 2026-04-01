@@ -32,6 +32,30 @@ namespace System.Security.Cryptography
         /// </value>
         public static bool IsSupported => X25519DiffieHellmanImplementation.IsSupported;
 
+        public byte[] DeriveRawSecretAgreement(X25519DiffieHellman otherParty)
+        {
+            ArgumentNullException.ThrowIfNull(otherParty);
+            ThrowIfDisposed();
+
+            byte[] buffer = new byte[SecretAgreementSizeInBytes];
+            DeriveRawSecretAgreementCore(otherParty, buffer);
+            return buffer;
+        }
+
+        public void DeriveRawSecretAgreement(X25519DiffieHellman otherParty, Span<byte> destination)
+        {
+            ArgumentNullException.ThrowIfNull(otherParty);
+
+            if (destination.Length != SecretAgreementSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, SecretAgreementSizeInBytes),
+                    nameof(destination));
+            }
+
+            DeriveRawSecretAgreementCore(otherParty, destination);
+        }
+
         /// <summary>
         ///   Generates a new X25519 Diffie-Hellman key.
         /// </summary>
@@ -95,8 +119,24 @@ namespace System.Security.Cryptography
             ExportPublicKeyCore(destination);
         }
 
+        protected abstract void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination);
         protected abstract void ExportPrivateKeyCore(Span<byte> destination);
         protected abstract void ExportPublicKeyCore(Span<byte> destination);
+
+        public static X25519DiffieHellman ImportPrivateKey(byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportPrivateKey(new ReadOnlySpan<byte>(source));
+        }
+
+        public static X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source)
+        {
+            if (source.Length != PrivateKeySizeInBytes)
+                throw new ArgumentException(SR.Argument_PrivateKeyWrongSizeForAlgorithm, nameof(source));
+
+            ThrowIfNotSupported();
+            return X25519DiffieHellmanImplementation.ImportPrivateKeyImpl(source);
+        }
 
         public static X25519DiffieHellman ImportPublicKey(byte[] source)
         {

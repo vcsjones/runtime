@@ -3476,6 +3476,9 @@ namespace System.Security.Cryptography
         public const int SecretAgreementSizeInBytes = 32;
         protected X25519DiffieHellman() { }
         public static bool IsSupported { get { throw null; } }
+        public byte[] DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty) { throw null; }
+        public void DeriveRawSecretAgreement(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination) { }
+        protected abstract void DeriveRawSecretAgreementCore(System.Security.Cryptography.X25519DiffieHellman otherParty, System.Span<byte> destination);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public byte[] ExportPrivateKey() { throw null; }
@@ -3485,6 +3488,8 @@ namespace System.Security.Cryptography
         public void ExportPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
         public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
     }
