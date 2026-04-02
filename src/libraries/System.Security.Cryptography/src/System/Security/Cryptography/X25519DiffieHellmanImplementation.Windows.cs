@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
                 using (SafeBCryptKeyHandle otherPartyHandle = ImportKey(false, publicKeyBytes, out _))
                 using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyHandle))
                 {
-                     Interop.BCrypt.BCryptDeriveKey(
+                    Interop.BCrypt.BCryptDeriveKey(
                         secret,
                         BCryptNative.KeyDerivationFunction.Raw,
                         in Unsafe.NullRef<Interop.BCrypt.BCryptBufferDesc>(),
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography
         private static SafeBCryptKeyHandle ImportKey(bool privateKey, ReadOnlySpan<byte> key, out byte preservation)
         {
             Debug.Assert(IsSupported);
-             string blobType = privateKey ?
+            string blobType = privateKey ?
                 Interop.BCrypt.KeyBlobType.BCRYPT_ECCPRIVATE_BLOB :
                 Interop.BCrypt.KeyBlobType.BCRYPT_ECCPUBLIC_BLOB;
 
