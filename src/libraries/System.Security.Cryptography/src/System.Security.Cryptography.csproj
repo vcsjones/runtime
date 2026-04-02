@@ -1573,10 +1573,14 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroySecret.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroySecret.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs"
@@ -1611,6 +1615,8 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSecretAgreement.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptSecretAgreement.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSignHash.cs"
@@ -1845,6 +1851,8 @@
              Link="Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptSecretHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeBCryptSecretHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandleWithKeyContainerDeletion.cs"
@@ -2020,7 +2028,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Windows.Import.cs" />
