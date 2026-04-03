@@ -5,6 +5,17 @@ using System;
 
 namespace System.Security.Cryptography
 {
+    /// <summary>
+    ///   Represents an X25519 Diffie-Hellman key.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     Developers are encouraged to program against the <c>X25519DiffieHellman</c> base class,
+    ///     rather than any specific derived class.
+    ///     The derived classes are intended for interop with the underlying system
+    ///     cryptographic libraries.
+    ///   </para>
+    /// </remarks>
     public abstract class X25519DiffieHellman : IDisposable
     {
         private bool _disposed;
@@ -32,6 +43,26 @@ namespace System.Security.Cryptography
         /// </value>
         public static bool IsSupported => X25519DiffieHellmanImplementation.IsSupported;
 
+        /// <summary>
+        ///   Derives a raw secret agreement with the other party's key.
+        /// </summary>
+        /// <param name="otherParty">
+        ///   The other party's key.
+        /// </param>
+        /// <returns>
+        ///   The secret agreement.
+        /// </returns>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="otherParty" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] DeriveRawSecretAgreement(X25519DiffieHellman otherParty)
         {
             ArgumentNullException.ThrowIfNull(otherParty);
@@ -42,6 +73,29 @@ namespace System.Security.Cryptography
             return buffer;
         }
 
+        /// <summary>
+        ///   Derives a raw secret agreement with the other party's key, writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherParty">
+        ///   The other party's key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="otherParty" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> is the incorrect length to receive the secret agreement.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void DeriveRawSecretAgreement(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             ArgumentNullException.ThrowIfNull(otherParty);
@@ -75,6 +129,16 @@ namespace System.Security.Cryptography
             return X25519DiffieHellmanImplementation.GenerateKeyImpl();
         }
 
+        /// <summary>
+        ///   Exports the private key.
+        /// </summary>
+        /// <returns>
+        ///   The private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] ExportPrivateKey()
         {
             ThrowIfDisposed();
@@ -84,6 +148,19 @@ namespace System.Security.Cryptography
             return buffer;
         }
 
+        /// <summary>
+        ///   Exports the private key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private key.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> is the incorrect length to receive the private key.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportPrivateKey(Span<byte> destination)
         {
             if (destination.Length != PrivateKeySizeInBytes)
@@ -97,6 +174,16 @@ namespace System.Security.Cryptography
             ExportPrivateKeyCore(destination);
         }
 
+        /// <summary>
+        ///   Exports the public key.
+        /// </summary>
+        /// <returns>
+        ///   The public key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] ExportPublicKey()
         {
             ThrowIfDisposed();
@@ -106,6 +193,19 @@ namespace System.Security.Cryptography
             return buffer;
         }
 
+        /// <summary>
+        ///   Exports the public key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the public key.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> is the incorrect length to receive the public key.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void ExportPublicKey(Span<byte> destination)
         {
             if (destination.Length != PublicKeySizeInBytes)
@@ -119,16 +219,84 @@ namespace System.Security.Cryptography
             ExportPublicKeyCore(destination);
         }
 
+        /// <summary>
+        ///   When overridden in a derived class, derives a raw secret agreement with the other party's key,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherParty">
+        ///   The other party's key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
         protected abstract void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the private key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the private key.
+        /// </param>
         protected abstract void ExportPrivateKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, exports the public key into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the public key.
+        /// </param>
         protected abstract void ExportPublicKeyCore(Span<byte> destination);
 
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from a private key.
+        /// </summary>
+        /// <param name="source">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> has a length that is not <see cref="PrivateKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
         public static X25519DiffieHellman ImportPrivateKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
             return ImportPrivateKey(new ReadOnlySpan<byte>(source));
         }
 
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from a private key.
+        /// </summary>
+        /// <param name="source">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> has a length that is not <see cref="PrivateKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
         public static X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source)
         {
             if (source.Length != PrivateKeySizeInBytes)
@@ -138,12 +306,53 @@ namespace System.Security.Cryptography
             return X25519DiffieHellmanImplementation.ImportPrivateKeyImpl(source);
         }
 
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from a public key.
+        /// </summary>
+        /// <param name="source">
+        ///   The public key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> has a length that is not <see cref="PublicKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
         public static X25519DiffieHellman ImportPublicKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
             return ImportPublicKey(new ReadOnlySpan<byte>(source));
         }
 
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from a public key.
+        /// </summary>
+        /// <param name="source">
+        ///   The public key.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> has a length that is not <see cref="PublicKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
         public static X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source)
         {
             if (source.Length != PublicKeySizeInBytes)
