@@ -113,6 +113,7 @@ namespace System.Security.Cryptography
                     nameof(destination));
             }
 
+            ThrowIfDisposed();
             DeriveRawSecretAgreementCore(otherParty, destination);
         }
 
@@ -1406,6 +1407,7 @@ namespace System.Security.Cryptography
         {
             ValueAsnReader reader = new(privateKeyContents, AsnEncodingRules.BER);
             ReadOnlySpan<byte> privateKey = reader.ReadOctetString();
+            reader.ThrowIfNotEmpty();
 
             if (privateKey.Length != PrivateKeySizeInBytes)
             {
