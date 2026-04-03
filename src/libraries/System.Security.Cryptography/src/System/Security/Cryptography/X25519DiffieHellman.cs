@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -21,6 +22,8 @@ namespace System.Security.Cryptography
     /// </remarks>
     public abstract class X25519DiffieHellman : IDisposable
     {
+        private static readonly string[] s_knownOids = [Oids.X25519];
+
         private bool _disposed;
 
         /// <summary>
@@ -848,6 +851,422 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from an X.509 SubjectPublicKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///   The bytes of an X.509 SubjectPublicKeyInfo structure in the ASN.1-DER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-DER-encoded X.509 SubjectPublicKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The SubjectPublicKeyInfo value does not represent an X25519 Diffie-Hellman key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
+        public static X25519DiffieHellman ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
+        {
+            Helpers.ThrowIfAsnInvalidLength(source);
+            ThrowIfNotSupported();
+
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(
+                s_knownOids,
+                source,
+                SubjectPublicKeyReader,
+                out int read,
+                out X25519DiffieHellman key);
+
+            Debug.Assert(read == source.Length);
+            return key;
+
+            static void SubjectPublicKeyReader(
+                ReadOnlySpan<byte> key,
+                in ValueAlgorithmIdentifierAsn identifier,
+                out X25519DiffieHellman result)
+            {
+                if (key.Length != PublicKeySizeInBytes)
+                {
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
+                }
+
+                result = X25519DiffieHellmanImplementation.ImportPublicKeyImpl(key);
+            }
+        }
+
+        /// <inheritdoc cref="ImportSubjectPublicKeyInfo(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static X25519DiffieHellman ImportSubjectPublicKeyInfo(byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman private key from a PKCS#8 PrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 PrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 PrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The PrivateKeyInfo value does not represent an X25519 Diffie-Hellman key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="source" /> contains trailing data after the ASN.1 structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
+        public static X25519DiffieHellman ImportPkcs8PrivateKey(ReadOnlySpan<byte> source)
+        {
+            Helpers.ThrowIfAsnInvalidLength(source);
+            ThrowIfNotSupported();
+
+            KeyFormatHelper.ReadPkcs8(s_knownOids, source, Pkcs8KeyReader, out int read, out X25519DiffieHellman key);
+            Debug.Assert(read == source.Length);
+            return key;
+        }
+
+        /// <inheritdoc cref="ImportPkcs8PrivateKey(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static X25519DiffieHellman ImportPkcs8PrivateKey(byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="passwordBytes">
+        ///   The bytes to use as a password when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The EncryptedPrivateKeyInfo indicates the Key Derivation Function (KDF) to apply is the legacy PKCS#12 KDF,
+        ///     which requires <see cref="char"/>-based passwords.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an X25519 Diffie-Hellman key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
+        public static X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, ReadOnlySpan<byte> source)
+        {
+            Helpers.ThrowIfAsnInvalidLength(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                passwordBytes,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an X25519 Diffie-Hellman key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
+        public static X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, ReadOnlySpan<byte> source)
+        {
+            Helpers.ThrowIfAsnInvalidLength(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman private key from a PKCS#8 EncryptedPrivateKeyInfo structure.
+        /// </summary>
+        /// <param name="password">
+        ///   The password to use when decrypting the key material.
+        /// </param>
+        /// <param name="source">
+        ///   The bytes of a PKCS#8 EncryptedPrivateKeyInfo structure in the ASN.1-BER encoding.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="password" /> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The contents of <paramref name="source"/> do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified password is incorrect.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The value does not represent an X25519 Diffie-Hellman key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific import failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The platform does not support X25519 Diffie-Hellman. Callers can use the <see cref="IsSupported" /> property
+        ///   to determine if the platform supports X25519 Diffie-Hellman.
+        /// </exception>
+        public static X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
+        {
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
+            Helpers.ThrowIfAsnInvalidLength(source);
+            ThrowIfNotSupported();
+
+            return KeyFormatHelper.DecryptPkcs8(
+                password,
+                source,
+                ImportPkcs8PrivateKey,
+                out _);
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from an RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The text of the PEM key to import.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded X25519 Diffie-Hellman keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded X25519 Diffie-Hellman keys.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while importing the key.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///   are found, an exception is raised to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>
+        ///   This method supports the following PEM labels:
+        ///   <list type="bullet">
+        ///     <item><description>PUBLIC KEY</description></item>
+        ///     <item><description>PRIVATE KEY</description></item>
+        ///   </list>
+        ///   </para>
+        /// </remarks>
+        public static X25519DiffieHellman ImportFromPem(ReadOnlySpan<char> source)
+        {
+            ThrowIfNotSupported();
+
+            return PemKeyHelpers.ImportFactoryPem<X25519DiffieHellman>(source, label =>
+                label switch
+                {
+                    PemLabels.Pkcs8PrivateKey => ImportPkcs8PrivateKey,
+                    PemLabels.SpkiPublicKey => ImportSubjectPublicKeyInfo,
+                    _ => null,
+                });
+        }
+
+        /// <inheritdoc cref="ImportFromPem(ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static X25519DiffieHellman ImportFromPem(string source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            return ImportFromPem(source.AsSpan());
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.
+        /// </param>
+        /// <param name="password">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source"/> does not contain a PEM-encoded key with a recognized label.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The password is incorrect.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while importing the key.</para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When the base-64 decoded contents of <paramref name="source" /> indicate an algorithm that uses PBKDF1
+        ///     (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
+        ///     the password is converted to bytes via the UTF-8 encoding.
+        ///   </para>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static X25519DiffieHellman ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<char> password)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<X25519DiffieHellman, char>(
+                source,
+                password,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <summary>
+        ///   Imports an X25519 Diffie-Hellman key from an encrypted RFC 7468 PEM-encoded string.
+        /// </summary>
+        /// <param name="source">
+        ///   The PEM text of the encrypted key to import.
+        /// </param>
+        /// <param name="passwordBytes">
+        ///   The password to use for decrypting the key material.
+        /// </param>
+        /// <returns>
+        ///   The imported key.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="source"/> does not contain a PEM-encoded key with a recognized label.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The password is incorrect.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while importing the key.</para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when the key is ambiguous.
+        ///   </para>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
+        /// </remarks>
+        public static X25519DiffieHellman ImportFromEncryptedPem(ReadOnlySpan<char> source, ReadOnlySpan<byte> passwordBytes)
+        {
+            return PemKeyHelpers.ImportEncryptedFactoryPem<X25519DiffieHellman, byte>(
+                source,
+                passwordBytes,
+                ImportEncryptedPkcs8PrivateKey);
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{char})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />.
+        /// </exception>
+        public static X25519DiffieHellman ImportFromEncryptedPem(string source, string password)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(password);
+            return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
+        }
+
+        /// <inheritdoc cref="ImportFromEncryptedPem(ReadOnlySpan{char}, ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />.
+        /// </exception>
+        public static X25519DiffieHellman ImportFromEncryptedPem(string source, byte[] passwordBytes)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(passwordBytes);
+            return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
+        }
+
+        /// <summary>
         ///   Releases all resources used by the <see cref="X25519DiffieHellman"/> class.
         /// </summary>
         public void Dispose()
@@ -978,6 +1397,22 @@ namespace System.Security.Cryptography
                 tmp.Reset();
                 CryptoPool.Return(rented, written);
             }
+        }
+
+        private static void Pkcs8KeyReader(
+            ReadOnlySpan<byte> privateKeyContents,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
+            out X25519DiffieHellman key)
+        {
+            ValueAsnReader reader = new(privateKeyContents, AsnEncodingRules.BER);
+            ReadOnlySpan<byte> privateKey = reader.ReadOctetString();
+
+            if (privateKey.Length != PrivateKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+            }
+
+            key = X25519DiffieHellmanImplementation.ImportPrivateKeyImpl(privateKey);
         }
 
         private protected void ThrowIfDisposed()

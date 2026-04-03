@@ -3498,10 +3498,23 @@ namespace System.Security.Cryptography
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportEncryptedPkcs8PrivateKey(string password, byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<byte> passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(System.ReadOnlySpan<char> source, System.ReadOnlySpan<char> password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, byte[] passwordBytes) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromEncryptedPem(string source, string password) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportFromPem(string source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
+        public static System.Security.Cryptography.X25519DiffieHellman ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
