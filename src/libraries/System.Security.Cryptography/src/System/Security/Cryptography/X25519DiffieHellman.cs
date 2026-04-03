@@ -446,8 +446,8 @@ namespace System.Security.Cryptography
 
             // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is 12 bytes.
             // Round it off to 16.
-            int capacity = 16 + PublicKeySizeInBytes;
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+            const int Capacity = 16 + PublicKeySizeInBytes;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, Capacity);
             spki.Encode(writer);
             return writer;
         }
