@@ -4,6 +4,7 @@
 using System;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -260,6 +261,26 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             return ExportSubjectPublicKeyInfoCore().Encode();
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key in a PEM-encoded representation of
+        ///   the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A string containing the PEM-encoded representation of the X.509 SubjectPublicKeyInfo
+        ///   representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public string ExportSubjectPublicKeyInfoPem()
+        {
+            ThrowIfDisposed();
+            AsnWriter writer = ExportSubjectPublicKeyInfoCore();
+            // SPKI does not contain sensitive data.
+            return Helpers.EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
 
         /// <summary>
