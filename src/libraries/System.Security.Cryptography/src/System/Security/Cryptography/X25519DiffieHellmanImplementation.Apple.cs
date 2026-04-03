@@ -21,8 +21,22 @@ namespace System.Security.Cryptography
 
         protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            ThrowIfPrivateNeeded();
+
+            if (otherParty is X25519DiffieHellmanImplementation x25519impl)
+            {
+                Interop.AppleCrypto.X25519DeriveRawSecretAgreement(_key, x25519impl._key, destination);
+            }
+            else
+            {
+                Span<byte> publicKeyBuffer = stackalloc byte[PublicKeySizeInBytes];
+                otherParty.ExportPublicKey(publicKeyBuffer);
+
+                using (SafeX25519KeyHandle publicKey = Interop.AppleCrypto.X25519ImportPublicKey(publicKeyBuffer))
+                {
+                    Interop.AppleCrypto.X25519DeriveRawSecretAgreement(_key, publicKey, destination);
+                }
+            }
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -55,16 +69,16 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPrivateKeyImpl(ReadOnlySpan<byte> source)
         {
-            _ = source;
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            return new X25519DiffieHellmanImplementation(
+                Interop.AppleCrypto.X25519ImportPrivateKey(source),
+                hasPrivate: true);
         }
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            _ = source;
-            Debug.Fail("Caller should have checked platform availability.");
-            throw new PlatformNotSupportedException();
+            return new X25519DiffieHellmanImplementation(
+                Interop.AppleCrypto.X25519ImportPublicKey(source),
+                hasPrivate: false);
         }
 
         private void ThrowIfPrivateNeeded()
