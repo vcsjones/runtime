@@ -284,6 +284,63 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+            return TryExportPkcs8PrivateKeyCore(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Exports the current key in the PKCS#8 PrivateKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public byte[] ExportPkcs8PrivateKey()
+        {
+            ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => pkcs8.ToArray());
+        }
+
+        /// <summary>
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public string ExportPkcs8PrivateKeyPem()
+        {
+            ThrowIfDisposed();
+            return ExportPkcs8PrivateKeyCallback(static pkcs8 => PemEncoding.WriteString(PemLabels.Pkcs8PrivateKey, pkcs8));
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, derives a raw secret agreement with the other party's key,
         ///   writing it into the provided buffer.
         /// </summary>
@@ -313,6 +370,25 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the public key.
         /// </param>
         protected abstract void ExportPublicKeyCore(Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to export the current key in the PKCS#8 PrivateKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the PKCS#8 PrivateKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        protected abstract bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten);
 
         /// <summary>
         ///   Imports an X25519 Diffie-Hellman key from a private key.
@@ -471,6 +547,61 @@ namespace System.Security.Cryptography
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, Capacity);
             spki.Encode(writer);
             return writer;
+        }
+
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)
+        {
+            // A PKCS#8 X25519 PrivateKeyInfo has an ASN.1 overhead of 16 bytes, assuming no attributes.
+            // Make it an even 32 and that should give a good starting point for a buffer size.
+            int size = PrivateKeySizeInBytes + 32;
+            byte[] buffer = CryptoPool.Rent(size);
+            int written;
+
+            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
+            {
+                CryptoPool.Return(buffer);
+                size = checked(size * 2);
+                buffer = CryptoPool.Rent(size);
+            }
+
+            if (written < 0 || written > buffer.Length)
+            {
+                CryptographicOperations.ZeroMemory(buffer);
+                throw new CryptographicException();
+            }
+
+            TResult result = func(buffer.AsSpan(0, written));
+            CryptoPool.Return(buffer, written);
+            return result;
+        }
+
+        private protected bool TryExportPkcs8PrivateKeyImpl(Span<byte> destination, out int bytesWritten)
+        {
+            ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
+            {
+                Algorithm = Oids.X25519,
+            };
+
+            Span<byte> privateKey = stackalloc byte[PrivateKeySizeInBytes];
+            ExportPrivateKey(privateKey);
+
+            try
+            {
+                AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
+                algorithmIdentifier.Encode(algorithmWriter);
+                AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
+                privateKeyWriter.WriteOctetString(privateKey);
+                AsnWriter pkcs8Writer = KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter);
+
+                bool result = pkcs8Writer.TryEncode(destination, out bytesWritten);
+                privateKeyWriter.Reset();
+                pkcs8Writer.Reset();
+                return result;
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(privateKey);
+            }
         }
 
         private protected void ThrowIfDisposed()

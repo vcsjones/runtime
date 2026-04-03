@@ -90,6 +90,12 @@ namespace System.Security.Cryptography
             ExportKey(false, destination);
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfPrivateNeeded();
+            return TryExportPkcs8PrivateKeyImpl(destination, out bytesWritten);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -327,6 +333,12 @@ namespace System.Security.Cryptography
             }
 
             return hAlgorithm;
+        }
+
+        private void ThrowIfPrivateNeeded()
+        {
+            if (!_hasPrivate)
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
         }
     }
 }

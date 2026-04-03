@@ -60,6 +60,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.X25519ExportPublicKey(_key, destination);
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfPrivateNeeded();
+            return TryExportPkcs8PrivateKeyImpl(destination, out bytesWritten);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

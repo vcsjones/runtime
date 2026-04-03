@@ -27,6 +27,12 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         internal static X25519DiffieHellmanImplementation GenerateKeyImpl()
         {
             Debug.Fail("Caller should have checked platform availability.");
