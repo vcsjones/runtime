@@ -1365,6 +1365,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Symmetric.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X25519.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X25519.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs"
@@ -1434,7 +1436,7 @@
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Apple.cs" />
-    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X25519DiffieHellmanImplementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.TempExportPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateData.ManagedDecode.cs" />

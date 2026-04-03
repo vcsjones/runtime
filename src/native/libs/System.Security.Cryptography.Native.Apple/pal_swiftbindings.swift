@@ -11,6 +11,25 @@ final class HashBox {
     }
 }
 
+enum X25519Key {
+    case PrivateKey(Curve25519.KeyAgreement.PrivateKey)
+    case PublicKey(Curve25519.KeyAgreement.PublicKey)
+
+    func getPublic() -> Curve25519.KeyAgreement.PublicKey {
+        switch self {
+            case .PrivateKey(let key): return key.publicKey
+            case .PublicKey(let key): return key
+        }
+    }
+}
+
+final class X25519KeyBox {
+    var value: X25519Key
+    init(_ value: X25519Key) {
+        self.value = value
+    }
+}
+
 protocol NonceProtocol {
     init<D>(data: D) throws where D : DataProtocol
 }
@@ -535,4 +554,63 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     }
 
     return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519ExportPrivateKey")
+public func AppleCryptoNative_X25519ExportPrivateKey(keyPtr: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let pOutput else {
+        return -1
+    }
+
+    let box = Unmanaged<X25519KeyBox>.fromOpaque(keyPtr).takeUnretainedValue()
+
+    guard case .PrivateKey(let key) = box.value else {
+        return -1
+    }
+
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+    let copied = key.rawRepresentation.withUnsafeBytes { privateKey in
+        return privateKey.copyBytes(to: destination) == privateKey.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519ExportPublicKey")
+public func AppleCryptoNative_X25519ExportPublicKey(keyPtr: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let pOutput else {
+        return -1
+    }
+
+    let box = Unmanaged<X25519KeyBox>.fromOpaque(keyPtr).takeUnretainedValue()
+    let key = box.value.getPublic()
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    let copied = key.rawRepresentation.withUnsafeBytes { pubKey in
+        return pubKey.copyBytes(to: destination) == pubKey.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519GenerateKey")
+public func AppleCryptoNative_X25519GenerateKey() ->  UnsafeMutableRawPointer? {
+    let key = Curve25519.KeyAgreement.PrivateKey.init()
+    let box = X25519KeyBox(X25519Key.PrivateKey(key))
+    return Unmanaged.passRetained(box).toOpaque()
+}
+
+@_silgen_name("AppleCryptoNative_X25519FreeKey")
+public func AppleCryptoNative_X25519FreeKey(ptr: UnsafeMutableRawPointer?) {
+    if let ptr {
+        Unmanaged<X25519KeyBox>.fromOpaque(ptr).release()
+    }
 }
