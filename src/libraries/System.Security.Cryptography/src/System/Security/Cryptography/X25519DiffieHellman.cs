@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Formats.Asn1;
+using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -220,6 +222,47 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Attempts to export the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="destination">
+        ///   The buffer to receive the X.509 SubjectPublicKeyInfo value.
+        /// </param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if <paramref name="destination"/> was large enough to hold the result;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten)
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().TryEncode(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
+        /// </summary>
+        /// <returns>
+        ///   A byte array containing the X.509 SubjectPublicKeyInfo representation of the public-key portion of this key.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while exporting the key.
+        /// </exception>
+        public byte[] ExportSubjectPublicKeyInfo()
+        {
+            ThrowIfDisposed();
+            return ExportSubjectPublicKeyInfoCore().Encode();
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, derives a raw secret agreement with the other party's key,
         ///   writing it into the provided buffer.
         /// </summary>
@@ -385,6 +428,28 @@ namespace System.Security.Cryptography
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
+        }
+
+        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        {
+            Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
+            ExportPublicKeyCore(publicKey);
+
+            ValueSubjectPublicKeyInfoAsn spki = new ValueSubjectPublicKeyInfoAsn
+            {
+                Algorithm = new ValueAlgorithmIdentifierAsn
+                {
+                    Algorithm = Oids.X25519,
+                },
+                SubjectPublicKey = publicKey,
+            };
+
+            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is 12 bytes.
+            // Round it off to 16.
+            int capacity = 16 + PublicKeySizeInBytes;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, capacity);
+            spki.Encode(writer);
+            return writer;
         }
 
         private protected void ThrowIfDisposed()

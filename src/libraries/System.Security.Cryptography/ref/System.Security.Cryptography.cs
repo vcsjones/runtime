@@ -3487,11 +3487,13 @@ namespace System.Security.Cryptography
         public byte[] ExportPublicKey() { throw null; }
         public void ExportPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
+        public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman GenerateKey() { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.X25519DiffieHellman ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
 }
 namespace System.Security.Cryptography.X509Certificates
