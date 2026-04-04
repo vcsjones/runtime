@@ -11,30 +11,11 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public static class X25519DiffieHellmanTests
     {
-        private const string X25519Oid = "1.3.101.110";
         private static readonly byte[] s_asnNull = [0x05, 0x00];
 
-        // RFC 7748 Alice's private key
-        private const string AlicePrivateKeyHex = "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
-        private const string AlicePublicKeyHex = "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a";
-
-        // SPKI for Alice's public key
-        private static readonly byte[] AliceSpki = ("302a300506032b656e032100" + AlicePublicKeyHex).HexToByteArray();
-
-        // PKCS#8 for Alice's private key
-        private static readonly byte[] AlicePkcs8 = ("302e020100300506032b656e04220420" + AlicePrivateKeyHex).HexToByteArray();
-
-        // Encrypted PKCS#8 for Alice's private key, password = "PLACEHOLDER", AES-128-CBC
-        private static readonly byte[] AliceEncryptedPkcs8 =
-            ("3081a3305f06092a864886f70d01050d3052303106092a864886f70d01050c" +
-             "302404106a2d90cfd9a8f9644d4ea289a19758a602020800300c06082a8648" +
-             "86f70d02090500301d0609608648016503040102041099bb649f99a8dc086f" +
-             "3e3d4110fa0d4a04409bee7166f2dce53783315ddede6e0bd194f2deda3e22" +
-             "94e092b1018cad6d2dc008ede619ad5159daede3b8e502719ac69743f5e582" +
-             "b0671e2327d7341217d40c").HexToByteArray();
-
-        private const string EncryptedPrivateKeyPassword = "PLACEHOLDER";
-        private static ReadOnlySpan<byte> EncryptedPrivateKeyPasswordBytes => "PLACEHOLDER"u8;
+        private static readonly byte[] AliceSpki = X25519DiffieHellmanTestData.AliceSpki;
+        private static readonly byte[] AlicePkcs8 = X25519DiffieHellmanTestData.AlicePkcs8;
+        private static readonly byte[] AliceEncryptedPkcs8 = X25519DiffieHellmanTestData.AliceEncryptedPkcs8;
 
         [Fact]
         public static void ImportPrivateKey_NullSource()
@@ -133,17 +114,17 @@ namespace System.Security.Cryptography.Tests
         public static void ImportSubjectPublicKeyInfo_WrongParameters()
         {
             // RFC 8410: AlgorithmIdentifier parameters MUST be absent
-            byte[] spki = SpkiEncode(X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes], algorithmParameters: s_asnNull);
+            byte[] spki = SpkiEncode(X25519DiffieHellmanTestData.X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes], algorithmParameters: s_asnNull);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportSubjectPublicKeyInfo(spki));
         }
 
         [Fact]
         public static void ImportSubjectPublicKeyInfo_WrongSize()
         {
-            byte[] spki = SpkiEncode(X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes - 1]);
+            byte[] spki = SpkiEncode(X25519DiffieHellmanTestData.X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes - 1]);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportSubjectPublicKeyInfo(spki));
 
-            spki = SpkiEncode(X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes + 1]);
+            spki = SpkiEncode(X25519DiffieHellmanTestData.X25519Oid, new byte[X25519DiffieHellman.PublicKeySizeInBytes + 1]);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportSubjectPublicKeyInfo(spki));
         }
 
@@ -202,10 +183,10 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void ImportPkcs8PrivateKey_WrongKeySize()
         {
-            byte[] pkcs8 = Pkcs8Encode(X25519Oid, new byte[X25519DiffieHellman.PrivateKeySizeInBytes - 1]);
+            byte[] pkcs8 = Pkcs8Encode(X25519DiffieHellmanTestData.X25519Oid, new byte[X25519DiffieHellman.PrivateKeySizeInBytes - 1]);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8));
 
-            pkcs8 = Pkcs8Encode(X25519Oid, new byte[X25519DiffieHellman.PrivateKeySizeInBytes + 1]);
+            pkcs8 = Pkcs8Encode(X25519DiffieHellmanTestData.X25519Oid, new byte[X25519DiffieHellman.PrivateKeySizeInBytes + 1]);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8));
         }
 
@@ -213,7 +194,7 @@ namespace System.Security.Cryptography.Tests
         public static void ImportPkcs8PrivateKey_BadAlgorithmIdentifier()
         {
             // RFC 8410: AlgorithmIdentifier parameters MUST be absent
-            byte[] pkcs8 = Pkcs8Encode(X25519Oid, AlicePrivateKeyHex.HexToByteArray(), algorithmParameters: s_asnNull);
+            byte[] pkcs8 = Pkcs8Encode(X25519DiffieHellmanTestData.X25519Oid, X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), algorithmParameters: s_asnNull);
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8.AsSpan()));
             Assert.Throws<CryptographicException>(() => X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8));
         }
@@ -239,14 +220,14 @@ namespace System.Security.Cryptography.Tests
         public static void ImportPkcs8PrivateKey_Array_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPkcs8PrivateKey(AlicePkcs8);
-            AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
         }
 
         [Fact]
         public static void ImportPkcs8PrivateKey_Span_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(AlicePkcs8));
-            AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
         }
 
         [Fact]
@@ -260,13 +241,13 @@ namespace System.Security.Cryptography.Tests
                 "gJoH9z0+/Z9WzLU8ix8F7B+HWwRhib5Cd6si+AX6DsNelMq2zP1NO7Un416dkg==");
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword, ecP256Key));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, ecP256Key));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword.AsSpan(), new ReadOnlySpan<byte>(ecP256Key)));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), new ReadOnlySpan<byte>(ecP256Key)));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPasswordBytes, new ReadOnlySpan<byte>(ecP256Key)));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, new ReadOnlySpan<byte>(ecP256Key)));
         }
 
         [Fact]
@@ -276,26 +257,26 @@ namespace System.Security.Cryptography.Tests
             AliceEncryptedPkcs8.AsSpan().CopyTo(oversized);
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword, oversized));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, oversized));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword.AsSpan(), oversized));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), oversized));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPasswordBytes, oversized));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, oversized));
         }
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_NotAsn()
         {
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword, "potatoes"u8.ToArray()));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, "potatoes"u8.ToArray()));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword.AsSpan(), "potatoes"u8));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), "potatoes"u8));
 
             Assert.Throws<CryptographicException>(() =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPasswordBytes, "potatoes"u8));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, "potatoes"u8));
         }
 
         [Fact]
@@ -315,31 +296,31 @@ namespace System.Security.Cryptography.Tests
         public static void ImportEncryptedPkcs8PrivateKey_CharPassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
-                EncryptedPrivateKeyPassword.AsSpan(), AliceEncryptedPkcs8);
-            AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), AliceEncryptedPkcs8);
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
         }
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_StringPassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
-                EncryptedPrivateKeyPassword, AliceEncryptedPkcs8);
-            AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, AliceEncryptedPkcs8);
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
         }
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_BytePassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(
-                EncryptedPrivateKeyPasswordBytes, AliceEncryptedPkcs8);
-            AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, AliceEncryptedPkcs8);
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
         }
 
         [Fact]
         public static void ImportEncryptedPkcs8PrivateKey_NullArgs()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
-                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(EncryptedPrivateKeyPassword, (byte[])null));
+                X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey(X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, (byte[])null));
 
             AssertExtensions.Throws<ArgumentNullException>("password", static () =>
                 X25519DiffieHellman.ImportEncryptedPkcs8PrivateKey((string)null, AliceEncryptedPkcs8));
@@ -389,7 +370,7 @@ namespace System.Security.Cryptography.Tests
             AssertImportFromPem(importer =>
             {
                 using X25519DiffieHellman xdh = importer(pem);
-                AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
             });
         }
 
@@ -406,7 +387,7 @@ namespace System.Security.Cryptography.Tests
             AssertImportFromPem(importer =>
             {
                 using X25519DiffieHellman xdh = importer(pem);
-                AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
             });
         }
 
@@ -481,10 +462,10 @@ namespace System.Security.Cryptography.Tests
         public static void ImportFromEncryptedPem_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source",
-                static () => X25519DiffieHellman.ImportFromEncryptedPem((string)null, EncryptedPrivateKeyPassword));
+                static () => X25519DiffieHellman.ImportFromEncryptedPem((string)null, X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword));
 
             AssertExtensions.Throws<ArgumentNullException>("source",
-                static () => X25519DiffieHellman.ImportFromEncryptedPem((string)null, EncryptedPrivateKeyPasswordBytes.ToArray()));
+                static () => X25519DiffieHellman.ImportFromEncryptedPem((string)null, X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes.ToArray()));
         }
 
         [Fact]
@@ -503,8 +484,8 @@ namespace System.Security.Cryptography.Tests
             string pem = WritePem("ENCRYPTED PRIVATE KEY", AliceEncryptedPkcs8);
             AssertImportFromEncryptedPem(importer =>
             {
-                using X25519DiffieHellman xdh = importer(pem, EncryptedPrivateKeyPassword);
-                AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                using X25519DiffieHellman xdh = importer(pem, X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword);
+                AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
             });
         }
 
@@ -518,7 +499,7 @@ namespace System.Security.Cryptography.Tests
             AssertImportFromEncryptedPem(importer =>
             {
                 AssertExtensions.Throws<ArgumentException>("source",
-                    () => importer(pem, EncryptedPrivateKeyPassword));
+                    () => importer(pem, X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword));
             });
         }
 
@@ -559,8 +540,8 @@ namespace System.Security.Cryptography.Tests
             """;
             AssertImportFromEncryptedPem(importer =>
             {
-                using X25519DiffieHellman xdh = importer(pem, EncryptedPrivateKeyPassword);
-                AssertExtensions.SequenceEqual(AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
+                using X25519DiffieHellman xdh = importer(pem, X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword);
+                AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(), xdh.ExportPrivateKey());
             });
         }
 
