@@ -897,6 +897,11 @@ namespace System.Security.Cryptography
                 in ValueAlgorithmIdentifierAsn identifier,
                 out X25519DiffieHellman result)
             {
+                if (identifier.HasParameters)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
                 if (key.Length != PublicKeySizeInBytes)
                 {
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
@@ -1405,6 +1410,11 @@ namespace System.Security.Cryptography
             in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             out X25519DiffieHellman key)
         {
+            if (algorithmIdentifier.HasParameters)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
             ValueAsnReader reader = new(privateKeyContents, AsnEncodingRules.BER);
             ReadOnlySpan<byte> privateKey = reader.ReadOctetString();
             reader.ThrowIfNotEmpty();
