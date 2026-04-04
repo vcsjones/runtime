@@ -309,7 +309,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PrivateKey_Roundtrip_ClampedScalar()
         {
-            byte[] privateKey = X25519DiffieHellmanTestData.AlicePrivateKey;
+            byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
             privateKey[0] &= 0b11111000;
             privateKey[^1] &= 0b01111111;
             privateKey[^1] |= 0b01000000;
@@ -321,7 +321,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PrivateKey_ClampedAndUnclamped_SamePublicKey()
         {
-            byte[] unclamped = X25519DiffieHellmanTestData.AlicePrivateKey;
+            byte[] unclamped = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
             byte[] clamped = (byte[])unclamped.Clone();
             clamped[0] &= 0b11111000;
             clamped[^1] &= 0b01111111;

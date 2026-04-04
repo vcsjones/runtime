@@ -299,7 +299,7 @@ namespace System.Security.Cryptography.Tests
             // Construct a private key that is ALREADY properly clamped per RFC 7748:
             // bytes[0] low 3 bits = 0, bytes[31] bit 7 = 0 and bit 6 = 1.
             // Importing this key should be a no-op fixup; the key roundtrips unchanged.
-            byte[] privateKey = X25519DiffieHellmanTestData.AlicePrivateKey;
+            byte[] privateKey = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
             privateKey[0] &= 0b11111000;
             privateKey[^1] &= 0b01111111;
             privateKey[^1] |= 0b01000000;
@@ -321,7 +321,7 @@ namespace System.Security.Cryptography.Tests
         {
             // The unclamped and clamped forms of the same key should produce the same public key,
             // because the DH computation always operates on the clamped scalar.
-            byte[] unclamped = X25519DiffieHellmanTestData.AlicePrivateKey;
+            byte[] unclamped = (byte[])X25519DiffieHellmanTestData.AlicePrivateKey.Clone();
             byte[] clamped = (byte[])unclamped.Clone();
             clamped[0] &= 0b11111000;
             clamped[^1] &= 0b01111111;
