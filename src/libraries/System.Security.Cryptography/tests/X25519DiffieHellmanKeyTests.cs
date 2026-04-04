@@ -288,5 +288,82 @@ namespace System.Security.Cryptography.Tests
 
             Assert.Throws<CryptographicException>(() => publicOnly.ExportPrivateKey());
         }
+
+        [Fact]
+        public static void PrivateKey_Roundtrip_UnclampedScalar_AllPreservationBits()
+        {
+            // A private key where bytes[0] low 3 bits = 0b111 AND bytes[31] high 2 bits = 0b11.
+            // This exercises the maximum scalar fixup on Windows CNG (all preservation bits set).
+            // Bob's RFC 7748 key has this property: bytes[0]=0x5d (low 3=0b101), bytes[31]=0xeb (high 2=0b11).
+            byte[] privateKey = BobPrivateKey.HexToByteArray();
+            Assert.Equal(0b101, privateKey[0] & 0b111);
+            Assert.Equal(0b11000000, privateKey[^1] & 0b11000000);
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKey);
+
+            // Private key must roundtrip with original unclamped bits preserved
+            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+
+            // Public key must still be correct (computed from the clamped scalar)
+            AssertExtensions.SequenceEqual(BobPublicKey.HexToByteArray(), xdh.ExportPublicKey());
+
+            // PKCS#8 roundtrip must also preserve the original private key
+            byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
+            using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
+            AssertExtensions.SequenceEqual(privateKey, reimported.ExportPrivateKey());
+        }
+
+        [Fact]
+        public static void PrivateKey_Roundtrip_ClampedScalar()
+        {
+            // Construct a private key that is ALREADY properly clamped per RFC 7748:
+            // bytes[0] low 3 bits = 0, bytes[31] bit 7 = 0 and bit 6 = 1.
+            // Importing this key should be a no-op fixup; the key roundtrips unchanged.
+            byte[] privateKey = AlicePrivateKey.HexToByteArray();
+            privateKey[0] &= 0b11111000;
+            privateKey[^1] &= 0b01111111;
+            privateKey[^1] |= 0b01000000;
+
+            Assert.Equal(0, privateKey[0] & 0b111);
+            Assert.Equal(0b01000000, privateKey[^1] & 0b11000000);
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKey);
+            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+
+            // PKCS#8 roundtrip
+            byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
+            using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
+            AssertExtensions.SequenceEqual(privateKey, reimported.ExportPrivateKey());
+        }
+
+        [Fact]
+        public static void PrivateKey_ClampedAndUnclamped_SamePublicKey()
+        {
+            // The unclamped and clamped forms of the same key should produce the same public key,
+            // because the DH computation always operates on the clamped scalar.
+            byte[] unclamped = AlicePrivateKey.HexToByteArray();
+            byte[] clamped = (byte[])unclamped.Clone();
+            clamped[0] &= 0b11111000;
+            clamped[^1] &= 0b01111111;
+            clamped[^1] |= 0b01000000;
+
+            using X25519DiffieHellman xdhUnclamped = X25519DiffieHellman.ImportPrivateKey(unclamped);
+            using X25519DiffieHellman xdhClamped = X25519DiffieHellman.ImportPrivateKey(clamped);
+
+            AssertExtensions.SequenceEqual(xdhUnclamped.ExportPublicKey(), xdhClamped.ExportPublicKey());
+        }
+
+        [Fact]
+        public static void PrivateKey_Roundtrip_MaxPreservation()
+        {
+            // A key with bytes[0]=0xFF and bytes[31]=0xFF — maximum preservation needed.
+            // The scalar fixup would clamp bytes[0] to 0xF8 and bytes[31] to 0x7F,
+            // but the original 0xFF values must be restored on export.
+            byte[] privateKey = new byte[X25519DiffieHellman.PrivateKeySizeInBytes];
+            privateKey.AsSpan().Fill(0xFF);
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKey);
+            AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
+        }
     }
 }
