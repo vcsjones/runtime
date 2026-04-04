@@ -350,6 +350,15 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void TryExportPkcs8PrivateKey_EarlyExitForSmallBuffer()
+        {
+            X25519DiffieHellmanContract xdh = new();
+            byte[] destination = new byte[47];
+            AssertExtensions.FalseExpression(xdh.TryExportPkcs8PrivateKey(destination, out int written));
+            Assert.Equal(0, written);
+        }
+
+        [Fact]
         public static void TryExportPkcs8PrivateKey()
         {
             int bufferSize = Random.Shared.Next(50, 1024);

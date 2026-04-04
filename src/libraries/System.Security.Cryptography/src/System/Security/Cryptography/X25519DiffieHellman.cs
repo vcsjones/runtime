@@ -309,6 +309,19 @@ namespace System.Security.Cryptography
         public bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
         {
             ThrowIfDisposed();
+
+            // An X25519 PKCS#8 PrivateKeyInfo with no attributes is 48 bytes:
+            //   SEQUENCE (2) + INTEGER version (3) + SEQUENCE AlgorithmIdentifier (7) +
+            //   OCTET STRING outer (2) + OCTET STRING CurvePrivateKey (2) + 32 byte key = 48.
+            // A buffer smaller than that cannot hold a PKCS#8 encoded key.
+            const int MinimumPossiblePkcs8X25519Key = 48;
+
+            if (destination.Length < MinimumPossiblePkcs8X25519Key)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
             return TryExportPkcs8PrivateKeyCore(destination, out bytesWritten);
         }
 
