@@ -192,7 +192,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void ExportEncryptedPkcs8PrivateKey_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(AlicePrivateKey.HexToByteArray());
@@ -203,7 +202,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void ExportEncryptedPkcs8PrivateKey_Roundtrip_BytePassword()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(AlicePrivateKey.HexToByteArray());
@@ -236,7 +234,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not support symmetric encryption")]
         public static void ImportFromEncryptedPem_Roundtrip()
         {
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(AlicePrivateKey.HexToByteArray());
