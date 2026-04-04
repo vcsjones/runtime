@@ -397,6 +397,39 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public void DeriveRawSecretAgreement_NonPlatformOtherParty()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+
+            // Wrap key2 in a non-platform wrapper. This forces the implementation to go through
+            // the ExportPublicKey fallback path rather than using the native key handle directly.
+            using X25519DiffieHellmanWrapper wrapper = new(key2);
+
+            byte[] secret1 = key1.DeriveRawSecretAgreement(wrapper);
+            byte[] secret2 = key2.DeriveRawSecretAgreement(key1);
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+            Assert.True(wrapper.ExportPublicKeyCoreWasCalled);
+        }
+
+        [Fact]
+        public void DeriveRawSecretAgreement_NonPlatformOtherParty_ExactBuffers()
+        {
+            using X25519DiffieHellman key1 = GenerateKey();
+            using X25519DiffieHellman key2 = GenerateKey();
+            using X25519DiffieHellmanWrapper wrapper = new(key2);
+
+            byte[] secret1 = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            byte[] secret2 = new byte[X25519DiffieHellman.SecretAgreementSizeInBytes];
+            key1.DeriveRawSecretAgreement(wrapper, secret1);
+            key2.DeriveRawSecretAgreement(key1, secret2);
+
+            AssertExtensions.SequenceEqual(secret1, secret2);
+            Assert.True(wrapper.ExportPublicKeyCoreWasCalled);
+        }
+
         private delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
 
         private static byte[] DoTryUntilDone(TryExportFunc func)
@@ -410,6 +443,50 @@ namespace System.Security.Cryptography.Tests
             }
 
             return buffer.AsSpan(0, written).ToArray();
+        }
+
+        /// <summary>
+        /// A wrapper around an X25519DiffieHellman instance that is not the platform's
+        /// internal implementation type. This forces the DeriveRawSecretAgreementCore fallback
+        /// path that exports the public key and re-imports it.
+        /// </summary>
+        private sealed class X25519DiffieHellmanWrapper : X25519DiffieHellman
+        {
+            private readonly X25519DiffieHellman _inner;
+
+            public bool ExportPublicKeyCoreWasCalled { get; private set; }
+
+            public X25519DiffieHellmanWrapper(X25519DiffieHellman inner)
+            {
+                _inner = inner;
+            }
+
+            protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
+            {
+                _inner.DeriveRawSecretAgreement(otherParty, destination);
+            }
+
+            protected override void ExportPrivateKeyCore(Span<byte> destination)
+            {
+                _inner.ExportPrivateKey(destination);
+            }
+
+            protected override void ExportPublicKeyCore(Span<byte> destination)
+            {
+                ExportPublicKeyCoreWasCalled = true;
+                _inner.ExportPublicKey(destination);
+            }
+
+            protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+            {
+                return _inner.TryExportPkcs8PrivateKey(destination, out bytesWritten);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                // Don't dispose _inner; the test owns it.
+                base.Dispose(disposing);
+            }
         }
     }
 }
