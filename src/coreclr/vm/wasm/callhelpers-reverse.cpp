@@ -274,6 +274,45 @@ static void Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid(int32_t arg0, void * arg1, int32_t arg2, void * arg3, void * arg4)
+{
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.IO.FileLoadException, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid);
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, int32_t arg3, void * arg4, void * arg5)
+{
+    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.TypeLoadException, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid(int32_t arg0, void * arg1, void * arg2, void * arg3, void * arg4)
+{
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateArgumentException", &MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
@@ -462,6 +501,19 @@ static void Call_System_Private_CoreLib_System_Environment_GetResourceString_I32
         LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "GetResourceString", &MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, int32_t arg3, void * arg4)
+{
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "CallEntryPoint", &MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid = nullptr;
@@ -1016,6 +1068,9 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 4090197812, "ConvertToManaged#3:System.Private.CoreLib:System.StubHelpers:BSTRMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid } },
     { 1901425681, "ConvertToNative#2:System.Private.CoreLib:System.StubHelpers:BSTRMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 } },
     { 1243134822, "Create#2:System.Private.CoreLib:System.Reflection:LoaderAllocator", { &MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid } },
+    { 1899576323, "Create#5:System.Private.CoreLib:System.IO:FileLoadException", { &MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_RetVoid } },
+    { 1263271190, "Create#6:System.Private.CoreLib:System:TypeLoadException", { &MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid } },
+    { 509807279, "CreateArgumentException#5:System.Private.CoreLib:System:Exception", { &MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid } },
     { 1570902419, "CreateAssemblyName#3:System.Private.CoreLib:System.Reflection:AssemblyName", { &MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid } },
     { 3054399043, "CreateRuntimeWrappedException#3:System.Private.CoreLib:System:Exception", { &MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid } },
     { 271519467, "CreateTargetInvocationException#3:System.Private.CoreLib:System:Exception", { &MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid } },
@@ -1029,6 +1084,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 4101188193, "GetJitContext#4:System.Private.CoreLib:System:Resolver", { &MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid } },
     { 2512220404, "GetLocalsSignature#3:System.Private.CoreLib:System:Resolver", { &MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid } },
     { 1081971317, "GetManagedStackTrace#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports", { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid } },
+    { 3962535319, "CallEntryPoint#5:System.Private.CoreLib:System:Environment", { &MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid } },
     { 1275372322, "GetResourceString#3:System.Private.CoreLib:System:Environment", { &MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid } },
     { 831291767, "GetStringLiteral#4:System.Private.CoreLib:System:Resolver", { &MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid } },
     { 3370125186, "GetTypeHelper#7:System.Private.CoreLib:System.Reflection:TypeNameResolver", { &MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid } },
