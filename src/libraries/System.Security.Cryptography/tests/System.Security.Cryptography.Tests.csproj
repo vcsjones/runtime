@@ -615,6 +615,7 @@
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="X25519DiffieHellmanContractTests.cs" />
     <Compile Include="X25519DiffieHellmanKeyTests.cs" />
+    <Compile Include="X25519DiffieHellmanNotSupportedTests.cs" />
     <Compile Include="X25519DiffieHellmanTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
