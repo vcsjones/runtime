@@ -110,11 +110,11 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void DeriveRawSecretAgreement_Rfc7748Vector()
         {
-            using X25519DiffieHellman alice = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray());
-            using X25519DiffieHellman bob = ImportPrivateKey(X25519DiffieHellmanTestData.BobPrivateKeyHex.HexToByteArray());
+            using X25519DiffieHellman alice = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
+            using X25519DiffieHellman bob = ImportPrivateKey(X25519DiffieHellmanTestData.BobPrivateKey);
 
             byte[] secret = alice.DeriveRawSecretAgreement(bob);
-            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.SharedSecretHex.HexToByteArray(), secret);
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.SharedSecret, secret);
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(false)]
         public void SubjectPublicKeyInfo_Roundtrip(bool useTryExport)
         {
-            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             AssertSubjectPublicKeyInfo(xdh, useTryExport, X25519DiffieHellmanTestData.AliceSpki);
         }
 
@@ -177,13 +177,13 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ExportPkcs8PrivateKey_Roundtrip()
         {
-            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
 
             AssertExportPkcs8PrivateKey(xdh, pkcs8 =>
             {
                 using X25519DiffieHellman imported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
                 AssertExtensions.SequenceEqual(
-                    X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(),
+                    X25519DiffieHellmanTestData.AlicePrivateKey,
                     imported.ExportPrivateKey());
             });
         }
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ExportPkcs8PrivateKey_PublicKeyOnly_Fails()
         {
-            using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
             Assert.Throws<CryptographicException>(() => DoTryUntilDone(xdh.TryExportPkcs8PrivateKey));
             Assert.Throws<CryptographicException>(() => xdh.ExportPkcs8PrivateKey());
         }
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ExportEncryptedPkcs8PrivateKey_Roundtrip()
         {
-            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             AssertEncryptedExportPkcs8PrivateKey(
                 xdh,
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword,
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Tests
                         pkcs8);
 
                     AssertExtensions.SequenceEqual(
-                        X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray(),
+                        X25519DiffieHellmanTestData.AlicePrivateKey,
                         imported.ExportPrivateKey());
                 });
         }
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ExportEncryptedPkcs8PrivateKey_PublicKeyOnly_Fails()
         {
-            using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
 
             Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
                 xdh.TryExportEncryptedPkcs8PrivateKey(
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(ExportPkcs8Parameters))]
         public void ExportEncryptedPkcs8PrivateKey_PbeParameters(PbeParameters pbeParameters)
         {
-            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray());
+            using X25519DiffieHellman xdh = ImportPrivateKey(X25519DiffieHellmanTestData.AlicePrivateKey);
             AssertEncryptedExportPkcs8PrivateKey(
                 xdh,
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword,
@@ -283,11 +283,11 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PrivateKey_Roundtrip_UnclampedScalar()
         {
-            byte[] privateKey = X25519DiffieHellmanTestData.BobPrivateKeyHex.HexToByteArray();
+            byte[] privateKey = X25519DiffieHellmanTestData.BobPrivateKey;
             using X25519DiffieHellman xdh = ImportPrivateKey(privateKey);
 
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
-            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.BobPublicKeyHex.HexToByteArray(), xdh.ExportPublicKey());
+            AssertExtensions.SequenceEqual(X25519DiffieHellmanTestData.BobPublicKey, xdh.ExportPublicKey());
 
             byte[] pkcs8 = xdh.ExportPkcs8PrivateKey();
             using X25519DiffieHellman reimported = X25519DiffieHellman.ImportPkcs8PrivateKey(pkcs8);
@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PrivateKey_Roundtrip_ClampedScalar()
         {
-            byte[] privateKey = X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray();
+            byte[] privateKey = X25519DiffieHellmanTestData.AlicePrivateKey;
             privateKey[0] &= 0b11111000;
             privateKey[^1] &= 0b01111111;
             privateKey[^1] |= 0b01000000;
@@ -309,7 +309,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PrivateKey_ClampedAndUnclamped_SamePublicKey()
         {
-            byte[] unclamped = X25519DiffieHellmanTestData.AlicePrivateKeyHex.HexToByteArray();
+            byte[] unclamped = X25519DiffieHellmanTestData.AlicePrivateKey;
             byte[] clamped = (byte[])unclamped.Clone();
             clamped[0] &= 0b11111000;
             clamped[^1] &= 0b01111111;
