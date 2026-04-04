@@ -35,6 +35,7 @@ namespace System.Security.Cryptography
         protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            ThrowIfPrivateNeeded();
             int written;
 
             if (otherParty is X25519DiffieHellmanImplementation x25519impl)
