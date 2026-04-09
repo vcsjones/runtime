@@ -20,12 +20,14 @@ namespace System.Security.Cryptography
         private readonly SafeBCryptKeyHandle _key;
         private readonly bool _hasPrivate;
         private readonly byte _privatePreservation;
+        private readonly byte[]? _originalPublicKey;
 
-        private X25519DiffieHellmanImplementation(SafeBCryptKeyHandle key, bool hasPrivate, byte privatePreservation)
+        private X25519DiffieHellmanImplementation(SafeBCryptKeyHandle key, bool hasPrivate, byte privatePreservation, byte[]? originalPublicKey = null)
         {
             _key = key;
             _hasPrivate = hasPrivate;
             _privatePreservation = privatePreservation;
+            _originalPublicKey = originalPublicKey;
             Debug.Assert(_hasPrivate || _privatePreservation == 0);
         }
 
@@ -88,7 +90,14 @@ namespace System.Security.Cryptography
 
         protected override void ExportPublicKeyCore(Span<byte> destination)
         {
-            ExportKey(false, destination);
+            if (_originalPublicKey is not null)
+            {
+                _originalPublicKey.CopyTo(destination);
+            }
+            else
+            {
+                ExportKey(false, destination);
+            }
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
@@ -134,9 +143,38 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            SafeBCryptKeyHandle key = ImportKey(false, source, out _);
+            // RFC 7748 Section 5: "implementations of X25519 MUST mask the most significant
+            // bit in the final byte" and "Implementations MUST accept non-canonical values and
+            // process them as if they had been reduced modulo the field prime."
+            //
+            // CNG rejects non-canonical u-coordinates (values >= p = 2^255 - 19) and does not
+            // mask the high bit. We handle both here by checking if the value (after masking)
+            // falls in the non-canonical range and replacing it with its canonical equivalent.
+            // There are exactly 19 such values: p+0 through p+18, which reduce to 0 through 18.
+            //
+            // We save the original bytes so ExportPublicKey returns them unmodified.
+            byte[]? originalPublicKey = null;
+            ReadOnlySpan<byte> importKey = source;
+            byte[]? canonicalKey = TryReduceNonCanonicalPublicKey(source);
+
+            if (canonicalKey is not null)
+            {
+                originalPublicKey = source.ToArray();
+                importKey = canonicalKey;
+            }
+            else if ((source[^1] & 0x80) != 0)
+            {
+                // The value is canonical but has the high bit set. CNG doesn't mask it,
+                // so we need to clear it before import and preserve the original for export.
+                originalPublicKey = source.ToArray();
+                canonicalKey = source.ToArray();
+                canonicalKey[^1] &= 0x7F;
+                importKey = canonicalKey;
+            }
+
+            SafeBCryptKeyHandle key = ImportKey(false, importKey, out _);
             Debug.Assert(!key.IsInvalid);
-            return new X25519DiffieHellmanImplementation(key, hasPrivate: false, privatePreservation: 0);
+            return new X25519DiffieHellmanImplementation(key, hasPrivate: false, privatePreservation: 0, originalPublicKey);
         }
 
         private void ExportKey(bool privateKey, Span<byte> destination)
@@ -298,6 +336,30 @@ namespace System.Security.Cryptography
                 bytes[0] = (byte)((preservation & 0b111) | (bytes[0] & 0b11111000));
                 bytes[^1] = (byte)((preservation & 0b11000000) | (bytes[^1] & 0b00111111));
             }
+        }
+
+        /// <summary>
+        /// Checks if a public key u-coordinate is non-canonical (>= p) after masking the high
+        /// bit, and returns the canonical (reduced mod p) form if so. There are exactly 19 such
+        /// values: the byte pattern is FF...FF in bytes 1-30, 7F in byte 31, and byte 0 is in
+        /// [0xED, 0xFF]. These reduce to the small values 0 through 18.
+        /// Returns null if the value is already canonical (after high-bit masking).
+        /// </summary>
+        private static byte[]? TryReduceNonCanonicalPublicKey(ReadOnlySpan<byte> key)
+        {
+            Debug.Assert(key.Length == PublicKeySizeInBytes);
+
+            // Non-canonical requires byte 0 >= 0xED, bytes 1..30 all 0xFF, and byte 31 (masked) = 0x7F.
+            if (key[0] < 0xED || key[1..^1].IndexOfAnyExcept((byte)0xFF) >= 0 || (key[^1] & 0x7F) != 0x7F)
+            {
+                return null;
+            }
+
+            // This is a non-canonical value: p + (key[0] - 0xED).
+            // The canonical form is simply the small integer key[0] - 0xED.
+            byte[] canonical = new byte[PublicKeySizeInBytes];
+            canonical[0] = (byte)(key[0] - 0xED);
+            return canonical;
         }
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()

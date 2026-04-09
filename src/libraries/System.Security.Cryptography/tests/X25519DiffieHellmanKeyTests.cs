@@ -345,5 +345,46 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPrivateKey(privateKey);
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(9)]
+        [InlineData(18)]
+        public static void PublicKey_NonCanonical_Roundtrip(int offset)
+        {
+            // RFC 7748 Section 5: Non-canonical u-coordinates are p through 2^255 - 1.
+            // Construct p + offset in little-endian.
+            // p = 2^255 - 19 = 0xED_FFFF...FFFF_7F (little-endian)
+            byte[] nonCanonical = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
+            nonCanonical.AsSpan().Fill(0xFF);
+            nonCanonical[0] = (byte)(0xED + offset);
+            nonCanonical[^1] = 0x7F;
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPublicKey(nonCanonical);
+            byte[] exported = xdh.ExportPublicKey();
+            AssertExtensions.SequenceEqual(nonCanonical, exported);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(3)]
+        [InlineData(18)]
+        public static void PublicKey_NonCanonical_HighBitSet_Roundtrip(int offset)
+        {
+            // Same as above but with the high bit set in byte[31].
+            // RFC 7748 says the high bit MUST be masked, but the original
+            // byte should be preserved on export for roundtripping.
+            byte[] nonCanonical = new byte[X25519DiffieHellman.PublicKeySizeInBytes];
+            nonCanonical.AsSpan().Fill(0xFF);
+            nonCanonical[0] = (byte)(0xED + offset);
+            // byte[31] = 0xFF (high bit set)
+
+            using X25519DiffieHellman xdh = X25519DiffieHellman.ImportPublicKey(nonCanonical);
+            byte[] exported = xdh.ExportPublicKey();
+            AssertExtensions.SequenceEqual(nonCanonical, exported);
+        }
     }
 }
