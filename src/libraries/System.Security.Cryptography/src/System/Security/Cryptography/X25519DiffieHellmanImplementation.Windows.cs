@@ -148,31 +148,30 @@ namespace System.Security.Cryptography
             // process them as if they had been reduced modulo the field prime."
             //
             // CNG rejects non-canonical u-coordinates (values >= p = 2^255 - 19) and does not
-            // mask the high bit. We handle both here by checking if the value (after masking)
-            // falls in the non-canonical range and replacing it with its canonical equivalent.
-            // There are exactly 19 such values: p+0 through p+18, which reduce to 0 through 18.
+            // mask the high bit. We handle both here: mask the high bit, then if the value is
+            // non-canonical (>= p), subtract p to reduce it. Since all values are < 2^255 after
+            // masking and p = 2^255 - 19, a single subtraction suffices.
             //
             // We save the original bytes so ExportPublicKey returns them unmodified.
-            byte[]? originalPublicKey = null;
-            ReadOnlySpan<byte> importKey = source;
-            byte[]? canonicalKey = TryReduceNonCanonicalPublicKey(source);
+            Span<byte> reduced = stackalloc byte[PublicKeySizeInBytes];
+            source.CopyTo(reduced);
+            reduced[^1] &= 0x7F;
 
-            if (canonicalKey is not null)
+            byte[]? originalPublicKey = null;
+
+            if (IsNonCanonicalPublicKey(reduced))
             {
                 originalPublicKey = source.ToArray();
-                importKey = canonicalKey;
+                ReducePublicKey(reduced);
             }
             else if ((source[^1] & 0x80) != 0)
             {
                 // The value is canonical but has the high bit set. CNG doesn't mask it,
                 // so we need to clear it before import and preserve the original for export.
                 originalPublicKey = source.ToArray();
-                canonicalKey = source.ToArray();
-                canonicalKey[^1] &= 0x7F;
-                importKey = canonicalKey;
             }
 
-            SafeBCryptKeyHandle key = ImportKey(false, importKey, out _);
+            SafeBCryptKeyHandle key = ImportKey(false, reduced, out _);
             Debug.Assert(!key.IsInvalid);
             return new X25519DiffieHellmanImplementation(key, hasPrivate: false, privatePreservation: 0, originalPublicKey);
         }
@@ -338,28 +337,49 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// <summary>
-        /// Checks if a public key u-coordinate is non-canonical (>= p) after masking the high
-        /// bit, and returns the canonical (reduced mod p) form if so. There are exactly 19 such
-        /// values: the byte pattern is FF...FF in bytes 1-30, 7F in byte 31, and byte 0 is in
-        /// [0xED, 0xFF]. These reduce to the small values 0 through 18.
-        /// Returns null if the value is already canonical (after high-bit masking).
-        /// </summary>
-        private static byte[]? TryReduceNonCanonicalPublicKey(ReadOnlySpan<byte> key)
+        // p = 2^255 - 19 in little-endian
+        private static ReadOnlySpan<byte> FieldPrime =>
+        [
+            0xed, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+        ];
+
+        private static bool IsNonCanonicalPublicKey(ReadOnlySpan<byte> key)
+        {
+            Debug.Assert(key.Length == PublicKeySizeInBytes);
+            Debug.Assert((key[^1] & 0x80) == 0);
+
+            // Compare key >= p (little-endian). Since key < 2^255 (high bit masked)
+            // and p = 2^255 - 19, a non-canonical value is in [p, 2^255 - 1].
+            // Compare from most significant byte to least significant.
+            for (int i = PublicKeySizeInBytes - 1; i >= 0; i--)
+            {
+                if (key[i] > FieldPrime[i])
+                    return true;
+                if (key[i] < FieldPrime[i])
+                    return false;
+            }
+
+            // key == p, which is also non-canonical (reduces to 0)
+            return true;
+        }
+
+        private static void ReducePublicKey(Span<byte> key)
         {
             Debug.Assert(key.Length == PublicKeySizeInBytes);
 
-            // Non-canonical requires byte 0 >= 0xED, bytes 1..30 all 0xFF, and byte 31 (masked) = 0x7F.
-            if (key[0] < 0xED || key[1..^1].IndexOfAnyExcept((byte)0xFF) >= 0 || (key[^1] & 0x7F) != 0x7F)
+            // Subtract p from key. Since we only call this when key >= p and key < 2^255,
+            // a single subtraction is sufficient: key = key - p.
+            int borrow = 0;
+
+            for (int i = 0; i < PublicKeySizeInBytes; i++)
             {
-                return null;
+                int diff = key[i] - FieldPrime[i] - borrow;
+                key[i] = (byte)diff;
+                borrow = (diff < 0) ? 1 : 0;
             }
 
-            // This is a non-canonical value: p + (key[0] - 0xED).
-            // The canonical form is simply the small integer key[0] - 0xED.
-            byte[] canonical = new byte[PublicKeySizeInBytes];
-            canonical[0] = (byte)(key[0] - 0xED);
-            return canonical;
+            Debug.Assert(borrow == 0);
         }
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
