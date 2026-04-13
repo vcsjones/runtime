@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
     public static class X25519DiffieHellmanKeyTests
     {
+        public static bool IsNotStrictKeyValidatingPlatform => !X25519DiffieHellmanBaseTests.IsStrictKeyValidatingPlatform;
         private static readonly PbeParameters s_aes128Pbe = new(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA256, 2);
 
         [Fact]
@@ -346,7 +347,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(privateKey, xdh.ExportPrivateKey());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(X25519DiffieHellmanKeyTests), nameof(IsNotStrictKeyValidatingPlatform))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -368,7 +369,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.SequenceEqual(nonCanonical, exported);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(X25519DiffieHellmanKeyTests), nameof(IsNotStrictKeyValidatingPlatform))]
         [InlineData(0)]
         [InlineData(3)]
         [InlineData(18)]
