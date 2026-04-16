@@ -15,8 +15,7 @@ namespace System.Security.Cryptography
 
         internal static new bool IsSupported { get; } = Interop.AndroidCrypto.X25519IsSupported();
 
-        // The X25519 base point (u-coordinate = 9). Kept as a process-lifetime handle since this never
-        // changes and is only needed when importing a private key (to derive the matching public key).
+        // The X25519 base point (u-coordinate = 9).
         private static readonly Lazy<SafeX25519PublicKeyHandle> s_basePointHandle = new(static () =>
         {
             ReadOnlySpan<byte> basePoint = [
@@ -53,21 +52,6 @@ namespace System.Security.Cryptography
                     DeriveRawSecretAgreementCore(_privateKey, importedPublicKey, destination);
                 }
             }
-        }
-
-        private static void DeriveRawSecretAgreementCore(
-            SafeX25519PrivateKeyHandle currentParty,
-            SafeX25519PublicKeyHandle otherParty,
-            Span<byte> destination)
-        {
-            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
-            Interop.AndroidCrypto.X25519DeriveSecret(currentParty, otherParty, destination);
-        }
-
-        private static SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
-        {
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore(source);
-            return writer.Encode(static spki => Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki));
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -238,6 +222,9 @@ namespace System.Security.Cryptography
                 pkcs8Writer.Reset();
             }
 
+            // RFC 7748 - the public key is defined as X25519(privateKey, 9) so to get the public key from the private
+            // key we just need to call DeriveRawSecretAgreementCore with the private key and the other "party" as a
+            // scalar of 9.
             SafeX25519PublicKeyHandle publicKey;
 
             try
@@ -268,6 +255,21 @@ namespace System.Security.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
             }
+        }
+
+        private static void DeriveRawSecretAgreementCore(
+            SafeX25519PrivateKeyHandle currentParty,
+            SafeX25519PublicKeyHandle otherParty,
+            Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            Interop.AndroidCrypto.X25519DeriveSecret(currentParty, otherParty, destination);
+        }
+
+        private static SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
+        {
+            AsnWriter writer = ExportSubjectPublicKeyInfoCore(source);
+            return writer.Encode(static spki => Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki));
         }
     }
 }
