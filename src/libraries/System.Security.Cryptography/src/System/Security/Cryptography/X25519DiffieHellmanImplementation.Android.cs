@@ -15,6 +15,20 @@ namespace System.Security.Cryptography
 
         internal static new bool IsSupported { get; } = Interop.AndroidCrypto.X25519IsSupported();
 
+        // The X25519 base point (u-coordinate = 9). Kept as a process-lifetime handle since this never
+        // changes and is only needed when importing a private key (to derive the matching public key).
+        private static readonly Lazy<SafeX25519PublicKeyHandle> s_basePointHandle = new(static () =>
+        {
+            ReadOnlySpan<byte> basePoint = [
+                9, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+            ];
+
+            return ImportPublicKeyAsHandle(basePoint);
+        });
+
         private X25519DiffieHellmanImplementation(SafeX25519PublicKeyHandle publicKey, SafeX25519PrivateKeyHandle? privateKey)
         {
             _publicKey = publicKey;
@@ -228,21 +242,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                // Derive the public key from the private scalar by performing X25519 with the base point (u = 9).
-                ReadOnlySpan<byte> basePoint = [
-                    9, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                ];
-
                 Span<byte> rawPublicKey = stackalloc byte[PublicKeySizeInBytes];
-
-                using (SafeX25519PublicKeyHandle basePointHandle = ImportPublicKeyAsHandle(basePoint))
-                {
-                    DeriveRawSecretAgreementCore(privateKey, basePointHandle, rawPublicKey);
-                }
-
+                DeriveRawSecretAgreementCore(privateKey, s_basePointHandle.Value, rawPublicKey);
                 publicKey = ImportPublicKeyAsHandle(rawPublicKey);
             }
             catch
