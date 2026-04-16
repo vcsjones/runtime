@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Security.Cryptography
 {
     internal sealed class X25519DiffieHellmanImplementation : X25519DiffieHellman
@@ -28,7 +30,49 @@ namespace System.Security.Cryptography
 
         protected override void ExportPublicKeyCore(Span<byte> destination)
         {
-            throw new NotImplementedException();
+            Debug.Assert(destination.Length == PublicKeySizeInBytes);
+
+            // An X25519 SubjectPublicKeyInfo is fixed-size and small. If the encoded form
+            // does not fit in this buffer, whatever was returned is not an X25519 SPKI.
+            Span<byte> spkiBuffer = stackalloc byte[128];
+
+            if (!Interop.AndroidCrypto.X25519TryExportSubjectPublicKeyInfo(_publicKey, spkiBuffer, out int written))
+            {
+                Debug.Fail($"X25519 SubjectPublicKeyInfo did not fit in {spkiBuffer.Length} bytes.");
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(
+                s_knownOids,
+                spkiBuffer.Slice(0, written),
+                SubjectPublicKeyReader,
+                out int read,
+                out ReadOnlySpan<byte> rawKey);
+
+            if (read != written)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            rawKey.CopyTo(destination);
+
+            static void SubjectPublicKeyReader(
+                ReadOnlySpan<byte> key,
+                scoped in Asn1.ValueAlgorithmIdentifierAsn identifier,
+                out ReadOnlySpan<byte> result)
+            {
+                if (identifier.HasParameters)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                if (key.Length != PublicKeySizeInBytes)
+                {
+                    throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
+                }
+
+                result = key;
+            }
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)

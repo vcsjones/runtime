@@ -11,7 +11,8 @@ namespace System.Security.Cryptography
 {
     internal static partial class KeyFormatHelper
     {
-        internal delegate void KeyReader<TRet>(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out TRet ret);
+        internal delegate void KeyReader<TRet>(ReadOnlySpan<byte> key, scoped in ValueAlgorithmIdentifierAsn algId, out TRet ret)
+            where TRet : allows ref struct;
 
         internal static void ReadSubjectPublicKeyInfo<TRet>(
             string[] validOids,
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+            where TRet : allows ref struct
         {
             ValueSubjectPublicKeyInfoAsn spki;
             int read;
@@ -78,6 +80,7 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+            where TRet : allows ref struct
         {
             try
             {

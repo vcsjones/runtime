@@ -21,6 +21,7 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+            where TRet : allows ref struct
         {
             ReadEncryptedPkcs8(
                 validOids,
@@ -39,6 +40,7 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+            where TRet : allows ref struct
         {
             ReadEncryptedPkcs8(
                 validOids,
@@ -58,6 +60,7 @@ namespace System.Security.Cryptography
             KeyReader<TRet> keyReader,
             out int bytesRead,
             out TRet ret)
+            where TRet : allows ref struct
         {
             int read;
             ValueEncryptedPrivateKeyInfoAsn epki;

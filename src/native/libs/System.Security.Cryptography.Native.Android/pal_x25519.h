@@ -12,3 +12,5 @@ PALEXPORT int32_t AndroidCryptoNative_X25519IsSupported(void);
 PALEXPORT void AndroidCryptoNative_X25519DestroyKey(jobject key);
 
 PALEXPORT int32_t AndroidCryptoNative_X25519GenerateKey(jobject* publicKey, jobject* privateKey);
+
+PALEXPORT int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(jobject publicKey, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten);

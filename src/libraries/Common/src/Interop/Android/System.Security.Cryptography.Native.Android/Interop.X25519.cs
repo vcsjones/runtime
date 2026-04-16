@@ -25,14 +25,42 @@ internal static partial class Interop
             out SafeX25519PublicKeyHandle publicKey,
             out SafeX25519PrivateKeyHandle privateKey)
         {
+            const int Success = 1;
+
             int result = X25519GenerateKeyNative(out publicKey, out privateKey);
 
-            if (result != 1)
+            if (result != Success)
             {
                 publicKey.Dispose();
                 privateKey.Dispose();
                 throw new CryptographicException();
             }
+        }
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo")]
+        private static partial int X25519ExportSubjectPublicKeyInfoNative(
+            SafeX25519PublicKeyHandle publicKey,
+            Span<byte> buffer,
+            int bufferLength,
+            out int bytesWritten);
+
+        internal static bool X25519TryExportSubjectPublicKeyInfo(SafeX25519PublicKeyHandle publicKey, Span<byte> buffer, out int bytesWritten)
+        {
+            const int Success = 1;
+            const int InsufficientBuffer = -1;
+
+            int result = X25519ExportSubjectPublicKeyInfoNative(
+                publicKey,
+                buffer,
+                buffer.Length,
+                out bytesWritten);
+
+            return result switch
+            {
+                Success => true,
+                InsufficientBuffer => false,
+                _ => throw new CryptographicException(),
+            };
         }
     }
 }
