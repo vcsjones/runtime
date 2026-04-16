@@ -164,7 +164,28 @@ namespace System.Security.Cryptography
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            throw new NotImplementedException();
+            ThrowIfPrivateNeeded();
+
+            Span<byte> rawPrivateKey = stackalloc byte[PrivateKeySizeInBytes];
+            ExportPrivateKeyCore(rawPrivateKey);
+
+            try
+            {
+                AsnWriter pkcs8Writer = ExportPkcs8PrivateKeyCore(rawPrivateKey);
+
+                try
+                {
+                    return pkcs8Writer.TryEncode(destination, out bytesWritten);
+                }
+                finally
+                {
+                    pkcs8Writer.Reset();
+                }
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(rawPrivateKey);
+            }
         }
 
         protected override void Dispose(bool disposing)
