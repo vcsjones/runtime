@@ -184,3 +184,64 @@ jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buff
     result = ToGRef(env, publicKey);
     return result;
 }
+
+int32_t AndroidCryptoNative_X25519DeriveSecret(jobject privateKey, jobject publicKey, uint8_t* destination, int32_t destinationLength)
+{
+    abort_if_invalid_pointer_argument(privateKey);
+    abort_if_invalid_pointer_argument(publicKey);
+    abort_if_invalid_pointer_argument(destination);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+
+    jstring algorithmName = make_java_string(env, "XDH");
+    jobject keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
+    ReleaseLRef(env, algorithmName);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyAgreement);
+        return FAIL;
+    }
+
+    (*env)->CallVoidMethod(env, keyAgreement, g_KeyAgreementInit, privateKey);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyAgreement);
+        return FAIL;
+    }
+
+    jobject phaseResult = (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementDoPhase, publicKey, JNI_TRUE);
+    ReleaseLRef(env, phaseResult);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyAgreement);
+        return FAIL;
+    }
+
+    jbyteArray secret = (jbyteArray)(*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementGenerateSecret);
+    ReleaseLRef(env, keyAgreement);
+
+    if (CheckJNIExceptions(env) || !secret)
+    {
+        ReleaseLRef(env, secret);
+        return FAIL;
+    }
+
+    jsize secretLen = (*env)->GetArrayLength(env, secret);
+
+    if (secretLen != destinationLength)
+    {
+        ReleaseLRef(env, secret);
+        return FAIL;
+    }
+
+    (*env)->GetByteArrayRegion(env, secret, 0, secretLen, (jbyte*)destination);
+
+    ReleaseLRef(env, secret);
+
+    ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    return ret;
+}

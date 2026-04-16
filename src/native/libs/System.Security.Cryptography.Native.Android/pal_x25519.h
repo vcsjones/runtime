@@ -18,3 +18,5 @@ PALEXPORT int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(jobject p
 PALEXPORT int32_t AndroidCryptoNative_X25519ExportPkcs8PrivateKey(jobject privateKey, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten);
 
 PALEXPORT jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buffer, int32_t bufferLength);
+
+PALEXPORT int32_t AndroidCryptoNative_X25519DeriveSecret(jobject privateKey, jobject publicKey, uint8_t* destination, int32_t destinationLength);

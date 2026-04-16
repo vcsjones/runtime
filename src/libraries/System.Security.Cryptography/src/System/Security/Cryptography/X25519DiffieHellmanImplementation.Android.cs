@@ -23,7 +23,37 @@ namespace System.Security.Cryptography
 
         protected override void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            ThrowIfPrivateNeeded();
+
+            if (otherParty is X25519DiffieHellmanImplementation otherImpl)
+            {
+                DeriveRawSecretAgreementCore(_privateKey, otherImpl._publicKey, destination);
+            }
+            else
+            {
+                Span<byte> otherPublicKey = stackalloc byte[PublicKeySizeInBytes];
+                otherParty.ExportPublicKey(otherPublicKey);
+
+                using (SafeX25519PublicKeyHandle importedPublicKey = ImportPublicKeyAsHandle(otherPublicKey))
+                {
+                    DeriveRawSecretAgreementCore(_privateKey, importedPublicKey, destination);
+                }
+            }
+        }
+
+        private static void DeriveRawSecretAgreementCore(
+            SafeX25519PrivateKeyHandle currentParty,
+            SafeX25519PublicKeyHandle otherParty,
+            Span<byte> destination)
+        {
+            Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
+            Interop.AndroidCrypto.X25519DeriveSecret(currentParty, otherParty, destination);
+        }
+
+        private static SafeX25519PublicKeyHandle ImportPublicKeyAsHandle(ReadOnlySpan<byte> source)
+        {
+            AsnWriter writer = ExportSubjectPublicKeyInfoCore(source);
+            return writer.Encode(static spki => Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki));
         }
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
@@ -165,14 +195,7 @@ namespace System.Security.Cryptography
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == PublicKeySizeInBytes);
-            AsnWriter writer = ExportSubjectPublicKeyInfoCore(source);
-
-            SafeX25519PublicKeyHandle publicKey = writer.Encode(static spki =>
-            {
-                return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki);
-            });
-
-            return new X25519DiffieHellmanImplementation(publicKey, privateKey: null);
+            return new X25519DiffieHellmanImplementation(ImportPublicKeyAsHandle(source), privateKey: null);
         }
 
         [MemberNotNull(nameof(_privateKey))]

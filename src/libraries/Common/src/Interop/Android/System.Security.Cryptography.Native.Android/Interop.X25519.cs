@@ -106,6 +106,28 @@ internal static partial class Interop
 
             return handle;
         }
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519DeriveSecret")]
+        private static partial int X25519DeriveSecretNative(
+            SafeX25519PrivateKeyHandle privateKey,
+            SafeX25519PublicKeyHandle publicKey,
+            Span<byte> destination,
+            int destinationLength);
+
+        internal static void X25519DeriveSecret(
+            SafeX25519PrivateKeyHandle privateKey,
+            SafeX25519PublicKeyHandle publicKey,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+
+            int result = X25519DeriveSecretNative(privateKey, publicKey, destination, destination.Length);
+
+            if (result != Success)
+            {
+                throw new CryptographicException();
+            }
+        }
     }
 }
 
