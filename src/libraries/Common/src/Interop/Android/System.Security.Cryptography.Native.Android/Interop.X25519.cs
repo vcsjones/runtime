@@ -88,6 +88,24 @@ internal static partial class Interop
                 _ => throw new CryptographicException(),
             };
         }
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo")]
+        private static partial SafeX25519PublicKeyHandle X25519ImportSubjectPublicKeyInfoNative(
+            ReadOnlySpan<byte> buffer,
+            int bufferLength);
+
+        internal static SafeX25519PublicKeyHandle X25519ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> spki)
+        {
+            SafeX25519PublicKeyHandle handle = X25519ImportSubjectPublicKeyInfoNative(spki, spki.Length);
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            }
+
+            return handle;
+        }
     }
 }
 

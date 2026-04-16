@@ -1310,11 +1310,8 @@ namespace System.Security.Cryptography
         {
         }
 
-        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        private protected static AsnWriter ExportSubjectPublicKeyInfoCore(ReadOnlySpan<byte> publicKey)
         {
-            Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
-            ExportPublicKeyCore(publicKey);
-
             ValueSubjectPublicKeyInfoAsn spki = new ValueSubjectPublicKeyInfoAsn
             {
                 Algorithm = new ValueAlgorithmIdentifierAsn
@@ -1330,6 +1327,13 @@ namespace System.Security.Cryptography
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, Capacity);
             spki.Encode(writer);
             return writer;
+        }
+
+        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        {
+            Span<byte> publicKey = stackalloc byte[PublicKeySizeInBytes];
+            ExportPublicKeyCore(publicKey);
+            return ExportSubjectPublicKeyInfoCore(publicKey);
         }
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)

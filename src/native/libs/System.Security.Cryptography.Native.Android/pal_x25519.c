@@ -139,3 +139,48 @@ int32_t AndroidCryptoNative_X25519ExportPkcs8PrivateKey(jobject privateKey, uint
 {
     return ExportEncodedKey(privateKey, buffer, bufferLength, bytesWritten);
 }
+
+jobject AndroidCryptoNative_X25519ImportSubjectPublicKeyInfo(const uint8_t* buffer, int32_t bufferLength)
+{
+    abort_if_invalid_pointer_argument(buffer);
+    abort_if_negative_integer_argument(bufferLength);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject result = NULL;
+
+    jstring algorithmName = make_java_string(env, "X25519");
+    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
+    ReleaseLRef(env, algorithmName);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyFactory);
+        return NULL;
+    }
+
+    jbyteArray spkiBytes = make_java_byte_array(env, bufferLength);
+    (*env)->SetByteArrayRegion(env, spkiBytes, 0, bufferLength, (const jbyte*)buffer);
+
+    jobject keySpec = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, spkiBytes);
+    ReleaseLRef(env, spkiBytes);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyFactory);
+        ReleaseLRef(env, keySpec);
+        return NULL;
+    }
+
+    jobject publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, keySpec);
+    ReleaseLRef(env, keyFactory);
+    ReleaseLRef(env, keySpec);
+
+    if (CheckJNIExceptions(env) || !publicKey)
+    {
+        ReleaseLRef(env, publicKey);
+        return NULL;
+    }
+
+    result = ToGRef(env, publicKey);
+    return result;
+}

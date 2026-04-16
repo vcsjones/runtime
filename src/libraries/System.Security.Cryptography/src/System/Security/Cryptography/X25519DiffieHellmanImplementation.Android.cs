@@ -164,7 +164,15 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            throw new NotImplementedException();
+            Debug.Assert(source.Length == PublicKeySizeInBytes);
+            AsnWriter writer = ExportSubjectPublicKeyInfoCore(source);
+
+            SafeX25519PublicKeyHandle publicKey = writer.Encode(static spki =>
+            {
+                return Interop.AndroidCrypto.X25519ImportSubjectPublicKeyInfo(spki);
+            });
+
+            return new X25519DiffieHellmanImplementation(publicKey, privateKey: null);
         }
 
         [MemberNotNull(nameof(_privateKey))]
