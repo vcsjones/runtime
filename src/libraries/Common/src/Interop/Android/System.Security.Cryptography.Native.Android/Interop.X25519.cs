@@ -107,6 +107,24 @@ internal static partial class Interop
             return handle;
         }
 
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519ImportPkcs8PrivateKey")]
+        private static partial SafeX25519PrivateKeyHandle X25519ImportPkcs8PrivateKeyNative(
+            ReadOnlySpan<byte> buffer,
+            int bufferLength);
+
+        internal static SafeX25519PrivateKeyHandle X25519ImportPkcs8PrivateKey(ReadOnlySpan<byte> pkcs8)
+        {
+            SafeX25519PrivateKeyHandle handle = X25519ImportPkcs8PrivateKeyNative(pkcs8, pkcs8.Length);
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+            }
+
+            return handle;
+        }
+
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519DeriveSecret")]
         private static partial int X25519DeriveSecretNative(
             SafeX25519PrivateKeyHandle privateKey,

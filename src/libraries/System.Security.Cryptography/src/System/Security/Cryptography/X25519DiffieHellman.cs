@@ -1364,30 +1364,44 @@ namespace System.Security.Cryptography
 
         private protected bool TryExportPkcs8PrivateKeyImpl(Span<byte> destination, out int bytesWritten)
         {
-            ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
-            {
-                Algorithm = Oids.X25519,
-            };
-
             Span<byte> privateKey = stackalloc byte[PrivateKeySizeInBytes];
             ExportPrivateKey(privateKey);
 
             try
             {
-                AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
-                algorithmIdentifier.Encode(algorithmWriter);
-                AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
-                privateKeyWriter.WriteOctetString(privateKey);
-                AsnWriter pkcs8Writer = KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter);
+                AsnWriter pkcs8Writer = ExportPkcs8PrivateKeyCore(privateKey);
 
                 bool result = pkcs8Writer.TryEncode(destination, out bytesWritten);
-                privateKeyWriter.Reset();
                 pkcs8Writer.Reset();
                 return result;
             }
             finally
             {
                 CryptographicOperations.ZeroMemory(privateKey);
+            }
+        }
+
+        private protected static AsnWriter ExportPkcs8PrivateKeyCore(ReadOnlySpan<byte> privateKey)
+        {
+            Debug.Assert(privateKey.Length == PrivateKeySizeInBytes);
+
+            ValueAlgorithmIdentifierAsn algorithmIdentifier = new()
+            {
+                Algorithm = Oids.X25519,
+            };
+
+            AsnWriter algorithmWriter = new(AsnEncodingRules.DER);
+            algorithmIdentifier.Encode(algorithmWriter);
+            AsnWriter privateKeyWriter = new(AsnEncodingRules.DER);
+
+            try
+            {
+                privateKeyWriter.WriteOctetString(privateKey);
+                return KeyFormatHelper.WritePkcs8(algorithmWriter, privateKeyWriter);
+            }
+            finally
+            {
+                privateKeyWriter.Reset();
             }
         }
 

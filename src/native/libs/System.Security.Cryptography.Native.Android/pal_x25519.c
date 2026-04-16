@@ -245,3 +245,56 @@ int32_t AndroidCryptoNative_X25519DeriveSecret(jobject privateKey, jobject publi
     ret = CheckJNIExceptions(env) ? FAIL : SUCCESS;
     return ret;
 }
+
+jobject AndroidCryptoNative_X25519ImportPkcs8PrivateKey(const uint8_t* buffer, int32_t bufferLength)
+{
+    abort_if_invalid_pointer_argument(buffer);
+    abort_if_negative_integer_argument(bufferLength);
+
+    JNIEnv* env = GetJNIEnv();
+    jobject result = NULL;
+
+    jstring algorithmName = make_java_string(env, "X25519");
+    jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
+    ReleaseLRef(env, algorithmName);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyFactory);
+        return NULL;
+    }
+
+    jbyteArray pkcs8Bytes = make_java_byte_array(env, bufferLength);
+    (*env)->SetByteArrayRegion(env, pkcs8Bytes, 0, bufferLength, (const jbyte*)buffer);
+
+    jobject keySpec = (*env)->NewObject(env, g_PKCS8EncodedKeySpec, g_PKCS8EncodedKeySpecCtor, pkcs8Bytes);
+
+    // Best-effort zero of the JVM-side copy of the PKCS#8 encoding before releasing the array.
+    jbyte* pkcs8Elements = (*env)->GetByteArrayElements(env, pkcs8Bytes, NULL);
+    if (pkcs8Elements != NULL)
+    {
+        memset(pkcs8Elements, 0, (size_t)bufferLength);
+        (*env)->ReleaseByteArrayElements(env, pkcs8Bytes, pkcs8Elements, 0);
+    }
+    ReleaseLRef(env, pkcs8Bytes);
+
+    if (CheckJNIExceptions(env))
+    {
+        ReleaseLRef(env, keyFactory);
+        ReleaseLRef(env, keySpec);
+        return NULL;
+    }
+
+    jobject privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, keySpec);
+    ReleaseLRef(env, keyFactory);
+    ReleaseLRef(env, keySpec);
+
+    if (CheckJNIExceptions(env) || !privateKey)
+    {
+        ReleaseLRef(env, privateKey);
+        return NULL;
+    }
+
+    result = ToGRef(env, privateKey);
+    return result;
+}

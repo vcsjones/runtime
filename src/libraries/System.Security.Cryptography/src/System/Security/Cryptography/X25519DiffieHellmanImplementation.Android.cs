@@ -189,7 +189,48 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPrivateKeyImpl(ReadOnlySpan<byte> source)
         {
-            throw new NotImplementedException();
+            Debug.Assert(source.Length == PrivateKeySizeInBytes);
+
+            AsnWriter pkcs8Writer = ExportPkcs8PrivateKeyCore(source);
+            SafeX25519PrivateKeyHandle privateKey;
+
+            try
+            {
+                privateKey = pkcs8Writer.Encode(static pkcs8 => Interop.AndroidCrypto.X25519ImportPkcs8PrivateKey(pkcs8));
+            }
+            finally
+            {
+                pkcs8Writer.Reset();
+            }
+
+            SafeX25519PublicKeyHandle publicKey;
+
+            try
+            {
+                // Derive the public key from the private scalar by performing X25519 with the base point (u = 9).
+                ReadOnlySpan<byte> basePoint = [
+                    9, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0,
+                ];
+
+                Span<byte> rawPublicKey = stackalloc byte[PublicKeySizeInBytes];
+
+                using (SafeX25519PublicKeyHandle basePointHandle = ImportPublicKeyAsHandle(basePoint))
+                {
+                    DeriveRawSecretAgreementCore(privateKey, basePointHandle, rawPublicKey);
+                }
+
+                publicKey = ImportPublicKeyAsHandle(rawPublicKey);
+            }
+            catch
+            {
+                privateKey.Dispose();
+                throw;
+            }
+
+            return new X25519DiffieHellmanImplementation(publicKey, privateKey);
         }
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
