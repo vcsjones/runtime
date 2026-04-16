@@ -90,18 +90,18 @@ int32_t AndroidCryptoNative_X25519GenerateKey(jobject* publicKey, jobject* priva
     return SUCCESS;
 }
 
-int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(jobject publicKey, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten)
+static int32_t ExportEncodedKey(jobject key, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten)
 {
-    abort_if_invalid_pointer_argument(publicKey);
+    abort_if_invalid_pointer_argument(key);
     abort_if_invalid_pointer_argument(bytesWritten);
 
     *bytesWritten = 0;
 
     JNIEnv* env = GetJNIEnv();
 
-    // PublicKey.getEncoded() returns the key in its primary encoding format.
-    // For PublicKey, the primary encoding format is X.509 SubjectPublicKeyInfo.
-    jbyteArray encoded = (jbyteArray)(*env)->CallObjectMethod(env, publicKey, g_KeyGetEncoded);
+    // Key.getEncoded() returns the key in its primary encoding format.
+    // PublicKey -> X.509 SubjectPublicKeyInfo; PrivateKey -> PKCS#8 PrivateKeyInfo.
+    jbyteArray encoded = (jbyteArray)(*env)->CallObjectMethod(env, key, g_KeyGetEncoded);
 
     if (CheckJNIExceptions(env) || !encoded)
     {
@@ -128,4 +128,14 @@ int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(jobject publicKey, 
 
     *bytesWritten = (int32_t)encodedLen;
     return SUCCESS;
+}
+
+int32_t AndroidCryptoNative_X25519ExportSubjectPublicKeyInfo(jobject publicKey, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten)
+{
+    return ExportEncodedKey(publicKey, buffer, bufferLength, bytesWritten);
+}
+
+int32_t AndroidCryptoNative_X25519ExportPkcs8PrivateKey(jobject privateKey, uint8_t* buffer, int32_t bufferLength, int32_t* bytesWritten)
+{
+    return ExportEncodedKey(privateKey, buffer, bufferLength, bytesWritten);
 }

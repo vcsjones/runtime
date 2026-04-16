@@ -62,6 +62,32 @@ internal static partial class Interop
                 _ => throw new CryptographicException(),
             };
         }
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X25519ExportPkcs8PrivateKey")]
+        private static partial int X25519ExportPkcs8PrivateKeyNative(
+            SafeX25519PrivateKeyHandle privateKey,
+            Span<byte> buffer,
+            int bufferLength,
+            out int bytesWritten);
+
+        internal static bool X25519TryExportPkcs8PrivateKey(SafeX25519PrivateKeyHandle privateKey, Span<byte> buffer, out int bytesWritten)
+        {
+            const int Success = 1;
+            const int InsufficientBuffer = -1;
+
+            int result = X25519ExportPkcs8PrivateKeyNative(
+                privateKey,
+                buffer,
+                buffer.Length,
+                out bytesWritten);
+
+            return result switch
+            {
+                Success => true,
+                InsufficientBuffer => false,
+                _ => throw new CryptographicException(),
+            };
+        }
     }
 }
 

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
+using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -25,7 +28,61 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
-            throw new NotImplementedException();
+            Debug.Assert(destination.Length == PrivateKeySizeInBytes);
+            ThrowIfPrivateNeeded();
+
+            // PKCS#8 PrivateKeyInfo for X25519 is small but not strictly fixed-size.
+            // 256 bytes leaves ample headroom for typical encodings.
+            Span<byte> pkcs8Buffer = stackalloc byte[256];
+
+            if (!Interop.AndroidCrypto.X25519TryExportPkcs8PrivateKey(_privateKey, pkcs8Buffer, out int written))
+            {
+                Debug.Fail($"X25519 PKCS#8 PrivateKeyInfo did not fit in {pkcs8Buffer.Length} bytes.");
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            try
+            {
+                KeyFormatHelper.ReadPkcs8(
+                    s_knownOids,
+                    pkcs8Buffer.Slice(0, written),
+                    Pkcs8KeyReader,
+                    out int read,
+                    out ReadOnlySpan<byte> rawKey);
+
+                if (read != written)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                rawKey.CopyTo(destination);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(pkcs8Buffer);
+            }
+
+            static void Pkcs8KeyReader(
+                ReadOnlySpan<byte> privateKeyContents,
+                scoped in ValueAlgorithmIdentifierAsn identifier,
+                out ReadOnlySpan<byte> result)
+            {
+                if (identifier.HasParameters)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                ValueAsnReader reader = new(privateKeyContents, AsnEncodingRules.BER);
+                ReadOnlySpan<byte> rawPrivateKey = reader.ReadOctetString();
+                reader.ThrowIfNotEmpty();
+
+                if (rawPrivateKey.Length != PrivateKeySizeInBytes)
+                {
+                    throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                }
+
+                result = rawPrivateKey;
+            }
         }
 
         protected override void ExportPublicKeyCore(Span<byte> destination)
@@ -58,7 +115,7 @@ namespace System.Security.Cryptography
 
             static void SubjectPublicKeyReader(
                 ReadOnlySpan<byte> key,
-                scoped in Asn1.ValueAlgorithmIdentifierAsn identifier,
+                scoped in ValueAlgorithmIdentifierAsn identifier,
                 out ReadOnlySpan<byte> result)
             {
                 if (identifier.HasParameters)
@@ -108,6 +165,15 @@ namespace System.Security.Cryptography
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
             throw new NotImplementedException();
+        }
+
+        [MemberNotNull(nameof(_privateKey))]
+        private void ThrowIfPrivateNeeded()
+        {
+            if (_privateKey is null)
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
         }
     }
 }
