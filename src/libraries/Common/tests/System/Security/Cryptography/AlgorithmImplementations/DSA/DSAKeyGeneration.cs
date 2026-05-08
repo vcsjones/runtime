@@ -41,6 +41,30 @@ namespace System.Security.Cryptography.Dsa.Tests
             GenerateKey(1024);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        [InlineData(0)]
+        [InlineData(2048)]
+        public static void GenerateKey_Android2048_CanSignWithSha1(int keySize)
+        {
+            using DSA dsa = keySize == 0 ? DSAFactory.Create() : DSAFactory.Create(keySize);
+
+            DSAParameters parameters = dsa.ExportParameters(false);
+            int pBits = parameters.P!.Length * 8;
+            int qBits = parameters.Q!.Length * 8;
+            Assert.True(
+                IsValidGeneratedParameterSize(pBits, qBits),
+                $"Expected valid DSA parameter sizes, got L={pBits}, N={qBits}.");
+
+            byte[] hash;
+            using (SHA1 sha = SHA1.Create())
+            {
+                hash = sha.ComputeHash(DSATestData.HelloBytes);
+            }
+
+            byte[] signature = dsa.CreateSignature(hash);
+            Assert.True(dsa.VerifySignature(hash, signature));
+        }
+
         private static void GenerateKey(int size)
         {
             GenerateKey(dsa => size);
@@ -86,6 +110,9 @@ namespace System.Security.Cryptography.Dsa.Tests
 
             return min;
         }
+
+        private static bool IsValidGeneratedParameterSize(int pBits, int qBits) =>
+            (pBits, qBits) is (1024, 160) or (2048, 224) or (2048, 256) or (3072, 256);
 
         private static int GetSecondMin(KeySizes[] keySizes)
         {
