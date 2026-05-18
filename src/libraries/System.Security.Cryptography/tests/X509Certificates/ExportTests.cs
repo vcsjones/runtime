@@ -484,6 +484,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        public static void ExportPkcs12_EphemeralPrivateKey_Roundtrips()
+        {
+            const string password = TestData.PfxDataPassword;
+            PbeParameters pbeParameters = new(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
+                TestData.PfxData,
+                password,
+                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet))
+            {
+                AssertRoundtripsWithPrivateKey(cert.Export(X509ContentType.Pkcs12, password));
+                AssertRoundtripsWithPrivateKey(cert.ExportPkcs12(
+                    Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1,
+                    password));
+                AssertRoundtripsWithPrivateKey(cert.ExportPkcs12(pbeParameters, password));
+            }
+
+            static void AssertRoundtripsWithPrivateKey(byte[] pkcs12)
+            {
+                using X509Certificate2 reloaded = X509CertificateLoader.LoadPkcs12(
+                    pkcs12,
+                    password,
+                    X509KeyStorageFlags.Exportable);
+                using RSA? privateKey = reloaded.GetRSAPrivateKey();
+                Assert.NotNull(privateKey);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Modifies user-persisted state", ~TestPlatforms.Browser)]
         public static void ExportDoesNotCorruptPrivateKeyMethods()
         {
@@ -556,6 +586,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.False(HasEphemeralKey(foundCert));
                 foundCert.Export(X509ContentType.Pfx, "");
+                Assert.False(HasEphemeralKey(foundCert));
+                foundCert.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, "");
+                Assert.False(HasEphemeralKey(foundCert));
+                foundCert.ExportPkcs12(
+                    new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32),
+                    "");
                 Assert.False(HasEphemeralKey(foundCert));
 
                 using (ImportedCollection toClean = new ImportedCollection(cuMy.Certificates))
