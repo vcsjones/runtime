@@ -132,34 +132,59 @@ namespace System.Net.Security.Tests
         [InlineData(CertificateExportBeforeUse.ExportPkcs12ExportPbeParameters)]
         [InlineData(CertificateExportBeforeUse.ExportPkcs12PbeParameters)]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("Modifies user-persisted state", ~TestPlatforms.Browser)]
         public async Task SslStream_ClientCertificateExportedAsPkcs12BeforeUse_IsMutuallyAuthenticated(
             CertificateExportBeforeUse exportBeforeUse)
         {
-            switch (exportBeforeUse)
-            {
-                case CertificateExportBeforeUse.ExportPkcs12ContentType:
-                    Assert.NotNull(_clientCertificate.Export(X509ContentType.Pkcs12));
-                    break;
-                case CertificateExportBeforeUse.ExportPkcs12ExportPbeParameters:
-                    Assert.NotNull(_clientCertificate.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, null));
-                    break;
-                case CertificateExportBeforeUse.ExportPkcs12PbeParameters:
-                    Assert.NotNull(_clientCertificate.ExportPkcs12(
-                        new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32),
-                        null));
-                    break;
-                default:
-                    Assert.Fail($"Unexpected export operation: {exportBeforeUse}");
-                    break;
-            }
+            string commonName = $"{nameof(SslStream_ClientCertificateExportedAsPkcs12BeforeUse_IsMutuallyAuthenticated)}-{Guid.NewGuid():N}";
+            string subject = $"CN={commonName}, OU=.NET";
+            string keyName = $"clrtest.{commonName}";
 
+            using X509Store currentUserMy = new(StoreName.My, StoreLocation.CurrentUser);
+            currentUserMy.Open(OpenFlags.ReadWrite);
+
+            X509Certificate2? createdCertificate = null;
+            X509Certificate2? clientCertificate = null;
+
+            try
+            {
+                RemoveCertificatesBySubjectName(currentUserMy, commonName);
+
+                createdCertificate = CreatePersistedClientCertificate(subject, keyName);
+                currentUserMy.Add(createdCertificate);
+
+                clientCertificate = FindSingleCertificateBySubjectName(currentUserMy, commonName);
+                Assert.True(clientCertificate.HasPrivateKey);
+
+                ExportAsPkcs12(clientCertificate, exportBeforeUse);
+                await AuthenticateWithClientCertificate(clientCertificate);
+            }
+            finally
+            {
+                RemoveCertificatesBySubjectName(currentUserMy, commonName);
+                clientCertificate?.Dispose();
+                createdCertificate?.Dispose();
+
+                try
+                {
+                    using CngKey key = CngKey.Open(keyName);
+                    key.Delete();
+                }
+                catch (CryptographicException)
+                {
+                }
+            }
+        }
+
+        private async Task AuthenticateWithClientCertificate(X509Certificate2 clientCertificate)
+        {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyCertificate))
             using (var server = new SslStream(stream2, false, AllowAnyCertificate))
             {
                 var clientOptions = new SslClientAuthenticationOptions
                 {
-                    ClientCertificates = new X509CertificateCollection() { _clientCertificate },
+                    ClientCertificates = new X509CertificateCollection() { clientCertificate },
                     TargetHost = Guid.NewGuid().ToString("N")
                 };
 
@@ -176,6 +201,84 @@ namespace System.Net.Security.Tests
 
                 Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
                 Assert.True(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
+            }
+        }
+
+        private static X509Certificate2 CreatePersistedClientCertificate(string subject, string keyName)
+        {
+            CngKeyCreationParameters options = new()
+            {
+                ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport,
+            };
+
+            using CngKey key = CngKey.Create(CngAlgorithm.Rsa, keyName, options);
+            using RSACng rsaCng = new(key);
+            CertificateRequest certReq = new(
+                subject,
+                rsaCng,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+
+            certReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
+            certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+                new OidCollection { new Oid("1.3.6.1.5.5.7.3.2") },
+                false));
+            certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
+
+            DateTimeOffset now = DateTimeOffset.UtcNow.AddMinutes(-5);
+            return certReq.CreateSelfSigned(now, now.AddDays(1));
+        }
+
+        private static X509Certificate2 FindSingleCertificateBySubjectName(X509Store store, string subjectName)
+        {
+            X509Certificate2Collection matches = store.Certificates.Find(
+                X509FindType.FindBySubjectName,
+                subjectName,
+                validOnly: false);
+
+            Assert.Equal(1, matches.Count);
+            X509Certificate2 result = matches[0];
+
+            for (int i = 1; i < matches.Count; i++)
+            {
+                matches[i].Dispose();
+            }
+
+            return result;
+        }
+
+        private static void RemoveCertificatesBySubjectName(X509Store store, string subjectName)
+        {
+            X509Certificate2Collection matches = store.Certificates.Find(
+                X509FindType.FindBySubjectName,
+                subjectName,
+                validOnly: false);
+
+            foreach (X509Certificate2 match in matches)
+            {
+                store.Remove(match);
+                match.Dispose();
+            }
+        }
+
+        private static void ExportAsPkcs12(X509Certificate2 certificate, CertificateExportBeforeUse exportBeforeUse)
+        {
+            switch (exportBeforeUse)
+            {
+                case CertificateExportBeforeUse.ExportPkcs12ContentType:
+                    Assert.NotNull(certificate.Export(X509ContentType.Pkcs12));
+                    break;
+                case CertificateExportBeforeUse.ExportPkcs12ExportPbeParameters:
+                    Assert.NotNull(certificate.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, null));
+                    break;
+                case CertificateExportBeforeUse.ExportPkcs12PbeParameters:
+                    Assert.NotNull(certificate.ExportPkcs12(
+                        new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32),
+                        null));
+                    break;
+                default:
+                    Assert.Fail($"Unexpected export operation: {exportBeforeUse}");
+                    break;
             }
         }
 
