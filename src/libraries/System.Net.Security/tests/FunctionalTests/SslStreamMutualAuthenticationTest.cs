@@ -5,10 +5,10 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
-using System.Runtime.InteropServices;
 
 namespace System.Net.Security.Tests
 {
@@ -38,6 +38,13 @@ namespace System.Net.Security.Tests
             ClientCertificate,
             SelectionCallback,
             CertificateContext
+        }
+
+        public enum CertificateExportBeforeUse
+        {
+            ExportPkcs12ContentType,
+            ExportPkcs12ExportPbeParameters,
+            ExportPkcs12PbeParameters
         }
 
         public static TheoryData<ClientCertSource> CertSourceData()
@@ -118,6 +125,58 @@ namespace System.Net.Security.Tests
             // Assert that the certificates are not being disposed
             Assert.NotEqual(_clientCertificate.Handle, IntPtr.Zero);
             Assert.NotEqual(_serverCertificate.Handle, IntPtr.Zero);
+        }
+
+        [Theory]
+        [InlineData(CertificateExportBeforeUse.ExportPkcs12ContentType)]
+        [InlineData(CertificateExportBeforeUse.ExportPkcs12ExportPbeParameters)]
+        [InlineData(CertificateExportBeforeUse.ExportPkcs12PbeParameters)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_ClientCertificateExportedAsPkcs12BeforeUse_IsMutuallyAuthenticated(
+            CertificateExportBeforeUse exportBeforeUse)
+        {
+            switch (exportBeforeUse)
+            {
+                case CertificateExportBeforeUse.ExportPkcs12ContentType:
+                    Assert.NotNull(_clientCertificate.Export(X509ContentType.Pkcs12));
+                    break;
+                case CertificateExportBeforeUse.ExportPkcs12ExportPbeParameters:
+                    Assert.NotNull(_clientCertificate.ExportPkcs12(Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1, null));
+                    break;
+                case CertificateExportBeforeUse.ExportPkcs12PbeParameters:
+                    Assert.NotNull(_clientCertificate.ExportPkcs12(
+                        new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32),
+                        null));
+                    break;
+                default:
+                    Assert.Fail($"Unexpected export operation: {exportBeforeUse}");
+                    break;
+            }
+
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, false, AllowAnyCertificate))
+            using (var server = new SslStream(stream2, false, AllowAnyCertificate))
+            {
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    ClientCertificates = new X509CertificateCollection() { _clientCertificate },
+                    TargetHost = Guid.NewGuid().ToString("N")
+                };
+
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                    ClientCertificateRequired = true
+                };
+
+                Task t2 = client.AuthenticateAsClientAsync(clientOptions);
+                Task t1 = server.AuthenticateAsServerAsync(serverOptions);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+                Assert.True(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
+            }
         }
 
         [Theory]
