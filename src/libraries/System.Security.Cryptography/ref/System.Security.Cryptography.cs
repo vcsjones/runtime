@@ -1418,6 +1418,33 @@ namespace System.Security.Cryptography
         public byte[]? X;
         public byte[]? Y;
     }
+    public abstract partial class Ed25519 : System.IDisposable
+    {
+        public const int PrivateKeySizeInBytes = 32;
+        public const int PublicKeySizeInBytes = 32;
+        public const int SignatureSizeInBytes = 64;
+        protected Ed25519() { }
+        public static bool IsSupported { get { throw null; } }
+        public void Dispose() { }
+        public byte[] ExportPrivateKey() { throw null; }
+        public void ExportPrivateKey(System.Span<byte> destination) { }
+        public byte[] ExportPublicKey() { throw null; }
+        public void ExportPublicKey(System.Span<byte> destination) { }
+        protected abstract void ExportPrivateKeyCore(System.Span<byte> destination);
+        protected abstract void ExportPublicKeyCore(System.Span<byte> destination);
+        protected virtual void Dispose(bool disposing) { }
+        public static System.Security.Cryptography.Ed25519 GenerateKey() { throw null; }
+        public static System.Security.Cryptography.Ed25519 ImportPrivateKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.Ed25519 ImportPrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.Ed25519 ImportPublicKey(byte[] source) { throw null; }
+        public static System.Security.Cryptography.Ed25519 ImportPublicKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public byte[] SignData(byte[] data) { throw null; }
+        public void SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { }
+        protected abstract void SignDataCore(System.ReadOnlySpan<byte> data, System.Span<byte> destination);
+        public bool VerifyData(byte[] data, byte[] signature) { throw null; }
+        public bool VerifyData(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature) { throw null; }
+        protected abstract bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> signature);
+    }
     public partial class FromBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {
         public FromBase64Transform() { }

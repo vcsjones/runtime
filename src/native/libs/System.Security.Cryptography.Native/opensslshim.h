@@ -491,8 +491,12 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
     LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
+    REQUIRED_FUNCTION(EVP_DigestSign) \
+    REQUIRED_FUNCTION(EVP_DigestSignInit) \
     LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
+    REQUIRED_FUNCTION(EVP_DigestVerify) \
+    REQUIRED_FUNCTION(EVP_DigestVerifyInit) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     LIGHTUP_FUNCTION(EVP_KDF_CTX_free) \
     LIGHTUP_FUNCTION(EVP_KDF_CTX_new) \
@@ -1071,8 +1075,12 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
+#define EVP_DigestSign EVP_DigestSign_ptr
+#define EVP_DigestSignInit EVP_DigestSignInit_ptr
 #define EVP_DigestSqueeze EVP_DigestSqueeze_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
+#define EVP_DigestVerify EVP_DigestVerify_ptr
+#define EVP_DigestVerifyInit EVP_DigestVerifyInit_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
 #define EVP_KDF_CTX_free EVP_KDF_CTX_free_ptr

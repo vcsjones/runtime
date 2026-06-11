@@ -585,6 +585,7 @@
     <Compile Include="System\Security\Cryptography\ECKeyXmlFormat.cs" />
     <Compile Include="System\Security\Cryptography\ECParameters.cs" />
     <Compile Include="System\Security\Cryptography\ECPoint.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519.cs" />
     <Compile Include="System\Security\Cryptography\FixedMemoryKeyBox.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
@@ -862,6 +863,7 @@
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Browser.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HMACHashProvider.Browser.Managed.cs" />
@@ -961,6 +963,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ed25519.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ed25519.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.ExportKeyContents.cs"
@@ -1098,6 +1102,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519Implementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.OpenSsl.cs" />
@@ -1270,6 +1275,7 @@
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Android.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
@@ -1420,6 +1426,7 @@
     <Compile Include="System\Security\Cryptography\DesImplementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.AppleCrypto.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.AppleCrypto.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Apple.cs" />
@@ -2010,6 +2017,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCngPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
+    <Compile Include="System\Security\Cryptography\Ed25519Implementation.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Windows.cs" />

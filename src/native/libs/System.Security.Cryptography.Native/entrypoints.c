@@ -22,6 +22,7 @@
 #include "pal_evp_pkey_dsa.h"
 #include "pal_evp_pkey_ecdh.h"
 #include "pal_evp_pkey_ecdsa.h"
+#include "pal_evp_pkey_ed25519.h"
 #include "pal_evp_pkey_eckey.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_evp_pkey_ml_dsa.h"
@@ -92,6 +93,14 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EncodeSubjectPublicKeyInfo)
     DllImportEntry(CryptoNative_EncodeX509)
     DllImportEntry(CryptoNative_EncodeX509SubjectPublicKeyInfo)
+    DllImportEntry(CryptoNative_Ed25519Available)
+    DllImportEntry(CryptoNative_Ed25519ExportPrivateKey)
+    DllImportEntry(CryptoNative_Ed25519ExportPublicKey)
+    DllImportEntry(CryptoNative_Ed25519GenerateKey)
+    DllImportEntry(CryptoNative_Ed25519ImportPrivateKey)
+    DllImportEntry(CryptoNative_Ed25519ImportPublicKey)
+    DllImportEntry(CryptoNative_Ed25519SignData)
+    DllImportEntry(CryptoNative_Ed25519VerifyData)
     DllImportEntry(CryptoNative_ErrClearError)
     DllImportEntry(CryptoNative_ErrErrorStringN)
     DllImportEntry(CryptoNative_ErrGetExceptionError)

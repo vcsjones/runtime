@@ -547,6 +547,9 @@
     <Compile Include="ECDiffieHellmanTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="ECDsaTests.cs" />
+    <Compile Include="Ed25519BaseTests.cs" />
+    <Compile Include="Ed25519ImplementationTests.cs" />
+    <Compile Include="Ed25519KeyTests.cs" />
     <Compile Include="ECPemExportTests.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
