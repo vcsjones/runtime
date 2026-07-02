@@ -40,16 +40,16 @@ namespace System.Security.Cryptography
 
             if (!hasErrors)
             {
+                // For non-explicit curves, the order length is not available here, so validate only
+                // that D is not empty when present.
+                if (D is [])
+                {
+                    hasErrors = true;
+                }
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
                     hasErrors = (D != null && (D.Length != Curve.Order!.Length));
-                }
-                else if (Curve.IsNamed && Q.X != null)
-                {
-                    // Named curves require D length to match Q.X and Q.Y if Q
-                    // is present.
-                    hasErrors = (D != null && (D.Length != Q.X.Length));
                 }
             }
 

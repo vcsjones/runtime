@@ -550,6 +550,7 @@
     <Compile Include="ECDiffieHellmanTestRegistration.Default.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="ECDsaTestRegistration.Default.cs" />
+    <Compile Include="ECParametersTests.cs" />
     <Compile Include="ECPemExportTests.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmNameTests.cs" />
