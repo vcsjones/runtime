@@ -111,6 +111,20 @@ namespace System.Security.Cryptography
             byte[]? x = null;
             byte[]? y = null;
 
+            ValueECDomainParameters domainParameters;
+
+            if (key.HasParameters)
+            {
+                domainParameters = key.Parameters;
+            }
+            else
+            {
+                Debug.Assert(algId.HasParameters);
+                ValueECDomainParameters.Decode(algId.Parameters, AsnEncodingRules.DER, out domainParameters);
+            }
+
+            ECCurve curve = GetCurve(domainParameters);
+
             if (key.HasPublicKey)
             {
                 ReadOnlySpan<byte> publicKeyBytes = key.PublicKey;
@@ -128,32 +142,32 @@ namespace System.Security.Cryptography
                 }
 
                 // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
-                if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
+                if (publicKeyBytes.Length < 3 || (publicKeyBytes.Length & 0x01) != 1)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                x = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray();
-                y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
-            }
+                int fieldWidth = publicKeyBytes.Length / 2;
 
-            ValueECDomainParameters domainParameters;
+                if (curve.IsExplicit)
+                {
+                    int expectedFieldWidth = curve.IsPrime ? curve.Prime!.Length : curve.G.X!.Length;
 
-            if (key.HasParameters)
-            {
-                domainParameters = key.Parameters;
-            }
-            else
-            {
-                Debug.Assert(algId.HasParameters);
-                ValueECDomainParameters.Decode(algId.Parameters, AsnEncodingRules.DER, out domainParameters);
+                    if (fieldWidth != expectedFieldWidth)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+                }
+
+                x = publicKeyBytes.Slice(1, fieldWidth).ToArray();
+                y = publicKeyBytes.Slice(1 + fieldWidth).ToArray();
             }
 
             Debug.Assert((x == null) == (y == null));
 
             ret = new ECParameters
             {
-                Curve = GetCurve(domainParameters),
+                Curve = curve,
                 Q = new ECPoint
                 {
                     X = x,
