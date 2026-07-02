@@ -43,7 +43,8 @@ PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
     BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD);
+    BIGNUM** d, int32_t* cbD,
+    int32_t* cbOrder);
 
 /*
 Returns the new EC_KEY instance using the explicit parameters.

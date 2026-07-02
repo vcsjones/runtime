@@ -220,21 +220,23 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
             out SafeBignumHandle qy_bn, out int y_cb,
-            out SafeBignumHandle d_bn, out int d_cb);
+            out SafeBignumHandle d_bn, out int d_cb,
+            out int order_cb);
 
         internal static ECParameters EvpPKeyGetEcKeyParameters(
             SafeEvpPKeyHandle key,
             bool includePrivate)
         {
             SafeBignumHandle qx_bn, qy_bn, d_bn;
-            int qx_cb, qy_cb, d_cb;
+            int qx_cb, qy_cb, d_cb, order_cb;
 
             int rc = CryptoNative_EvpPKeyGetEcKeyParameters(
                 key,
                 includePrivate,
                 out qx_bn, out qx_cb,
                 out qy_bn, out qy_cb,
-                out d_bn, out d_cb);
+                out d_bn, out d_cb,
+                out order_cb);
 
             using (qx_bn)
             using (qy_bn)
@@ -249,10 +251,10 @@ internal static partial class Interop
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
-                // Match Windows semantics where qx, qy, and d have same length
-                int expectedSize = GetEvpPKeySizeBytes(key);
+                int expectedSize = (EvpPKeyGetEcKeySize(key) + 7) >>> 3;
                 return GetEcParameters(
                     expectedSize,
+                    order_cb,
                     qx_bn, qx_cb,
                     qy_bn, qy_cb,
                     d_bn, d_cb);
@@ -261,6 +263,7 @@ internal static partial class Interop
 
         private static ECParameters GetEcParameters(
             int expectedKeySizeBytes,
+            int orderSizeBytes,
             SafeBignumHandle qx_bn, int qx_cb,
             SafeBignumHandle qy_bn, int qy_cb,
             SafeBignumHandle d_bn, int d_cb
@@ -268,21 +271,22 @@ internal static partial class Interop
         {
             ECParameters parameters = default;
 
-            // Match Windows semantics where qx, qy, and d have same length
-            int cbKey = GetMax(qx_cb, qy_cb, d_cb);
+            Debug.Assert(
+                qx_cb <= expectedKeySizeBytes && qy_cb <= expectedKeySizeBytes,
+                $"Expected field size was {expectedKeySizeBytes}, which a coordinate exceeded. qx={qx_cb}, qy={qy_cb}");
+
+            int privateKeySizeBytes = orderSizeBytes == 0 ? GetMax(d_cb, expectedKeySizeBytes) : orderSizeBytes;
 
             Debug.Assert(
-                cbKey <= expectedKeySizeBytes,
-                $"Expected output size was {expectedKeySizeBytes}, which a parameter exceeded. qx={qx_cb}, qy={qy_cb}, d={d_cb}");
-
-            cbKey = GetMax(cbKey, expectedKeySizeBytes);
+                d_cb <= privateKeySizeBytes,
+                $"Expected private key size was {privateKeySizeBytes}, which D exceeded. d={d_cb}");
 
             parameters.Q = new ECPoint
             {
-                X = Crypto.ExtractBignum(qx_bn, cbKey),
-                Y = Crypto.ExtractBignum(qy_bn, cbKey)
+                X = Crypto.ExtractBignum(qx_bn, expectedKeySizeBytes),
+                Y = Crypto.ExtractBignum(qy_bn, expectedKeySizeBytes)
             };
-            parameters.D = d_cb == 0 ? null : Crypto.ExtractBignum(d_bn, cbKey);
+            parameters.D = d_cb == 0 ? null : Crypto.ExtractBignum(d_bn, privateKeySizeBytes);
 
             return parameters;
         }

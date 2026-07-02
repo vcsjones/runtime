@@ -660,7 +660,8 @@ static int32_t EvpPKeyGetEcKeyParameters(
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
     BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD)
+    BIGNUM** d, int32_t* cbD,
+    int32_t* cbOrder)
 {
     assert(qx != NULL);
     assert(cbQx != NULL);
@@ -668,6 +669,7 @@ static int32_t EvpPKeyGetEcKeyParameters(
     assert(cbQy != NULL);
     assert(d != NULL);
     assert(cbD != NULL);
+    assert(cbOrder != NULL);
 
     if (
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
@@ -682,6 +684,7 @@ static int32_t EvpPKeyGetEcKeyParameters(
         *qx = *qy = NULL;
         *d = NULL;
         *cbD = 0;
+        *cbOrder = 0;
         return 2;
     }
 
@@ -689,6 +692,7 @@ static int32_t EvpPKeyGetEcKeyParameters(
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
     BIGNUM *dBn = NULL;
+    BIGNUM *orderBn = NULL;
     BIGNUM *ecP = NULL;
     BIGNUM *ecA = NULL;
     BIGNUM *ecB = NULL;
@@ -780,6 +784,15 @@ static int32_t EvpPKeyGetEcKeyParameters(
     if (!EcPointGetAffineCoordinates(group, point, xBn, yBn))
         goto error;
 
+    orderBn = BN_new();
+
+    if (orderBn == NULL)
+    {
+        goto error;
+    }
+
+    *cbOrder = EC_GROUP_get_order(group, orderBn, NULL) ? BN_num_bytes(orderBn) : 0;
+
     if (includePrivate && !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
     {
         rc = -1;
@@ -814,11 +827,13 @@ error:
     *qx = *qy = NULL;
     *d = NULL;
     *cbD = 0;
+    *cbOrder = 0;
 
 exit:
     if (xBn) BN_free(xBn);
     if (yBn) BN_free(yBn);
     if (dBn) BN_clear_free(dBn);
+    if (orderBn) BN_free(orderBn);
     if (pubKeyBuf) OPENSSL_free(pubKeyBuf);
     if (point) EC_POINT_free(point);
     if (group) EC_GROUP_free(group);
@@ -836,16 +851,26 @@ static int32_t EvpPKeyGetEcKeyParameters_Legacy(
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
     BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD)
+    BIGNUM** d, int32_t* cbD,
+    int32_t* cbOrder)
 {
     EC_KEY* ecKey = EVP_PKEY_get1_EC_KEY(pkey);
+
     if (!ecKey)
+    {
+        *qx = *qy = NULL;
+        *cbQx = *cbQy = 0;
+        *d = NULL;
+        *cbD = 0;
+        *cbOrder = 0;
         return 0;
+    }
 
     const BIGNUM* qxBorrowed = NULL;
     const BIGNUM* qyBorrowed = NULL;
     const BIGNUM* dBorrowed = NULL;
     int32_t cbQxLocal = 0, cbQyLocal = 0, cbDLocal = 0;
+    BIGNUM* orderBn = BN_new();
 
     int32_t result = CryptoNative_GetECKeyParameters(
         ecKey, includePrivate,
@@ -855,6 +880,9 @@ static int32_t EvpPKeyGetEcKeyParameters_Legacy(
 
     if (result == 1)
     {
+        const EC_GROUP* group = EC_KEY_get0_group(ecKey);
+        *cbOrder = group != NULL && orderBn != NULL && EC_GROUP_get_order(group, orderBn, NULL) ? BN_num_bytes(orderBn) : 0;
+
         // CryptoNative_GetECKeyParameters returns newly allocated BIGNUMs for qx/qy,
         // and a borrowed pointer for d. Transfer qx/qy ownership and dup d.
         *qx = (BIGNUM*)(uintptr_t)qxBorrowed;
@@ -873,6 +901,13 @@ static int32_t EvpPKeyGetEcKeyParameters_Legacy(
                 *cbQx = *cbQy = 0;
                 *d = NULL;
                 *cbD = 0;
+                *cbOrder = 0;
+
+                if (orderBn)
+                {
+                    BN_free(orderBn);
+                }
+
                 EC_KEY_free(ecKey);
                 return 0;
             }
@@ -890,8 +925,11 @@ static int32_t EvpPKeyGetEcKeyParameters_Legacy(
         *cbQx = *cbQy = 0;
         *d = NULL;
         *cbD = 0;
+        *cbOrder = 0;
     }
 
+    if (orderBn)
+        BN_free(orderBn);
     EC_KEY_free(ecKey);
     return result;
 }
@@ -903,7 +941,8 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
     BIGNUM** qy, int32_t* cbQy,
-    BIGNUM** d, int32_t* cbD)
+    BIGNUM** d, int32_t* cbD,
+    int32_t* cbOrder)
 {
     assert(qx != NULL);
     assert(cbQx != NULL);
@@ -911,14 +950,15 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     assert(cbQy != NULL);
     assert(d != NULL);
     assert(cbD != NULL);
+    assert(cbOrder != NULL);
 
 #ifdef NEED_OPENSSL_3_0
-    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD, cbOrder);
     if (rc != 2)
         return rc;
 #endif
 
-    return EvpPKeyGetEcKeyParameters_Legacy(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    return EvpPKeyGetEcKeyParameters_Legacy(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD, cbOrder);
 }
 
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
@@ -1238,7 +1278,8 @@ static int32_t EvpPKeyGetEcCurveParameters(
     ERR_clear_error();
 
     // Provider-backed key: use OSSL 3.0 params API
-    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    int32_t unusedOrderBytes = 0;
+    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD, &unusedOrderBytes);
 
     EC_POINT* G = NULL;
     BIGNUM* xBn = BN_new();

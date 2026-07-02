@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         protected abstract bool CanDeriveNewPublicKey { get; }
 
+        private bool IsSecP160r2Available => ECDsaFactory.IsCurveValid(new Oid("1.3.132.0.30", "secP160r2"));
+
 #if NET
         [Fact]
         public void DiminishedCoordsRoundtrip()
@@ -323,6 +325,25 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ConditionalTheory]
+        [MemberData(nameof(Secp160r2ECPrivateKeys))]
+        public void ExportParameters_Secp160r2(string base64Key, string expectedXHex, string expectedYHex, string expectedDHex)
+        {
+            SkipTestException.ThrowUnless(IsSecP160r2Available);
+
+            using ECDsa ecdsa = ECDsaFactory.Create();
+            byte[] key = Convert.FromBase64String(base64Key);
+
+            ecdsa.ImportECPrivateKey(key, out int bytesRead);
+            ECParameters exported = ecdsa.ExportParameters(includePrivateParameters: true);
+
+            Assert.Equal(key.Length, bytesRead);
+            Assert.Equal("1.3.132.0.30", exported.Curve.Oid.Value);
+            Assert.Equal(Convert.FromHexString(expectedXHex), exported.Q.X);
+            Assert.Equal(Convert.FromHexString(expectedYHex), exported.Q.Y);
+            Assert.Equal(Convert.FromHexString(expectedDHex), exported.D);
+        }
+
         [Fact]
         public void ExportIncludingPrivateOnPublicOnlyKey()
         {
@@ -518,10 +539,41 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P256"), false };
                 yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P384"), false };
                 yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P521"), false };
-                
+
                 // Curves may not be valid for all platforms, so validity must be checked at runtime
                 yield return new object[] { ECCurve.NamedCurves.brainpoolP160r1, true };
                 yield return new object[] { ECCurve.NamedCurves.brainpoolP160t1, true };
+            }
+        }
+
+        public static IEnumerable<object[]> Secp160r2ECPrivateKeys
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    """
+                    MFECAQEEFQCM0i5BxZVZ6fXCZhraFFQGEd+ilaAHBgUrgQQAHqEsAyoABCnyZW4j
+                    7uW6ZMNcBn73nO9WTLgDhhlmjCX7ETXPJ+rL8Cs2Y/0Ub9I=
+                    """,
+                    "29F2656E23EEE5BA64C35C067EF79CEF564CB803",
+                    "8619668C25FB1135CF27EACBF02B3663FD146FD2",
+                    "008CD22E41C59559E9F5C2661ADA14540611DFA295",
+                };
+
+                // This key was constructed with D = 2^160. Generating one with the left-most byte as 01 has
+                // a probability of about 2^-89, so instead we construct it.
+                // The value is valid because secp160r2's order is greater than 2^160; Q was derived as D * G.
+                yield return new object[]
+                {
+                    """
+                    MFECAQEEFQEAAAAAAAAAAAAAAAAAAAAAAAAAAKAHBgUrgQQAHqEsAyoABHZCyDa5
+                    sXKeYXMAvhZbtpoCriXpNrtsfH4jDbqYmGL53VQF/3lEF6Y=
+                    """,
+                    "7642C836B9B1729E617300BE165BB69A02AE25E9",
+                    "36BB6C7C7E230DBA989862F9DD5405FF794417A6",
+                    "010000000000000000000000000000000000000000",
+                };
             }
         }
 
