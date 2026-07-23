@@ -119,24 +119,7 @@ namespace System.Formats.Asn1
                 return;
             }
 
-            int valueLength;
-
-            if (value >= sbyte.MinValue)
-                valueLength = 1;
-            else if (value >= short.MinValue)
-                valueLength = 2;
-            else if (value >= unchecked((long)0xFFFFFFFF_FF800000))
-                valueLength = 3;
-            else if (value >= int.MinValue)
-                valueLength = 4;
-            else if (value >= unchecked((long)0xFFFFFF80_00000000))
-                valueLength = 5;
-            else if (value >= unchecked((long)0xFFFF8000_00000000))
-                valueLength = 6;
-            else if (value >= unchecked((long)0xFF800000_00000000))
-                valueLength = 7;
-            else
-                valueLength = 8;
+            int valueLength = GetIntegerEncodedLength((ulong)~value);
 
             Debug.Assert(!tag.IsConstructed);
             WriteTag(tag);
@@ -167,27 +150,7 @@ namespace System.Formats.Asn1
         // T-REC-X.690-201508 sec 8.3
         private void WriteNonNegativeIntegerCore(Asn1Tag tag, ulong value)
         {
-            int valueLength;
-
-            // 0x80 needs two bytes: 0x00 0x80
-            if (value < 0x80)
-                valueLength = 1;
-            else if (value < 0x8000)
-                valueLength = 2;
-            else if (value < 0x800000)
-                valueLength = 3;
-            else if (value < 0x80000000)
-                valueLength = 4;
-            else if (value < 0x80_00000000)
-                valueLength = 5;
-            else if (value < 0x8000_00000000)
-                valueLength = 6;
-            else if (value < 0x800000_00000000)
-                valueLength = 7;
-            else if (value < 0x80000000_00000000)
-                valueLength = 8;
-            else
-                valueLength = 9;
+            int valueLength = GetIntegerEncodedLength(value);
 
             // Clear the constructed bit, if it was set.
             Debug.Assert(!tag.IsConstructed);
@@ -214,6 +177,34 @@ namespace System.Formats.Asn1
 #endif
 
             _offset += valueLength;
+        }
+
+        private static int GetIntegerEncodedLength(ulong value)
+        {
+#if NET
+            // Adding eight accounts for one sign bit and seven bits to round up to a whole byte.
+            return (sizeof(ulong) * 8 + 8 - (int)ulong.LeadingZeroCount(value)) / 8;
+#else
+            // 0x80 needs two bytes: 0x00 0x80.
+            if (value < 0x80)
+                return 1;
+            if (value < 0x8000)
+                return 2;
+            if (value < 0x800000)
+                return 3;
+            if (value < 0x80000000)
+                return 4;
+            if (value < 0x80_00000000)
+                return 5;
+            if (value < 0x8000_00000000)
+                return 6;
+            if (value < 0x800000_00000000)
+                return 7;
+            if (value < 0x80000000_00000000)
+                return 8;
+
+            return 9;
+#endif
         }
 
         private void WriteIntegerUnsignedCore(Asn1Tag tag, ReadOnlySpan<byte> value)
