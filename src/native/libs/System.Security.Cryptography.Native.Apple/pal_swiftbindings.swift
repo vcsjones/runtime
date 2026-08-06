@@ -76,23 +76,21 @@ private func deallocatePointer<T>(_ pointer: UnsafeMutableRawPointer, to type: T
 
 func encrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
-    key: UnsafeBufferPointer<UInt8>,
+    key: SymmetricKey,
     nonceData: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeMutableBufferPointer<UInt8>,
     tag: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>) throws where Algorithm: AEADSymmetricAlgorithm {
 
-    let symmetricKey = SymmetricKey(data: key)
-
     let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
     let result: Algorithm.SealedBox
 
     if aad.isEmpty {
-        result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce)
+        result = try Algorithm.seal(plaintext, using: key, nonce: nonce)
     } else {
-        result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
+        result = try Algorithm.seal(plaintext, using: key, nonce: nonce, authenticating: aad)
     }
 
     // Data.copyBytes did not correctly handle slices before the 26 releases.
@@ -108,14 +106,12 @@ func encrypt<Algorithm>(
 
 func decrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
-    key: UnsafeBufferPointer<UInt8>,
+    key: SymmetricKey,
     nonceData: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeBufferPointer<UInt8>,
     tag: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>) throws where Algorithm: AEADSymmetricAlgorithm {
-
-    let symmetricKey = SymmetricKey(data: key)
 
     let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
@@ -124,9 +120,9 @@ func decrypt<Algorithm>(
     let result: Data
 
     if aad.isEmpty {
-        result = try Algorithm.open(sealedBox, using: symmetricKey)
+        result = try Algorithm.open(sealedBox, using: key)
     } else {
-        result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
+        result = try Algorithm.open(sealedBox, using: key, authenticating: aad)
     }
 
     _ = result.copyBytes(to: plaintext)
@@ -134,13 +130,15 @@ func decrypt<Algorithm>(
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
 public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
-    key: UnsafeBufferPointer<UInt8>,
+    keyPtr: UnsafeMutableRawPointer,
     nonceData: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeMutableBufferPointer<UInt8>,
     tag: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
+    let key = keyPtr.assumingMemoryBound(to: SymmetricKey.self).pointee
+
     return try encrypt(
         ChaChaPoly.self,
         key: key,
@@ -153,13 +151,15 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
 public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
-    key: UnsafeBufferPointer<UInt8>,
+    keyPtr: UnsafeMutableRawPointer,
     nonceData: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeBufferPointer<UInt8>,
     tag: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
+    let key = keyPtr.assumingMemoryBound(to: SymmetricKey.self).pointee
+
     return try decrypt(
         ChaChaPoly.self,
         key: key,
@@ -172,13 +172,15 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
 
 @_silgen_name("AppleCryptoNative_AesGcmEncrypt")
 public func AppleCryptoNative_AesGcmEncrypt(
-    key: UnsafeBufferPointer<UInt8>,
+    keyPtr: UnsafeMutableRawPointer,
     nonceData: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeMutableBufferPointer<UInt8>,
     tag: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
+    let key = keyPtr.assumingMemoryBound(to: SymmetricKey.self).pointee
+
     return try encrypt(
         AES.GCM.self,
         key: key,
@@ -191,13 +193,15 @@ public func AppleCryptoNative_AesGcmEncrypt(
 
 @_silgen_name("AppleCryptoNative_AesGcmDecrypt")
 public func AppleCryptoNative_AesGcmDecrypt(
-    key: UnsafeBufferPointer<UInt8>,
+    keyPtr: UnsafeMutableRawPointer,
     nonceData: UnsafeBufferPointer<UInt8>,
     cipherText: UnsafeBufferPointer<UInt8>,
     tag: UnsafeBufferPointer<UInt8>,
     plaintext: UnsafeMutableBufferPointer<UInt8>,
     aad: UnsafeBufferPointer<UInt8>
 ) throws {
+    let key = keyPtr.assumingMemoryBound(to: SymmetricKey.self).pointee
+
     return try decrypt(
         AES.GCM.self,
         key: key,
@@ -219,6 +223,18 @@ public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
         }
     }
     return false
+}
+
+@_silgen_name("AppleCryptoNative_SymmetricKeyFree")
+public func AppleCryptoNative_SymmetricKeyFree(ptr: UnsafeMutableRawPointer?) {
+    if let ptr {
+        deallocatePointer(ptr, to: SymmetricKey.self)
+    }
+}
+
+@_silgen_name("AppleCryptoNative_SymmetricKeyImport")
+public func AppleCryptoNative_SymmetricKeyImport(source: UnsafeBufferPointer<UInt8>) -> UnsafeMutableRawPointer {
+    return allocatePointer(to: SymmetricKey(data: source))
 }
 
 // Must remain in sync with PAL_HashAlgorithm from managed side.
