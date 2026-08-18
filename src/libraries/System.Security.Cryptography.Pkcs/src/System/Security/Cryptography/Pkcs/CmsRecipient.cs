@@ -7,7 +7,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class CmsRecipient
+    public sealed partial class CmsRecipient
     {
         public CmsRecipient(X509Certificate2 certificate)
             : this(SubjectIdentifierType.IssuerAndSerialNumber, certificate)

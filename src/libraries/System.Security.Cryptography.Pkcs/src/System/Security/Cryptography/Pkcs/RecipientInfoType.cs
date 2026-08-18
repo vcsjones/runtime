@@ -11,5 +11,11 @@ namespace System.Security.Cryptography.Pkcs
         Unknown = 0,
         KeyTransport = 1,
         KeyAgreement = 2,
+#if NET11_0_OR_GREATER
+        /// <summary>
+        /// Identifies recipient information that uses a key-encapsulation mechanism (KEM).
+        /// </summary>
+        KeyEncapsulation = 3,
+#endif
     }
 }

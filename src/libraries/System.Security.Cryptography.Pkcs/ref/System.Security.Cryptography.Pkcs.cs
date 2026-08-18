@@ -231,6 +231,9 @@ namespace System.Security.Cryptography.Pkcs
         Unknown = 0,
         KeyTransport = 1,
         KeyAgreement = 2,
+#if NET11_0_OR_GREATER
+        KeyEncapsulation = 3,
+#endif
     }
     public sealed partial class SignedCms
     {

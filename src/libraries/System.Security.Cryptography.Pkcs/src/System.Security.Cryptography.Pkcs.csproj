@@ -694,6 +694,12 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampTokenInfo.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Security\Cryptography\Pkcs\CmsRecipient.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\EnvelopedCms.Kem.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\KemRecipientInfo.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="@(AsnXml)" />
   </ItemGroup>
