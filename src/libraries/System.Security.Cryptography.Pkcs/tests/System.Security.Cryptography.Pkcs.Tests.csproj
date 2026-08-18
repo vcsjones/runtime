@@ -10,6 +10,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.GeneratedCertificates.cs"
@@ -35,6 +37,7 @@
     <Compile Include="EnvelopedCms\GeneralTests.cs" />
     <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoTests.cs" />
+    <Compile Include="EnvelopedCms\MLKemTestDocuments.cs" />
     <Compile Include="EnvelopedCms\StateTests.cs" />
     <Compile Include="EnvelopedCms\UnprotectedAttributeTests.cs" />
     <Compile Include="Oids.cs" />
