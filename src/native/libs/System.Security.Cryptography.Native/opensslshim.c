@@ -108,6 +108,12 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("1.1"));
     }
 
+    // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("4"));
+    }
+
     if (libssl == NULL)
     {
         // Debian 9 has dropped support for SSLv3 and so they have bumped their soname. Let's try it

@@ -29,6 +29,13 @@
 
 c_static_assert(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS == 4);
 
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
+const unsigned char* local_ASN1_STRING_get0_data(const ASN1_STRING* asn1)
+{
+    return asn1->data;
+}
+#endif
+
 const ASN1_TIME* local_X509_get0_notBefore(const X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)

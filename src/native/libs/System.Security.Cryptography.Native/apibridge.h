@@ -7,6 +7,7 @@
 #include "pal_types.h"
 
 int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+const unsigned char* local_ASN1_STRING_get0_data(const ASN1_STRING* asn1);
 int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w);
 int local_BN_is_zero(const BIGNUM* a);
 int local_BN_is_odd(const BIGNUM* a);
