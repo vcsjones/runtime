@@ -24,6 +24,7 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
 int ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm);
+const unsigned char* ASN1_STRING_get0_data(const ASN1_STRING* x);
 int BN_abs_is_word(const BIGNUM *a, const BN_ULONG w);
 int BN_is_odd(const BIGNUM* a);
 int BN_is_one(const BIGNUM* a);
