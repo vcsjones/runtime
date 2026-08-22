@@ -66,6 +66,9 @@ namespace System.Security.Cryptography
         internal const string Pkcs7Hashed = "1.2.840.113549.1.7.5";
         internal const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
 
+        // CMS OtherRecipientInfo Types
+        internal const string CmsKemRecipientInfo = "1.2.840.113549.1.9.16.13.3";
+
         // Hash algorithms
         internal const string Md5 = "1.2.840.113549.2.5";
         internal const string Sha1 = "1.3.14.3.2.26";

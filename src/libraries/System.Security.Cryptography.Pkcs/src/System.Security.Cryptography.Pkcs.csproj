@@ -151,6 +151,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KemRecipientInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.xml</DependentUpon>
@@ -178,6 +182,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherRecipientInfoAsn.xml</DependentUpon>
     </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.xml.cs">
@@ -695,6 +703,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="Internal\Cryptography\KemRecipientInfoPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Kem.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsRecipient.Kem.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\EnvelopedCms.Kem.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\KemRecipientInfo.cs" />

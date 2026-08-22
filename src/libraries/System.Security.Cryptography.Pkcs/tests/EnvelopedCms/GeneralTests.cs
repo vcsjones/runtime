@@ -68,6 +68,15 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifyVersion0(encodedMessage);
         }
 
+        [Fact]
+        public static void DecodeMLKem512()
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(MLKemTestDocuments.MLKem512WithoutUserKeyingMaterial);
+
+            Assert.Equal(MLKemTestDocuments.MLKem512Content, cms.ContentInfo.Content);
+        }
+
         private static void VerifyVersion0(byte[] encodedMessage)
         {
             EnvelopedCms ecms = new EnvelopedCms();
