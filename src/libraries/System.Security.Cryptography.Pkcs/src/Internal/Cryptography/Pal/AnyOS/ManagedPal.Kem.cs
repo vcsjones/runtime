@@ -85,8 +85,6 @@ namespace Internal.Cryptography.Pal.AnyOS
                         _asn.KekLength != kekLength ||
                         _asn.EncryptedKey.Length < MinimumWrappedKeySize ||
                         _asn.EncryptedKey.Length % KeyWrapBlockSize != 0 ||
-                        // TODO-KEM: Support UKM when deriving the key-encryption key.
-                        _asn.Ukm.HasValue ||
                         _asn.Wrap.Parameters is not null)
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -116,8 +114,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                                     Algorithm = _asn.Wrap.Algorithm,
                                 },
                                 KekLength = _asn.KekLength,
-                                // TODO-KEM: Include UKM after UKM decryption support is implemented.
                             };
+
+                            if (_asn.Ukm.HasValue)
+                            {
+                                otherInfo.Ukm = _asn.Ukm.Value.Span;
+                            }
 
                             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                             otherInfo.Encode(writer);
