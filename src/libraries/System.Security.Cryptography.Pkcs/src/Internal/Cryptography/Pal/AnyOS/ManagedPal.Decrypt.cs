@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             public override unsafe ContentInfo? TryDecrypt(
                 RecipientInfo recipientInfo,
                 X509Certificate2? cert,
-                AsymmetricAlgorithm? privateKey,
+                CmsDecryptionKey decryptionKey,
                 X509Certificate2Collection originatorCerts,
                 X509Certificate2Collection extraStore,
                 out Exception? exception)
@@ -40,13 +40,18 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                Debug.Assert((cert != null) ^ (privateKey != null));
+                Debug.Assert((cert is not null) ^ (decryptionKey is not NoKey));
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    RSA? key = privateKey as RSA;
+                    RSA? key = decryptionKey switch
+                    {
+                        AsymmetricAlgorithm asymmetricAlgorithm => asymmetricAlgorithm as RSA,
+                        MLKem => null,
+                        NoKey => null,
+                    };
 
-                    if (privateKey != null && key == null)
+                    if (decryptionKey is not NoKey && key is null)
                     {
                         exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
                         return null;
@@ -79,6 +84,46 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                     }
                 }
+#if NET11_0_OR_GREATER
+                else if (recipientInfo.Pal is ManagedKemPal kemri)
+                {
+                    if (decryptionKey is not MLKem privateKey)
+                    {
+                        exception = new CryptographicException(
+                            SR.Cryptography_Cms_RecipientType_NotSupported,
+                            recipientInfo.Type.ToString());
+
+                        return null;
+                    }
+
+                    byte[]? cek = kemri.DecryptCek(privateKey, out exception);
+
+                    fixed (byte* pinnedCek = cek)
+                    {
+                        try
+                        {
+                            if (exception is not null)
+                            {
+                                return null;
+                            }
+
+                            return TryDecryptCore(
+                                cek!,
+                                _envelopedData.EncryptedContentInfo.ContentType,
+                                _envelopedData.EncryptedContentInfo.EncryptedContent,
+                                _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
+                                out exception);
+                        }
+                        finally
+                        {
+                            if (cek is not null)
+                            {
+                                CryptographicOperations.ZeroMemory(cek);
+                            }
+                        }
+                    }
+                }
+#endif
                 else
                 {
                     exception = new CryptographicException(

@@ -26,14 +26,14 @@ namespace Internal.Cryptography
         public RecipientInfoCollection RecipientInfos { get; }
 
         /// <summary>
-        /// Attempt to decrypt the CMS using the specified "cert". If successful, return the ContentInfo that contains the decrypted content. If unsuccessful, return null and set "exception"
+        /// Attempt to decrypt the CMS using the specified certificate and decryption key. If successful, return the ContentInfo that contains the decrypted content. If unsuccessful, return null and set "exception"
         /// to a valid Exception object. Do not throw the exception as EnvelopedCms will want to continue decryption attempts against other recipients. Only if all the recipients fail to
         /// decrypt will then EnvelopedCms throw the exception from the last failed attempt.
         /// </summary>
         public abstract ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
-            AsymmetricAlgorithm? privateKey,
+            CmsDecryptionKey decryptionKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
             out Exception? exception);

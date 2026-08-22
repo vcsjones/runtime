@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Formats.Asn1;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Pkcs.Asn1;
 
@@ -39,6 +43,127 @@ namespace Internal.Cryptography.Pal.AnyOS
             public override ReadOnlyMemory<byte>? UserKeyingMaterial => _asn.Ukm;
 
             public override int Version => _asn.Version;
+
+            internal unsafe byte[]? DecryptCek(MLKem privateKey, out Exception? exception)
+            {
+                try
+                {
+                    MLKemAlgorithm kemAlgorithm = GetKemAlgorithm(_asn.Kem.Algorithm);
+                    int kekLength = GetKeyWrapSizeInBytes(_asn.Wrap.Algorithm);
+                    HashAlgorithmName kdfHashAlgorithm = GetKdfHashAlgorithm(_asn.Kdf.Algorithm);
+
+                    if (_asn.Version != 0 ||
+                        privateKey.Algorithm != kemAlgorithm ||
+                        _asn.Kem.Parameters is not null ||
+                        _asn.Kemct.Length != kemAlgorithm.CiphertextSizeInBytes ||
+                        _asn.Kdf.Parameters is not null ||
+                        _asn.KekLength != kekLength ||
+                        // TODO-KEM: Support UKM when deriving the key-encryption key.
+                        _asn.Ukm.HasValue ||
+                        _asn.Wrap.Parameters is not null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    const int SharedSecretSize = 32;
+
+                    if (kemAlgorithm.SharedSecretSizeInBytes != SharedSecretSize)
+                    {
+                        Debug.Fail($"Unexpected ML-KEM shared secret size: {kemAlgorithm.SharedSecretSizeInBytes}.");
+                        throw new CryptographicException();
+                    }
+
+                    Span<byte> sharedSecret = stackalloc byte[SharedSecretSize];
+                    byte[] keyEncryptionKey = new byte[kekLength];
+
+                    fixed (byte* pinnedKeyEncryptionKey = keyEncryptionKey)
+                    {
+                        try
+                        {
+                            privateKey.Decapsulate(_asn.Kemct.Span, sharedSecret);
+
+                            ValueCmsOriForKemOtherInfoAsn otherInfo = new ValueCmsOriForKemOtherInfoAsn
+                            {
+                                Wrap = new ValueAlgorithmIdentifierAsn
+                                {
+                                    Algorithm = _asn.Wrap.Algorithm,
+                                },
+                                KekLength = _asn.KekLength,
+                                // TODO-KEM: Include UKM after UKM decryption support is implemented.
+                            };
+
+                            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                            otherInfo.Encode(writer);
+
+                            HKDF.DeriveKey(
+                                kdfHashAlgorithm,
+                                sharedSecret,
+                                keyEncryptionKey,
+                                ReadOnlySpan<byte>.Empty,
+                                writer.Encode());
+
+                            using (Aes aes = Aes.Create())
+                            {
+                                aes.Key = keyEncryptionKey;
+                                exception = null;
+                                return aes.DecryptKeyWrap(_asn.EncryptedKey.Span);
+                            }
+                        }
+                        finally
+                        {
+                            CryptographicOperations.ZeroMemory(sharedSecret);
+                            CryptographicOperations.ZeroMemory(keyEncryptionKey);
+                        }
+                    }
+                }
+                catch (CryptographicException e)
+                {
+                    exception = e;
+                    return null;
+                }
+            }
+
+            private static MLKemAlgorithm GetKemAlgorithm(string kemAlgorithm)
+            {
+                return kemAlgorithm switch
+                {
+                    Oids.MlKem512 => MLKemAlgorithm.MLKem512,
+                    Oids.MlKem768 => MLKemAlgorithm.MLKem768,
+                    Oids.MlKem1024 => MLKemAlgorithm.MLKem1024,
+                    _ => throw new CryptographicException(
+                        SR.Cryptography_Cms_UnknownAlgorithm,
+                        kemAlgorithm),
+                };
+            }
+
+            private static int GetKeyWrapSizeInBytes(string wrapAlgorithm)
+            {
+                return wrapAlgorithm switch
+                {
+                    Oids.Aes128Wrap => 16,
+                    Oids.Aes192Wrap => 24,
+                    Oids.Aes256Wrap => 32,
+                    _ => throw new CryptographicException(
+                        SR.Cryptography_Cms_UnknownAlgorithm,
+                        wrapAlgorithm),
+                };
+            }
+
+            private static HashAlgorithmName GetKdfHashAlgorithm(string kdfAlgorithm)
+            {
+                return kdfAlgorithm switch
+                {
+                    Oids.HkdfWithSha256 => HashAlgorithmName.SHA256,
+                    Oids.HkdfWithSha384 => HashAlgorithmName.SHA384,
+                    Oids.HkdfWithSha512 => HashAlgorithmName.SHA512,
+                    Oids.HkdfWithSha3_256 => HashAlgorithmName.SHA3_256,
+                    Oids.HkdfWithSha3_384 => HashAlgorithmName.SHA3_384,
+                    Oids.HkdfWithSha3_512 => HashAlgorithmName.SHA3_512,
+                    _ => throw new CryptographicException(
+                        SR.Cryptography_Cms_UnknownAlgorithm,
+                        kdfAlgorithm),
+                };
+            }
         }
     }
 }

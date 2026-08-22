@@ -67,7 +67,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Xml\X509IssuerSerial.cs" />
 
      <!-- Internal types (platform independent) -->
-    <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
+     <Compile Include="Internal\Cryptography\CmsDecryptionKey.cs" />
+     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
     <Compile Include="Internal\Cryptography\KeyTransRecipientInfoPal.cs" />
@@ -147,6 +148,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Exceptions.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyAgree.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyTrans.cs" />
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\CmsOriForKemOtherInfoAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.xml</DependentUpon>

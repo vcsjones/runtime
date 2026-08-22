@@ -19,14 +19,14 @@ namespace Internal.Cryptography.Pal.Windows
         public sealed override unsafe ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
-            AsymmetricAlgorithm? privateKey,
+            CmsDecryptionKey decryptionKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
             out Exception? exception)
         {
-            Debug.Assert((cert != null) ^ (privateKey != null));
+            Debug.Assert((cert is not null) ^ (decryptionKey is not NoKey));
 
-            if (privateKey != null)
+            if (decryptionKey is AsymmetricAlgorithm privateKey)
             {
                 RSA? key = privateKey as RSA;
 
@@ -71,6 +71,17 @@ namespace Internal.Cryptography.Pal.Windows
                     }
                 }
             }
+
+#if NET11_0_OR_GREATER
+            if (decryptionKey is MLKem)
+            {
+                exception = new CryptographicException(
+                    SR.Cryptography_Cms_RecipientType_NotSupported,
+                    recipientInfo.Type.ToString());
+
+                return null;
+            }
+#endif
 
             Debug.Assert(recipientInfo != null);
             Debug.Assert(cert != null);

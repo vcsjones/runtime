@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Pkcs
             ContentInfo? contentInfo = _decryptorPal!.TryDecrypt(
                 recipientInfo,
                 null,
-                privateKey,
+                privateKey is null ? new NoKey() : privateKey,
                 Certificates,
                 extraStore,
                 out Exception? exception);
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Pkcs
                 newContentInfo = _decryptorPal!.TryDecrypt(
                     recipientInfo,
                     cert,
-                    null,
+                    new NoKey(),
                     originatorCerts,
                     extraStore,
                     out exception);
