@@ -73,6 +73,54 @@ namespace Internal.Cryptography.Pal.Windows
             }
 
 #if NET11_0_OR_GREATER
+            if (recipientInfo.Pal is AnyOS.ManagedPkcsPal.ManagedKemPal kemri)
+            {
+                MLKem? mlKemKey = null;
+
+                switch (decryptionKey)
+                {
+                    case MLKem key:
+                        mlKemKey = key;
+                        break;
+                    case NoKey:
+                        break;
+                    case AsymmetricAlgorithm:
+                        exception = new CryptographicException(
+                            SR.Cryptography_Cms_RecipientType_NotSupported,
+                            recipientInfo.Type.ToString());
+
+                        return null;
+                }
+
+                ContentInfo contentInfo = _hCryptMsg.GetContentInfo();
+                byte[]? cek = kemri.DecryptCek(cert, mlKemKey, out exception);
+
+                fixed (byte* pinnedCek = cek)
+                {
+                    try
+                    {
+                        if (exception is not null)
+                        {
+                            return null;
+                        }
+
+                        return AnyOS.ManagedPkcsPal.ManagedDecryptorPal.TryDecryptCore(
+                            cek!,
+                            contentInfo.ContentType.Value!,
+                            contentInfo.Content,
+                            _contentEncryptionAlgorithm,
+                            out exception);
+                    }
+                    finally
+                    {
+                        if (cek is not null)
+                        {
+                            CryptographicOperations.ZeroMemory(cek);
+                        }
+                    }
+                }
+            }
+
             if (decryptionKey is MLKem)
             {
                 exception = new CryptographicException(

@@ -64,12 +64,39 @@ namespace Internal.Cryptography.Pal.Windows
                 originatorCerts = hCryptMsg.GetOriginatorCerts();
                 unprotectedAttributes = hCryptMsg.GetUnprotectedAttributes();
 
-                RecipientInfoCollection recipientInfos = CreateRecipientInfos(hCryptMsg);
+                RecipientInfoCollection recipientInfos = CreateRecipientInfos(hCryptMsg, encodedMessage);
                 return new DecryptorPalWindows(hCryptMsg, recipientInfos, contentEncryptionAlgorithmAsn);
             }
             catch
             {
                 hCryptMsg?.Dispose();
+                throw;
+            }
+        }
+
+        private static RecipientInfoCollection CreateRecipientInfos(
+            SafeCryptMsgHandle hCryptMsg,
+            ReadOnlySpan<byte> encodedMessage)
+        {
+            try
+            {
+                return CreateRecipientInfos(hCryptMsg);
+            }
+            catch (CryptographicException)
+            {
+#if NET11_0_OR_GREATER
+                RecipientInfoCollection recipientInfos =
+                    AnyOS.ManagedPkcsPal.DecodeRecipientInfos(encodedMessage);
+
+                foreach (RecipientInfo recipientInfo in recipientInfos)
+                {
+                    if (recipientInfo.Type == RecipientInfoType.KeyEncapsulation)
+                    {
+                        return recipientInfos;
+                    }
+                }
+#endif
+
                 throw;
             }
         }

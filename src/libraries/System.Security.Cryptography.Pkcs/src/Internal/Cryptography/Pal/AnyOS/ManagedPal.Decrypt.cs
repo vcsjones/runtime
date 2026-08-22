@@ -87,16 +87,24 @@ namespace Internal.Cryptography.Pal.AnyOS
 #if NET11_0_OR_GREATER
                 else if (recipientInfo.Pal is ManagedKemPal kemri)
                 {
-                    if (decryptionKey is not MLKem privateKey)
-                    {
-                        exception = new CryptographicException(
-                            SR.Cryptography_Cms_RecipientType_NotSupported,
-                            recipientInfo.Type.ToString());
+                    MLKem? privateKey = null;
 
-                        return null;
+                    switch (decryptionKey)
+                    {
+                        case MLKem key:
+                            privateKey = key;
+                            break;
+                        case NoKey:
+                            break;
+                        case AsymmetricAlgorithm:
+                            exception = new CryptographicException(
+                                SR.Cryptography_Cms_RecipientType_NotSupported,
+                                recipientInfo.Type.ToString());
+
+                            return null;
                     }
 
-                    byte[]? cek = kemri.DecryptCek(privateKey, out exception);
+                    byte[]? cek = kemri.DecryptCek(cert, privateKey, out exception);
 
                     fixed (byte* pinnedCek = cek)
                     {

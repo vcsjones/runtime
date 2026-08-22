@@ -3,7 +3,6 @@
 
 using System.Linq;
 using System.Security.Cryptography.Pkcs.Tests;
-using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -69,23 +68,16 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifyVersion0(encodedMessage);
         }
 
-#if NET11_0_OR_GREATER
         [Fact]
-        public static void DecodeMLKem512()
+        public static void Decode_UnknownOtherRecipientInfo()
         {
+            // Contains OtherRecipientInfo { 1.2.3.4, UTF8String "other content" }.
+            byte[] encodedMessage = Convert.FromBase64String(
+                "MFYGCSqGSIb3DQEHA6BJMEcCAQMxFqQUBgMqAwQMDW90aGVyIGNvbnRlbnQwKgYJKoZIhvcNAQcBMB0GCWCGSAFlAwQBKgQQAAAAAAAAAAAAAAAAAAAAAA==");
             EnvelopedCms cms = new EnvelopedCms();
-            cms.Decode(MLKemTestDocuments.MLKem512WithoutUserKeyingMaterial);
 
-            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
-
-            using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem512PrivateKeySeedPem))
-            {
-                cms.Decrypt(recipientInfo, privateKey);
-            }
-
-            Assert.Equal(MLKemTestDocuments.MLKem512Content, cms.ContentInfo.Content);
+            Assert.Throws<CryptographicException>(() => cms.Decode(encodedMessage));
         }
-#endif
 
         private static void VerifyVersion0(byte[] encodedMessage)
         {

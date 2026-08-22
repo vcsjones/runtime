@@ -10,8 +10,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
-             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\SlhDsa\SlhDsaTestData.GeneratedCertificates.cs"
@@ -37,7 +35,6 @@
     <Compile Include="EnvelopedCms\GeneralTests.cs" />
     <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoTests.cs" />
-    <Compile Include="EnvelopedCms\MLKemTestDocuments.cs" />
     <Compile Include="EnvelopedCms\StateTests.cs" />
     <Compile Include="EnvelopedCms\UnprotectedAttributeTests.cs" />
     <Compile Include="Oids.cs" />
@@ -82,6 +79,12 @@
     <Compile Include="ImportedCollection.cs" />
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
+             Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
+    <Compile Include="EnvelopedCms\GeneralTests.Kem.cs" />
+    <Compile Include="EnvelopedCms\MLKemTestDocuments.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />

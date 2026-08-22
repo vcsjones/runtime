@@ -51,7 +51,20 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
 
             unprotectedAttributes = PkcsHelpers.MakeAttributeCollection(data.UnprotectedAttributes);
+            RecipientInfoCollection recipientInfos = CreateRecipientInfos(data);
 
+            return new ManagedDecryptorPal(copy, data, recipientInfos);
+        }
+
+        internal static RecipientInfoCollection DecodeRecipientInfos(ReadOnlySpan<byte> encodedMessage)
+        {
+            byte[] copy = CopyContent(encodedMessage);
+            EnvelopedDataAsn data = EnvelopedDataAsn.Decode(copy, AsnEncodingRules.BER);
+            return CreateRecipientInfos(data);
+        }
+
+        private static RecipientInfoCollection CreateRecipientInfos(EnvelopedDataAsn data)
+        {
             var recipientInfos = new List<RecipientInfo>();
 
             foreach (RecipientInfoAsn recipientInfo in data.RecipientInfos)
@@ -78,6 +91,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                     recipientInfos.Add(new KemRecipientInfo(new ManagedKemPal(kemRecipientInfo)));
                 }
 #endif
+                else if (recipientInfo.Ori.HasValue)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_Cms_RecipientType_NotSupported,
+                        recipientInfo.Ori.Value.OriType);
+                }
                 else
                 {
                     Debug.Fail($"{nameof(RecipientInfoAsn)} deserialized with an unknown recipient type");
@@ -85,7 +104,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
             }
 
-            return new ManagedDecryptorPal(copy, data, new RecipientInfoCollection(recipientInfos));
+            return new RecipientInfoCollection(recipientInfos);
         }
 
         private static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)

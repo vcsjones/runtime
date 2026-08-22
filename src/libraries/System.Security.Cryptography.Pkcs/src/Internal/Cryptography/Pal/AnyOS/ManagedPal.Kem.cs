@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Pkcs.Asn1;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal.AnyOS
 {
@@ -44,7 +45,28 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             public override int Version => _asn.Version;
 
-            internal unsafe byte[]? DecryptCek(MLKem privateKey, out Exception? exception)
+            internal byte[]? DecryptCek(X509Certificate2? cert, MLKem? privateKey, out Exception? exception)
+            {
+                if (privateKey is not null)
+                {
+                    return DecryptCekCore(privateKey, out exception);
+                }
+
+                Debug.Assert(cert is not null);
+
+                using (MLKem? certificateKey = cert.GetMLKemPrivateKey())
+                {
+                    if (certificateKey is null)
+                    {
+                        exception = new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
+                        return null;
+                    }
+
+                    return DecryptCekCore(certificateKey, out exception);
+                }
+            }
+
+            private unsafe byte[]? DecryptCekCore(MLKem privateKey, out Exception? exception)
             {
                 try
                 {
@@ -52,12 +74,17 @@ namespace Internal.Cryptography.Pal.AnyOS
                     int kekLength = GetKeyWrapSizeInBytes(_asn.Wrap.Algorithm);
                     HashAlgorithmName kdfHashAlgorithm = GetKdfHashAlgorithm(_asn.Kdf.Algorithm);
 
+                    const int MinimumWrappedKeySize = 24;
+                    const int KeyWrapBlockSize = 8;
+
                     if (_asn.Version != 0 ||
                         privateKey.Algorithm != kemAlgorithm ||
                         _asn.Kem.Parameters is not null ||
                         _asn.Kemct.Length != kemAlgorithm.CiphertextSizeInBytes ||
                         _asn.Kdf.Parameters is not null ||
                         _asn.KekLength != kekLength ||
+                        _asn.EncryptedKey.Length < MinimumWrappedKeySize ||
+                        _asn.EncryptedKey.Length % KeyWrapBlockSize != 0 ||
                         // TODO-KEM: Support UKM when deriving the key-encryption key.
                         _asn.Ukm.HasValue ||
                         _asn.Wrap.Parameters is not null)
