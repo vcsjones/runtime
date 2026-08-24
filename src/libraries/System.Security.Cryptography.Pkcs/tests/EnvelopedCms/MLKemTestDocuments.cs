@@ -5,7 +5,7 @@ using System;
 
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
-    internal static class MLKemTestDocuments
+    internal static partial class MLKemTestDocuments
     {
         internal static byte[] MLKem512Content => field ??= "Hello World ML-KEM-512"u8.ToArray();
 

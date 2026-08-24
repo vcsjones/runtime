@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Pkcs.Tests;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -104,6 +105,46 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ],
         ];
 
+        public static IEnumerable<object[]> MLKemAlternativeAlgorithmDocuments =>
+        [
+            [
+                MLKemTestDocuments.MLKem768Aes192WrapWithHkdfSha256,
+                Oids.HkdfWithSha256,
+                Oids.Aes192Wrap,
+                24,
+            ],
+            [
+                MLKemTestDocuments.MLKem768Aes256WrapWithHkdfSha384,
+                Oids.HkdfWithSha384,
+                Oids.Aes256Wrap,
+                32,
+            ],
+            [
+                MLKemTestDocuments.MLKem768Aes256WrapWithHkdfSha512,
+                Oids.HkdfWithSha512,
+                Oids.Aes256Wrap,
+                32,
+            ],
+            [
+                MLKemTestDocuments.MLKem768Aes256WrapWithHkdfSha3_256,
+                Oids.HkdfWithSha3_256,
+                Oids.Aes256Wrap,
+                32,
+            ],
+            [
+                MLKemTestDocuments.MLKem768Aes256WrapWithHkdfSha3_384,
+                Oids.HkdfWithSha3_384,
+                Oids.Aes256Wrap,
+                32,
+            ],
+            [
+                MLKemTestDocuments.MLKem768Aes256WrapWithHkdfSha3_512,
+                Oids.HkdfWithSha3_512,
+                Oids.Aes256Wrap,
+                32,
+            ],
+        ];
+
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemDocuments))]
         public static void DecodeMLKem(
@@ -146,6 +187,31 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
                 Assert.Equal(expectedContent, cms.ContentInfo.Content);
             }
+        }
+
+        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [MemberData(nameof(MLKemAlternativeAlgorithmDocuments))]
+        public static void DecodeMLKemWithAlternativeAlgorithms(
+            byte[] encodedMessage,
+            string expectedKdfOid,
+            string expectedWrapOid,
+            int expectedKekLength)
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(encodedMessage);
+
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            Assert.Equal(expectedKdfOid, recipientInfo.KeyDerivationAlgorithm.Oid.Value);
+            Assert.Equal(expectedWrapOid, recipientInfo.KeyEncryptionAlgorithm.Oid.Value);
+            Assert.Equal(expectedKekLength, recipientInfo.KeyEncryptionKeyLengthInBytes);
+            Assert.Null(recipientInfo.UserKeyingMaterial);
+
+            using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+            {
+                cms.Decrypt(recipientInfo, privateKey);
+            }
+
+            Assert.Equal(MLKemTestDocuments.MLKem768Content, cms.ContentInfo.Content);
         }
     }
 }

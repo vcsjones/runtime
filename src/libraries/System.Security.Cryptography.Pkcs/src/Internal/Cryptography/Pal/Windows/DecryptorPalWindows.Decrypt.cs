@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal.Windows
             X509Certificate2Collection extraStore,
             out Exception? exception)
         {
-            Debug.Assert((cert is not null) ^ (decryptionKey is not NoKey));
+            Debug.Assert((cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey));
 
             if (decryptionKey is AsymmetricAlgorithm privateKey)
             {
@@ -82,7 +82,7 @@ namespace Internal.Cryptography.Pal.Windows
                     case MLKem key:
                         mlKemKey = key;
                         break;
-                    case NoKey:
+                    case CmsDecryptionKey.NoKey:
                         break;
                     case AsymmetricAlgorithm:
                         exception = new CryptographicException(

@@ -20,7 +20,8 @@ namespace System.Runtime.CompilerServices
 
 namespace Internal.Cryptography
 {
-    internal sealed record NoKey;
-
-    internal union CmsDecryptionKey(AsymmetricAlgorithm, MLKem, NoKey);
+    internal union CmsDecryptionKey(AsymmetricAlgorithm, MLKem, CmsDecryptionKey.NoKey)
+    {
+        internal sealed record NoKey;
+    }
 }

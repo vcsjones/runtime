@@ -84,6 +84,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemTestData.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemTestData.cs" />
     <Compile Include="EnvelopedCms\GeneralTests.Kem.cs" />
+    <Compile Include="EnvelopedCms\MLKemTestDocuments.Algorithms.cs" />
     <Compile Include="EnvelopedCms\MLKemTestDocuments.cs" />
   </ItemGroup>
   <ItemGroup>

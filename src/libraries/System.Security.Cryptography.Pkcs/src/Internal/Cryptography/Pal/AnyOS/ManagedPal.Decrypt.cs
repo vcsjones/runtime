@@ -40,7 +40,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                Debug.Assert((cert is not null) ^ (decryptionKey is not NoKey));
+                Debug.Assert((cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey));
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
@@ -48,10 +48,10 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         AsymmetricAlgorithm asymmetricAlgorithm => asymmetricAlgorithm as RSA,
                         MLKem => null,
-                        NoKey => null,
+                        CmsDecryptionKey.NoKey => null,
                     };
 
-                    if (decryptionKey is not NoKey && key is null)
+                    if (decryptionKey is not CmsDecryptionKey.NoKey && key is null)
                     {
                         exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
                         return null;
@@ -94,7 +94,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         case MLKem key:
                             privateKey = key;
                             break;
-                        case NoKey:
+                        case CmsDecryptionKey.NoKey:
                             break;
                         case AsymmetricAlgorithm:
                             exception = new CryptographicException(
