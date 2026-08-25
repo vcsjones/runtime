@@ -223,5 +223,19 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             Assert.Throws<CryptographicException>(() => cms.Decrypt(recipientInfo, (AsymmetricAlgorithm?)null));
         }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void DecodeMLKemInvalidVersion()
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(MLKemTestDocuments.MLKem768InvalidVersion);
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            Assert.Equal(1, recipientInfo.Version);
+
+            using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+            {
+                Assert.Throws<CryptographicException>(() => cms.Decrypt(recipientInfo, privateKey));
+            }
+        }
     }
 }

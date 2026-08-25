@@ -81,6 +81,30 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             jQGY6kEyPuoLBGkzUu5M+0hnjRA=
             """);
 
+        // Derived from MLKem768WithoutUserKeyingMaterial with KEMRecipientInfo.version changed from 0 to 1.
+        internal static byte[] MLKem768InvalidVersion => field ??= Convert.FromBase64String(
+            """
+            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
+            jQGY6kEyPuoLBGkzUu5M+0hnjRA=
+            """);
+
         // Derived from MLKem768WithUserKeyingMaterial because the OpenSSL CLI does not accept empty -recip_ukm.
         internal static byte[] MLKem768WithEmptyUserKeyingMaterial => field ??= Convert.FromBase64String(
             """
