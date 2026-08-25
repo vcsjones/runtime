@@ -40,7 +40,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                Debug.Assert((cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey));
+                Debug.Assert(
+                    (cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey)
+#if NET11_0_OR_GREATER
+                    || recipientInfo.Pal is ManagedKemPal
+#endif
+                    );
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {

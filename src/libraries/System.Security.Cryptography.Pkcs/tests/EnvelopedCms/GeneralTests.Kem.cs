@@ -213,5 +213,15 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             Assert.Equal(MLKemTestDocuments.MLKem768Content, cms.ContentInfo.Content);
         }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void DecodeMLKemWithoutKey()
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(MLKemTestDocuments.MLKem768WithoutUserKeyingMaterial);
+            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+
+            Assert.Throws<CryptographicException>(() => cms.Decrypt(recipientInfo, (AsymmetricAlgorithm?)null));
+        }
     }
 }

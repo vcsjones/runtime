@@ -52,7 +52,11 @@ namespace Internal.Cryptography.Pal.AnyOS
                     return DecryptCekCore(privateKey, out exception);
                 }
 
-                Debug.Assert(cert is not null);
+                if (cert is null)
+                {
+                    exception = new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
+                    return null;
+                }
 
                 using (MLKem? certificateKey = cert.GetMLKemPrivateKey())
                 {

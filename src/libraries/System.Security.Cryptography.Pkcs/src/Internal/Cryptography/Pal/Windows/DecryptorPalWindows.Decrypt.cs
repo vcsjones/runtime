@@ -24,7 +24,12 @@ namespace Internal.Cryptography.Pal.Windows
             X509Certificate2Collection extraStore,
             out Exception? exception)
         {
-            Debug.Assert((cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey));
+            Debug.Assert(
+                (cert is not null) ^ (decryptionKey is not CmsDecryptionKey.NoKey)
+#if NET11_0_OR_GREATER
+                || recipientInfo.Pal is AnyOS.ManagedPkcsPal.ManagedKemPal
+#endif
+                );
 
             if (decryptionKey is AsymmetricAlgorithm privateKey)
             {
