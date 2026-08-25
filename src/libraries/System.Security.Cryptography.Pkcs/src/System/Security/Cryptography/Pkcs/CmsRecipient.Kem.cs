@@ -17,7 +17,10 @@ namespace System.Security.Cryptography.Pkcs
         public static CmsRecipient CreateForKeyEncapsulation(
             X509Certificate2 certificate,
             ReadOnlySpan<byte> userKeyingMaterial) =>
-            throw new NotImplementedException();
+            CreateForKeyEncapsulation(
+                SubjectIdentifierType.IssuerAndSerialNumber,
+                certificate,
+                userKeyingMaterial);
 
         /// <summary>
         /// Creates a recipient for key encapsulation using the specified recipient identifier type, certificate, and user keying material.
@@ -29,7 +32,22 @@ namespace System.Security.Cryptography.Pkcs
         public static CmsRecipient CreateForKeyEncapsulation(
             SubjectIdentifierType recipientIdentifierType,
             X509Certificate2 certificate,
-            ReadOnlySpan<byte> userKeyingMaterial) =>
-            throw new NotImplementedException();
+            ReadOnlySpan<byte> userKeyingMaterial)
+        {
+            CmsRecipient recipient = new CmsRecipient(recipientIdentifierType, certificate);
+
+            if (!recipient.IsKeyEncapsulation)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_Recipient_MLKEMRequired);
+            }
+
+            recipient.KeyEncapsulationUserKeyingMaterial = userKeyingMaterial.ToArray();
+            return recipient;
+        }
+
+        internal bool IsKeyEncapsulation =>
+            Certificate.GetKeyAlgorithm() is Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024;
+
+        internal byte[]? KeyEncapsulationUserKeyingMaterial { get; private set; }
     }
 }

@@ -163,6 +163,9 @@
   <data name="Cryptography_Cms_Ktri_RSARequired" xml:space="preserve">
     <value>An RSA key is required to decrypt for a RecipientInfo with a KeyTransport recipient type.</value>
   </data>
+  <data name="Cryptography_Cms_Recipient_MLKEMRequired" xml:space="preserve">
+    <value>An ML-KEM certificate is required for a key encapsulation recipient.</value>
+  </data>
   <data name="Cryptography_Cms_Recipient_RSARequired_RSAPaddingModeSupplied" xml:space="preserve">
     <value>An RSA certificate is required for a CmsRecipient when used with RSAEncryptionPadding.</value>
   </data>

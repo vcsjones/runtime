@@ -145,6 +145,35 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ],
         ];
 
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void RoundTripMLKem()
+        {
+            byte[] content = "Hello World ML-KEM round-trip"u8.ToArray();
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = CmsRecipient.CreateForKeyEncapsulation(certificate, ReadOnlySpan<byte>.Empty);
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipient);
+                byte[] encodedMessage = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encodedMessage);
+                Assert.Equal(3, cms.Version);
+                KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+                ReadOnlyMemory<byte>? userKeyingMaterial = recipientInfo.UserKeyingMaterial;
+                Assert.True(userKeyingMaterial.HasValue);
+                Assert.True(userKeyingMaterial.Value.IsEmpty);
+
+                using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+                {
+                    cms.Decrypt(recipientInfo, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
         [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
         [MemberData(nameof(MLKemDocuments))]
         public static void DecodeMLKem(

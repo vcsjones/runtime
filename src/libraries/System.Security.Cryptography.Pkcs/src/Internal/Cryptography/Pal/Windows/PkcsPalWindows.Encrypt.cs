@@ -18,6 +18,21 @@ namespace Internal.Cryptography.Pal.Windows
     {
         public sealed override unsafe byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
         {
+#if NET11_0_OR_GREATER
+            foreach (CmsRecipient recipient in recipients)
+            {
+                if (recipient.IsKeyEncapsulation)
+                {
+                    return new AnyOS.ManagedPkcsPal().Encrypt(
+                        recipients,
+                        contentInfo,
+                        contentEncryptionAlgorithm,
+                        originatorCerts,
+                        unprotectedAttributes);
+                }
+            }
+#endif
+
             using (SafeCryptMsgHandle hCryptMsg = EncodeHelpers.CreateCryptMsgHandleToEncode(recipients, contentInfo.ContentType, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes))
             {
                 byte[] encodedContent;

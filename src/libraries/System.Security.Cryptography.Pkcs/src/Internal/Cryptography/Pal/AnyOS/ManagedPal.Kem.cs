@@ -198,5 +198,144 @@ namespace Internal.Cryptography.Pal.AnyOS
                 };
             }
         }
+
+        private OtherRecipientInfoAsn MakeKemri(byte[] cek, CmsRecipient recipient)
+        {
+            const int MinimumKeyWrapInputSize = 16;
+            const int KeyWrapBlockSize = 8;
+
+            if (cek.Length < MinimumKeyWrapInputSize || cek.Length % KeyWrapBlockSize != 0)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey);
+            }
+
+            using (MLKem? publicKey = recipient.Certificate.GetMLKemPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Cms_Recipient_MLKEMRequired);
+                }
+
+                MLKemAlgorithm kemAlgorithm = publicKey.Algorithm;
+                string kemAlgorithmOid;
+                string wrapAlgorithmOid;
+                int kekLength;
+
+                if (kemAlgorithm == MLKemAlgorithm.MLKem512)
+                {
+                    kemAlgorithmOid = Oids.MlKem512;
+                    wrapAlgorithmOid = Oids.Aes128Wrap;
+                    kekLength = 16;
+                }
+                else if (kemAlgorithm == MLKemAlgorithm.MLKem768)
+                {
+                    kemAlgorithmOid = Oids.MlKem768;
+                    wrapAlgorithmOid = Oids.Aes256Wrap;
+                    kekLength = 32;
+                }
+                else if (kemAlgorithm == MLKemAlgorithm.MLKem1024)
+                {
+                    kemAlgorithmOid = Oids.MlKem1024;
+                    wrapAlgorithmOid = Oids.Aes256Wrap;
+                    kekLength = 32;
+                }
+                else
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_Cms_UnknownAlgorithm,
+                        kemAlgorithm.Name);
+                }
+
+                const int SharedSecretSize = 32;
+
+                if (kemAlgorithm.SharedSecretSizeInBytes != SharedSecretSize)
+                {
+                    Debug.Fail($"Unexpected ML-KEM shared secret size: {kemAlgorithm.SharedSecretSizeInBytes}.");
+                    throw new CryptographicException();
+                }
+
+                byte[] ciphertext = new byte[kemAlgorithm.CiphertextSizeInBytes];
+                Span<byte> sharedSecret = stackalloc byte[SharedSecretSize];
+                const int MaximumKeyEncryptionKeySize = 32;
+                Span<byte> keyEncryptionKeyBuffer = stackalloc byte[MaximumKeyEncryptionKeySize];
+                Span<byte> keyEncryptionKey = keyEncryptionKeyBuffer[..kekLength];
+
+                try
+                {
+                    publicKey.Encapsulate(ciphertext, sharedSecret);
+
+                    ValueCmsOriForKemOtherInfoAsn otherInfo = new ValueCmsOriForKemOtherInfoAsn
+                    {
+                        Wrap = new ValueAlgorithmIdentifierAsn
+                        {
+                            Algorithm = wrapAlgorithmOid,
+                        },
+                        KekLength = kekLength,
+                    };
+
+                    byte[]? userKeyingMaterial = recipient.KeyEncapsulationUserKeyingMaterial;
+
+                    if (userKeyingMaterial is not null)
+                    {
+                        otherInfo.Ukm = userKeyingMaterial;
+                    }
+
+                    AsnWriter otherInfoWriter = new AsnWriter(AsnEncodingRules.DER);
+                    otherInfo.Encode(otherInfoWriter);
+
+                    HKDF.DeriveKey(
+                        HashAlgorithmName.SHA256,
+                        sharedSecret,
+                        keyEncryptionKey,
+                        ReadOnlySpan<byte>.Empty,
+                        otherInfoWriter.Encode());
+
+                    KemRecipientInfoAsn kemri = new KemRecipientInfoAsn
+                    {
+                        Version = 0,
+                        Rid = MakeRecipientIdentifier(recipient),
+                        Kem =
+                        {
+                            Algorithm = kemAlgorithmOid,
+                        },
+                        Kemct = ciphertext,
+                        Kdf =
+                        {
+                            Algorithm = Oids.HkdfWithSha256,
+                        },
+                        KekLength = kekLength,
+                        Wrap =
+                        {
+                            Algorithm = wrapAlgorithmOid,
+                        },
+                    };
+
+                    if (userKeyingMaterial is not null)
+                    {
+                        kemri.Ukm = userKeyingMaterial;
+                    }
+
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.SetKey(keyEncryptionKey);
+                        kemri.EncryptedKey = aes.EncryptKeyWrap(cek);
+                    }
+
+                    AsnWriter kemriWriter = new AsnWriter(AsnEncodingRules.DER);
+                    kemri.Encode(kemriWriter);
+
+                    return new OtherRecipientInfoAsn
+                    {
+                        OriType = Oids.CmsKemRecipientInfo,
+                        OriValue = kemriWriter.Encode(),
+                    };
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(sharedSecret);
+                    CryptographicOperations.ZeroMemory(keyEncryptionKey);
+                }
+            }
+        }
     }
 }
