@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
 
         // Key wrap algorithms
+        public const string Aes128Wrap = "2.16.840.1.101.3.4.1.5";
         public const string Aes192Wrap = "2.16.840.1.101.3.4.1.25";
         public const string Aes256Wrap = "2.16.840.1.101.3.4.1.45";
         public const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";

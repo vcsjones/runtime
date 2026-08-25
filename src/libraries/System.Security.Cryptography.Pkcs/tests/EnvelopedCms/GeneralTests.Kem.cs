@@ -145,6 +145,31 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ],
         ];
 
+        public static IEnumerable<object[]> MLKemEncryptionAlgorithms =>
+        [
+            [
+                MLKemTestData.IetfMlKem512CertificatePem,
+                MLKemTestData.IetfMlKem512PrivateKeySeedPem,
+                MLKemTestData.MlKem512Oid,
+                Oids.Aes128Wrap,
+                16,
+            ],
+            [
+                MLKemTestData.IetfMlKem768CertificatePem,
+                MLKemTestData.IetfMlKem768PrivateKeySeedPem,
+                MLKemTestData.MlKem768Oid,
+                Oids.Aes256Wrap,
+                32,
+            ],
+            [
+                MLKemTestData.IetfMlKem1024CertificatePem,
+                MLKemTestData.IetfMlKem1024PrivateKeySeedPem,
+                MLKemTestData.MlKem1024Oid,
+                Oids.Aes256Wrap,
+                32,
+            ],
+        ];
+
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void RoundTripMLKem()
         {
@@ -171,6 +196,204 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 }
 
                 Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(MLKemEncryptionAlgorithms))]
+        public static void RoundTripMLKemDefaultAlgorithms(
+            string certificatePem,
+            string privateKeyPem,
+            string expectedKemAlgorithm,
+            string expectedWrapAlgorithm,
+            int expectedKekLength)
+        {
+            byte[] content = "Hello World ML-KEM default algorithms"u8.ToArray();
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(certificatePem))
+            {
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(new CmsRecipient(certificate));
+                byte[] encodedMessage = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encodedMessage);
+                Assert.Equal(3, cms.Version);
+                KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+                Assert.Equal(expectedKemAlgorithm, recipientInfo.KeyEncapsulationAlgorithm.Oid.Value);
+                Assert.Equal(Oids.HkdfWithSha256, recipientInfo.KeyDerivationAlgorithm.Oid.Value);
+                Assert.Equal(expectedWrapAlgorithm, recipientInfo.KeyEncryptionAlgorithm.Oid.Value);
+                Assert.Equal(expectedKekLength, recipientInfo.KeyEncryptionKeyLengthInBytes);
+                Assert.Null(recipientInfo.UserKeyingMaterial);
+
+                using (MLKem privateKey = MLKem.ImportFromPem(privateKeyPem))
+                {
+                    cms.Decrypt(recipientInfo, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void RoundTripMLKemWithUserKeyingMaterialAndSubjectKeyIdentifier()
+        {
+            byte[] content = "Hello World ML-KEM with UKM and SKI"u8.ToArray();
+            byte[] userKeyingMaterial = "ML-KEM user keying material"u8.ToArray();
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipient recipient = CmsRecipient.CreateForKeyEncapsulation(
+                    SubjectIdentifierType.SubjectKeyIdentifier,
+                    certificate,
+                    userKeyingMaterial);
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipient);
+                byte[] encodedMessage = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encodedMessage);
+                KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+                Assert.Equal(SubjectIdentifierType.SubjectKeyIdentifier, recipientInfo.RecipientIdentifier.Type);
+                Assert.Equal(userKeyingMaterial, recipientInfo.UserKeyingMaterial?.ToArray());
+
+                using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+                {
+                    cms.Decrypt(recipientInfo, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void RoundTripMultipleMLKemRecipients()
+        {
+            byte[] content = "Hello World multiple ML-KEM recipients"u8.ToArray();
+
+            using (X509Certificate2 certificate768 = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            using (X509Certificate2 certificate1024 = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem1024CertificatePem))
+            {
+                CmsRecipientCollection recipients = new CmsRecipientCollection();
+                recipients.Add(new CmsRecipient(certificate768));
+                recipients.Add(new CmsRecipient(certificate1024));
+
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipients);
+                byte[] encodedMessage = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encodedMessage);
+                Assert.Equal(2, cms.RecipientInfos.Count);
+                HashSet<string> algorithms = [];
+
+                foreach (RecipientInfo recipientInfo in cms.RecipientInfos)
+                {
+                    KemRecipientInfo kemRecipientInfo = Assert.IsType<KemRecipientInfo>(recipientInfo);
+                    string? keyAlgorithm = kemRecipientInfo.KeyEncapsulationAlgorithm.Oid.Value;
+                    Assert.NotNull(keyAlgorithm);
+                    algorithms.Add(keyAlgorithm);
+                }
+
+                Assert.Contains(MLKemTestData.MlKem768Oid, algorithms);
+                Assert.Contains(MLKemTestData.MlKem1024Oid, algorithms);
+
+                for (int index = 0; index < cms.RecipientInfos.Count; index++)
+                {
+                    cms = new EnvelopedCms();
+                    cms.Decode(encodedMessage);
+                    KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(cms.RecipientInfos[index]);
+                    string? keyAlgorithm = recipientInfo.KeyEncapsulationAlgorithm.Oid.Value;
+                    Assert.NotNull(keyAlgorithm);
+                    string privateKeyPem;
+
+                    if (keyAlgorithm == MLKemTestData.MlKem768Oid)
+                    {
+                        privateKeyPem = MLKemTestData.IetfMlKem768PrivateKeySeedPem;
+                    }
+                    else
+                    {
+                        Assert.Equal(MLKemTestData.MlKem1024Oid, keyAlgorithm);
+                        privateKeyPem = MLKemTestData.IetfMlKem1024PrivateKeySeedPem;
+                    }
+
+                    using (MLKem privateKey = MLKem.ImportFromPem(privateKeyPem))
+                    {
+                        cms.Decrypt(recipientInfo, privateKey);
+                    }
+
+                    Assert.Equal(content, cms.ContentInfo.Content);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void RoundTripMixedRsaAndMLKemRecipients()
+        {
+            byte[] content = "Hello World mixed RSA and ML-KEM recipients"u8.ToArray();
+
+            using (X509Certificate2 rsaCertificate = Certificates.RSAKeyTransfer1.GetCertificate())
+            using (X509Certificate2 kemCertificate = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                CmsRecipientCollection recipients = new CmsRecipientCollection();
+                recipients.Add(new CmsRecipient(rsaCertificate));
+                recipients.Add(new CmsRecipient(kemCertificate));
+
+                EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content));
+                cms.Encrypt(recipients);
+                byte[] encodedMessage = cms.Encode();
+
+                cms = new EnvelopedCms();
+                cms.Decode(encodedMessage);
+                Assert.Equal(2, cms.RecipientInfos.Count);
+                KemRecipientInfo kemRecipientInfo =
+                    cms.RecipientInfos[0] as KemRecipientInfo ??
+                    Assert.IsType<KemRecipientInfo>(cms.RecipientInfos[1]);
+                int keyTransRecipientIndex = ReferenceEquals(kemRecipientInfo, cms.RecipientInfos[0]) ? 1 : 0;
+                Assert.IsType<KeyTransRecipientInfo>(cms.RecipientInfos[keyTransRecipientIndex]);
+
+                using (MLKem privateKey = MLKem.ImportFromPem(MLKemTestData.IetfMlKem768PrivateKeySeedPem))
+                {
+                    cms.Decrypt(kemRecipientInfo, privateKey);
+                }
+
+                Assert.Equal(content, cms.ContentInfo.Content);
+            }
+        }
+
+        [Fact]
+        public static void CreateForKeyEncapsulationRejectsNonKemCertificate()
+        {
+            using (X509Certificate2 certificate = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                Assert.Throws<CryptographicException>(
+                    () => CmsRecipient.CreateForKeyEncapsulation(certificate, ReadOnlySpan<byte>.Empty));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void CreateForKeyEncapsulationRejectsInvalidIdentifierType()
+        {
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                Assert.Throws<CryptographicException>(
+                    () => CmsRecipient.CreateForKeyEncapsulation(
+                        (SubjectIdentifierType)42,
+                        certificate,
+                        ReadOnlySpan<byte>.Empty));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void EncryptMLKemRejectsIncompatibleContentEncryptionKeySize()
+        {
+            byte[] content = "Hello World ML-KEM with DES"u8.ToArray();
+            AlgorithmIdentifier des = new AlgorithmIdentifier(new Oid(Oids.Des));
+            EnvelopedCms cms = new EnvelopedCms(new ContentInfo(content), des);
+
+            using (X509Certificate2 certificate = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem768CertificatePem))
+            {
+                Assert.Throws<CryptographicException>(() => cms.Encrypt(new CmsRecipient(certificate)));
             }
         }
 
